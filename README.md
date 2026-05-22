@@ -12,7 +12,7 @@ ees-natural-language-search/
 |   └── ...
 ├── routes/
 |   ├── healthcheck.py
-|   └── natural_langiage_search_function.py
+|   └── natural_language_search_function.py
 ├── LICENSE
 └── README.md
 ```
