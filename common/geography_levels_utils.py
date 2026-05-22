@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-import pandas as pd
 from collections import defaultdict
 from rapidfuzz import process, fuzz
 from azure.storage.blob import BlobServiceClient
