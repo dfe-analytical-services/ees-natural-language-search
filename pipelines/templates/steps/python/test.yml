@@ -1,0 +1,6 @@
+steps:
+  # Placeholder for running tests
+  # This could also publish test results and collect code coverage
+  - script: |
+      echo "Run tests placeholder. No tests have been implemented yet."
+    displayName: 'Run tests'

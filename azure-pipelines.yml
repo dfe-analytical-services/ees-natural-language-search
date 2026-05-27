@@ -1,0 +1,24 @@
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    exclude:
+    - README.md
+pr:
+  branches:
+    include:
+    - main
+  drafts: false
+  paths:
+    exclude:
+    - README.md
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - template: pipelines/templates/stages/ci.yml
+
+variables:
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]

@@ -1,0 +1,8 @@
+stages:
+  - stage: CI
+    displayName: 'CI'
+
+    jobs:
+      - template: ../jobs/python-build.yml
+        parameters:
+          publishBuild: ${{ eq(variables.isMain, true) }}

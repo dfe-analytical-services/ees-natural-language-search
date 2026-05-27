@@ -1,0 +1,17 @@
+parameters:
+  pythonVersion: '3.14'
+  requirementsFile: 'requirements.txt'
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '${{ parameters.pythonVersion }}'
+    displayName: 'Use Python ${{ parameters.pythonVersion }}'
+
+  - script: |
+      python -m pip install --upgrade pip
+    displayName: 'Upgrade pip'
+
+  - script: |
+      pip install -r ${{ parameters.requirementsFile }}
+    displayName: 'Install dependencies'
