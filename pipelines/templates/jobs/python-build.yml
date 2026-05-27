@@ -1,0 +1,17 @@
+parameters:
+  - name: publishBuild
+    type: boolean
+    default: false
+
+jobs:
+  - job: PythonBuild
+    displayName: 'Python build'
+    steps:
+      - checkout: self
+
+      - template: ../steps/python/setup.yml
+
+      - template: ../steps/python/test.yml
+
+      - ${{ if eq(parameters.publishBuild, true) }}:
+        - template: ../steps/python/publish.yml
