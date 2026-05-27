@@ -5,4 +5,4 @@ stages:
     jobs:
       - template: ../jobs/python-build.yml
         parameters:
-          publishBuild: ${{ eq(variables.isMain, true) }}
+          publishBuild: ${{ eq(variables['Build.SourceBranch'], 'refs/heads/main') }}

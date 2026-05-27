@@ -19,6 +19,3 @@ pool:
 
 stages:
   - template: pipelines/templates/stages/ci.yml
-
-variables:
-  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
