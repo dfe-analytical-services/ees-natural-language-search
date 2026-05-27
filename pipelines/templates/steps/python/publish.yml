@@ -1,0 +1,19 @@
+parameters:
+  artifactName: 'drop'
+
+steps:
+  - task: ArchiveFiles@2
+    inputs:
+      rootFolderOrFile: '$(Build.SourcesDirectory)'
+      includeRootFolder: false
+      archiveType: 'zip'
+      archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)-$(Build.SourceBranchName)-$(Build.BuildNumber).zip'
+      replaceExistingArchive: true
+    displayName: 'Create deployment artifact'
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      artifactName: '${{ parameters.artifactName }}'
+      targetPath: '$(Build.ArtifactStagingDirectory)'
+      publishLocation: 'pipeline'
+    displayName: 'Publish pipeline artifact'
