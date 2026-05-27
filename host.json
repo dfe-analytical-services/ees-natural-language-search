@@ -1,0 +1,10 @@
+{
+    "version": "2.0",
+    "extensions": {
+        "http": {
+            "routePrefix": "",
+            "maxOutstandingRequests": 20,
+            "maxConcurrentRequests": 10
+        }
+    }
+}
