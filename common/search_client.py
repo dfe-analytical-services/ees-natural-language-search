@@ -97,10 +97,13 @@ async def multi_index_search(user_query: str, publication: str, top: int=10):
                                    top=top)
     dataset_ids = set()
     grouped_filters = defaultdict(list)
+    scores = defaultdict(list)
     for r in results:
         dataset_ids.add(r['fileId'])
         grouped_filters[r['fileId']].append(r['filterName'])
+        scores[r['fileId']].append(r['@search.score'])
 
+    max_scores = {k:max(v) for k, v in scores.items()}
     datasets = [dataset_client.get_document(dataset_id) for dataset_id in dataset_ids]
 
-    return query, datasets, grouped_filters
+    return query, datasets, max_scores, grouped_filters
