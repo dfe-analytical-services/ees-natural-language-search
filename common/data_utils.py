@@ -39,7 +39,7 @@ def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filt
 
     return transformed
 
-def combine_responses(model_responses: list, indicator_responses:list, geo_dict: defaultdict):
+def combine_responses(model_responses: list, indicator_responses:list, geo_dict: defaultdict, grouped_title_description: defaultdict):
     combined_responses = []
 
     for model_raw, indicator_raw in zip(model_responses, indicator_responses):
@@ -72,10 +72,21 @@ def combine_responses(model_responses: list, indicator_responses:list, geo_dict:
         for file_id, geo_matches in geo_dict.items():
             if file_id in combined:
                 combined[file_id]["geo_matches"] = geo_matches
+        
+        for file_id, title_desc in grouped_title_description.items():
+            if file_id in combined:
+                combined[file_id]["aiSummary"] = f'''This data is relevant because {title_desc['relevance_reason']}\n It contains information about {title_desc['description']}'''
 
         combined_responses.append(combined)
+    
+    
+    final_response = [
+        {"fileId": key, **value}
+        for item in combined_responses
+        for key, value in item.items()
+    ]
 
-    return combined_responses
+    return final_response
 
 def rrf_to_percentage(rrf_score: float):
     RRF_K = 60

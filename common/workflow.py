@@ -33,10 +33,12 @@ async def run_workflow(user_query: str, publication: str):
     grouped_geographic_levels = reranking_results["grouped_geographic_levels"]
     total_tokens_used += reranking_results["total_tokens_used"]
     reranker_response = json.loads(reranking_results["reranker_response_raw"])
-    
+
     for item in reranker_response.get("shortlisted_datasets", []):
         file_id = item.get("file_id")
         item["relevanceScore"] = rrf_to_percentage(scores.get(file_id))
+        if file_id in grouped_title_description:
+            grouped_title_description[file_id]['relevance_reason'] = item.get('relevance_reason', '')
     yield {'stage': 'reranker complete', 'data': reranker_response}
 
     logging.info("Getting geography matches")
@@ -60,8 +62,8 @@ async def run_workflow(user_query: str, publication: str):
     total_tokens_used+=(filter_tokens_used + indicator_tokens_used)
 
     logging.info("Consolidating Pipeline Responses")
-    combined_responses = combine_responses(model_responses, indicator_responses, geo_dict)
+    final_response = combine_responses(model_responses, indicator_responses, geo_dict, grouped_title_description)
 
-    yield {'stage': 'pipeline complete', 'data': combined_responses, 'token_usage': total_tokens_used}
+    yield {'stage': 'pipeline complete', 'data': {'datasets': final_response, 'token_usage': total_tokens_used}}
 
 
