@@ -76,3 +76,10 @@ def combine_responses(model_responses: list, indicator_responses:list, geo_dict:
         combined_responses.append(combined)
 
     return combined_responses
+
+def rrf_to_percentage(rrf_score: float):
+    RRF_K = 60
+    RRF_MAX = (1.0 / (1 + RRF_K)) + (1.0 / (1 + RRF_K)) #Both components are equal since vector score and BM25 score have same weightage currently
+
+    raw = (rrf_score/RRF_MAX) * 100
+    return round(min(raw, 100.0), 1)
