@@ -13,5 +13,5 @@ steps:
     displayName: 'Upgrade pip'
 
   - script: |
-      pip install -r ${{ parameters.requirementsFile }}
+      pip install --target="./.python_packages/lib/site-packages" -r ${{ parameters.requirementsFile }}
     displayName: 'Install dependencies'

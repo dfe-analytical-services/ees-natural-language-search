@@ -1,4 +1,7 @@
 parameters:
+  - name: artifactName
+    type: string
+    default: 'drop'
   - name: publishBuild
     type: boolean
     default: false
@@ -15,3 +18,5 @@ jobs:
 
       - ${{ if eq(parameters.publishBuild, true) }}:
         - template: ../steps/python/publish.yml
+          parameters:
+            artifactName: ${{ parameters.artifactName }}

@@ -17,5 +17,22 @@ pr:
 pool:
   vmImage: ubuntu-latest
 
+variables:
+  - group: Common
+  - name: artifactName
+    value: 'drop'
+  # TODO Read the function app resource name as an output variable from the 'EES - Search - Infrastructure and Deploy' pipeline?
+  - name:  azureFunctionAppNameDev
+    value: 's101d01-ees-fa-nlsearch'
+
 stages:
   - template: pipelines/templates/stages/ci.yml
+    parameters:
+      artifactName: $(artifactName)
+
+  - template: pipelines/templates/stages/deploy.yml
+    parameters:
+      artifactName: $(artifactName)
+      environmentName: Dev
+      functionAppName: $(azureFunctionAppNameDev)
+      serviceConnection: $(serviceConnectionDev)
