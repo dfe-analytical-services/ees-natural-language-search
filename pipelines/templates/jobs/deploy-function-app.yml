@@ -1,0 +1,31 @@
+parameters:
+  - name: artifactName
+    type: string
+    default: 'drop'
+  - name: displayName
+    type: string
+    default: 'Deploy Function App'
+  - name: environmentName
+    type: string
+  - name: functionAppName
+    type: string
+  - name: functionAppType
+    type: string
+    default: 'functionAppLinux'
+  - name: serviceConnection
+    type: string
+
+jobs:
+  - deployment: DeployFunctionApp
+    displayName: ${{ parameters.displayName }}
+    environment: ${{ parameters.environmentName }}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - template: ../steps/function-app/azure-function-app-deploy.yml
+              parameters:
+                artifactName: ${{ parameters.artifactName }}
+                functionAppName: ${{ parameters.functionAppName }}
+                functionAppType: ${{ parameters.functionAppType }}
+                serviceConnection: ${{ parameters.serviceConnection }}

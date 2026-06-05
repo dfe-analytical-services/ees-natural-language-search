@@ -1,0 +1,20 @@
+parameters:
+  - name: artifactName
+    type: string
+    default: 'drop'
+  - name: functionAppName
+    type: string
+  - name: functionAppType
+    type: string
+    default: 'functionAppLinux'
+  - name: serviceConnection
+    type: string
+
+steps:
+  - task: AzureFunctionApp@2
+    displayName: 'Azure Function App Deploy'
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      appType: ${{ parameters.functionAppType }}
+      appName: ${{ parameters.functionAppName }}
+      package: '$(Pipeline.Workspace)/${{ parameters.artifactName }}/**/*.zip'

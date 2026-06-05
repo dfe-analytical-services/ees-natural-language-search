@@ -1,0 +1,24 @@
+parameters:
+  - name: artifactName
+    type: string
+    default: 'drop'
+  - name: environmentName
+    type: string
+  - name: functionAppName
+    type: string
+  - name: serviceConnection
+    type: string
+
+stages:
+  - stage: Deploy
+    displayName: 'Deploy to ${{ parameters.environmentName }}'
+    dependsOn: CI
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'PullRequest'))
+
+    jobs:
+      - template: ../jobs/deploy-function-app.yml
+        parameters:
+          artifactName: ${{ parameters.artifactName }}
+          environmentName: ${{ parameters.environmentName }}
+          functionAppName: ${{ parameters.functionAppName }}
+          serviceConnection: ${{ parameters.serviceConnection }}
