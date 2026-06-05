@@ -17,5 +17,11 @@ pr:
 pool:
   vmImage: ubuntu-latest
 
+variables:
+  - name: artifactName
+    value: 'drop'
+
 stages:
   - template: pipelines/templates/stages/ci.yml
+    parameters:
+      artifactName: $(artifactName)
