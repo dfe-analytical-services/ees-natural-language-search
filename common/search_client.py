@@ -3,19 +3,21 @@ import time
 from openai import AsyncAzureOpenAI
 from collections import defaultdict
 from azure.search.documents import SearchClient
-from azure.core.credentials import AzureKeyCredential
+from azure.identity import DefaultAzureCredential
 from azure.search.documents.models import VectorizedQuery
+
+credential = DefaultAzureCredential()
 
 filter_client = SearchClient(
     endpoint=os.environ["AZURE_SEARCH_ENDPOINT"],
     index_name=os.environ["AZURE_SEARCH_FILTER_INDEX"],
-    credential=AzureKeyCredential(os.environ["AZURE_SEARCH_KEY"])
+    credential=credential
 )
 
 dataset_client = SearchClient(
     endpoint=os.environ["AZURE_SEARCH_ENDPOINT"],
     index_name=os.environ["AZURE_SEARCH_DATASET_INDEX"],
-    credential=AzureKeyCredential(os.environ["AZURE_SEARCH_KEY"])
+    credential=credential
 )
 
 def batch(items, size=20):
