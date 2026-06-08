@@ -54,7 +54,7 @@ Return a JSON object with this exact structure:
         {
             "file_id": "<exact fileId from metadata>",
             "title": "<exact title from metadata>",
-            "relevance_reason": "one brief sentence explaining exactly why this dataset addresses the query",
+            "relevance_reason": "1-2 brief sentences explaining exactly why this dataset addresses the query for a user summary. This should be separate from the dataset description.",
             "relevant_filters": ["a list of the exact filter names that were deemed to be releavnt to the user query"]
         }
     ],

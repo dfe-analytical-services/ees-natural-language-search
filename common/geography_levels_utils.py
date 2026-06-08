@@ -34,10 +34,10 @@ def get_file_from_blob(blob_name: str):
     '''
     # TODO: pull the string and conatiner name from env variables
     blob_service_client = BlobServiceClient.from_connection_string(
-        os.environ['AzureWebJobsStorage'],
+        os.environ['SEARCH_STORAGE_CONN_STRING'],
         api_version="2021-04-10"
         )
-    blob_client = blob_service_client.get_blob_client(container=os.environ['DATA_CONTAINER_NAME'], blob=blob_name)
+    blob_client = blob_service_client.get_blob_client(container=os.environ['LOCATIONS_DICT_CONTAINER_NAME'], blob=blob_name)
     download_stream = blob_client.download_blob()
     blob_data = download_stream.readall()
     json_data = json.loads(blob_data)

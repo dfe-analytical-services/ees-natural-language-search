@@ -5,7 +5,7 @@ from common.reranker import run_reranking_agent
 from common.retrieve_datasets import retrieve_datasets
 from common.filter_selection import run_filter_selection_agent
 from common.indicator_selection import run_indicator_selection_agent
-from common.data_utils import retrieve_and_transform_filter_data, combine_responses
+from common.data_utils import retrieve_and_transform_filter_data, combine_responses, rrf_to_percentage
 from common.geography_levels_utils import get_location_matches, geo_filter_and_group_matches
 
 async def run_workflow(user_query: str, publication: str):
@@ -13,9 +13,13 @@ async def run_workflow(user_query: str, publication: str):
     yield {"stage": "starting pipeline"}
 
     logging.info("Retrieving Datasets")
-    relevant_datasets, grouped_filters = await retrieve_datasets(user_query=user_query, publication=publication)
+    relevant_datasets, scores, grouped_filters = await retrieve_datasets(user_query=user_query, publication=publication)
 
-    yield {"stage": "retrieved datasets", "data":f"{len(relevant_datasets)} relevant datasets retrieved"}
+    scored_datasets = {'datasets': [{'title': r['title'], 
+                                     'relevanceScore': rrf_to_percentage(scores[r['fileId']]),
+                                     'rawRelevanceScore': scores[r['fileId']]}
+                                     for r in relevant_datasets]}
+    yield {"stage": "retrieved datasets", "data":scored_datasets}
 
     logging.info("Running Reranker")
     reranking_results = await run_reranking_agent(user_query, relevant_datasets, grouped_filters)
@@ -28,9 +32,14 @@ async def run_workflow(user_query: str, publication: str):
     grouped_title_description = reranking_results["grouped_title_description"]
     grouped_geographic_levels = reranking_results["grouped_geographic_levels"]
     total_tokens_used += reranking_results["total_tokens_used"]
-    reranker_response = reranking_results["reranker_response_raw"]
+    reranker_response = json.loads(reranking_results["reranker_response_raw"])
 
-    yield {'stage': 'reranker complete', 'data': json.loads(reranker_response)}
+    for item in reranker_response.get("shortlisted_datasets", []):
+        file_id = item.get("file_id")
+        item["relevanceScore"] = rrf_to_percentage(scores.get(file_id))
+        if file_id in grouped_title_description:
+            grouped_title_description[file_id]['relevance_reason'] = item.get('relevance_reason', '')
+    yield {'stage': 'reranker complete', 'data': reranker_response}
 
     logging.info("Getting geography matches")
     geo_dict = geo_filter_and_group_matches([get_location_matches(x, {}) for x in geography_requirements], grouped_geographic_levels)
@@ -53,8 +62,8 @@ async def run_workflow(user_query: str, publication: str):
     total_tokens_used+=(filter_tokens_used + indicator_tokens_used)
 
     logging.info("Consolidating Pipeline Responses")
-    combined_responses = combine_responses(model_responses, indicator_responses, geo_dict)
+    final_response = combine_responses(model_responses, indicator_responses, geo_dict, grouped_title_description)
 
-    yield {'stage': 'pipeline complete', 'data': combined_responses, 'token_usage': total_tokens_used}
+    yield {'stage': 'pipeline complete', 'data': {'datasets': final_response, 'token_usage': total_tokens_used}}
 
 
