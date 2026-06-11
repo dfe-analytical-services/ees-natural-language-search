@@ -4,9 +4,14 @@ from openai import AsyncAzureOpenAI
 from collections import defaultdict
 from azure.search.documents import SearchClient
 from azure.identity import DefaultAzureCredential
+from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.models import VectorizedQuery
 
-credential = DefaultAzureCredential()
+azure_search_key = os.environ.get("AZURE_SEARCH_KEY")
+if azure_search_key and len(azure_search_key)>0:
+    credential = azure_search_key
+else:
+    credential = DefaultAzureCredential()
 
 filter_client = SearchClient(
     endpoint=os.environ["AZURE_SEARCH_ENDPOINT"],
