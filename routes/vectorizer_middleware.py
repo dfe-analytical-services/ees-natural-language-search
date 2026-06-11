@@ -14,7 +14,7 @@ MODEL_NAME = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
 DIMENSIONS = int(os.getenv("EMBEDDING_DIMENSIONS", "1536"))
 
 
-@router.post("/vectorizer_middleware")
+@router.post("/api/vectorizer_middleware")
 async def vectorizer_middleware(req: Request):
     try:
         body = await req.json()
