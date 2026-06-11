@@ -9,7 +9,7 @@ from azure.search.documents.models import VectorizedQuery
 
 azure_search_key = os.environ.get("AZURE_SEARCH_KEY")
 if azure_search_key and len(azure_search_key)>0:
-    credential = azure_search_key
+    credential = AzureKeyCredential(azure_search_key)
 else:
     credential = DefaultAzureCredential()
 
