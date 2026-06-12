@@ -71,7 +71,7 @@ def combine_responses(model_responses: list, indicator_responses:list, geo_dict:
         
         for file_id, geo_matches in geo_dict.items():
             if file_id in combined:
-                combined[file_id]["geo_matches"] = geo_matches
+                combined[file_id]["geographicLevels"] = geo_matches
         
         for file_id, title_desc in grouped_title_description.items():
             if file_id in combined:
