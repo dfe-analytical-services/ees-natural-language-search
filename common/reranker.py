@@ -39,7 +39,7 @@ Before returning your answer, think through each dataset systematically:
 ## Output Format
 Return a JSON object with this exact structure:
 {
-    "query_requirements": {
+    "queryRequirements": {
         "filters":
             [
                 "Concise description of each distinct data requirement extracted from the query which can be a potential filter"
@@ -48,14 +48,14 @@ Return a JSON object with this exact structure:
             [
                 "Concise name of each distinct geography requirement extracted from the query. If nothing is identified then it should be National"
             ],
-        "time_period": "The specific time interval that the user wants the data for. If nothing is identified then return None."
+        "timePeriod": "The specific time interval that the user wants the data for. If nothing is identified then return None."
     },
-    "shortlisted_datasets": [
+    "shortlistedDatasets": [
         {
-            "file_id": "<exact fileId from metadata>",
+            "fileId": "<exact fileId from metadata>",
             "title": "<exact title from metadata>",
-            "relevance_reason": "1-2 brief sentences explaining exactly why this dataset addresses the query for a user summary. This should be separate from the dataset description.",
-            "relevant_filters": ["a list of the exact filter names that were deemed to be releavnt to the user query"]
+            "relevanceReason": "1-2 brief sentences explaining exactly why this dataset addresses the query for a user summary. This should be separate from the dataset description.",
+            "relevantFilters": ["a list of the exact filter names that were deemed to be releavnt to the user query"]
         }
     ],
     "confidence": "high | medium | low",
@@ -106,13 +106,13 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
     reranker_json = json.loads(reranker_response)
 
     reranked_datasets = [
-        d["file_id"] for d in reranker_json["shortlisted_datasets"]
+        d["fileId"] for d in reranker_json["shortlistedDatasets"]
     ]
 
     logging.info("Extracting filter, indicator and geography requirements from query")
     
-    query_requirements = reranker_json["query_requirements"]["filters"]
-    geography_requirements = reranker_json["query_requirements"]["geography"]
+    query_requirements = reranker_json["queryRequirements"]["filters"]
+    geography_requirements = reranker_json["queryRequirements"]["geography"]
 
     # 3. Collect dataset-level metadata for reranked datasets
     grouped_filters = {
