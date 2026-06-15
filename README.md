@@ -6,7 +6,7 @@ An Azure-hosted API that turns plain-Englisha querise into ranked educational da
 
 It combines **Azure Cognitive Search** (hybrid BM25 + vector) with a multi-stage **Azure OpenAI** pipeline (GPT-4.1-mini by default). Results stream back to the client as **Server-Sent Events (SSE)** so partial results appear progressively.
 
-**Stack** Python - Azure Functions - FastAPI (mounted as ASGI) - Azure Cognitive Search - Azure OpenAI
+**Stack:** Python - Azure Functions - FastAPI (mounted as ASGI) - Azure Cognitive Search - Azure OpenAI
 
 ---
 
@@ -43,4 +43,31 @@ ees-natural-language-search/
 ---
 
 ## How a request flows
+ 1. `function_app.py` receives every HTTP routea and proxies it into the FastAPI ASGI app, streaming the response body back through an `asyncio.Queue`.
+ 2. The route handler in `natural_language_search_function.py` calls `run_workflow(...)`, whic is an **async generator** which yields plain dicts; the route serialises each one as `data: <json>\n\n` and is also where exceptions become a `{"error": ...}` SSE event.
+ 3. `common/workflow.py` runs the pipeline stage by stage, yielding after each.
 
+ ```
+ run_workflow(user_query, publication)
+   │
+   ├── 1. retrieve_datasets -> multi_index_search       (search_client.py -> Azure Search)
+   │        Hybrid BM25 + vector search over the Filter index; dataset docs fetchewd by id.
+   │        yields {stage:"retrieved datasets", data:{datasets:[{title, relevanceScore, rawRelevanceScore}]}}
+   │
+   ├── 2. run_reranking_agent                           (reranker.py -> Azure OpenAI)
+   │        LLM shortlist datasets and extracts queryRequirements (filters, geography, timePeriod).
+   │        yields {stage:"reranker complete, data:<reranker JSON>}
+   │
+   ├── 3. geography_matching                            (geography_levels_utils.py -> Blob Storage)
+   │        Fuzzy-match mentioned locations, group by allowed geographic levels per dataset
+   │
+   ├── 4. retrieve_and_transform_filter_data            (data_utils.py -> Azure Search filter index)
+   │        Fetch full filter values for shortlisted datasets, flattened for the LLM
+   │
+   ├── 5. filter + indicator agents in parallel         (asyncio.gather -> Azure OpenAI)
+   │        Per-dataset relevance decisions for each filter value/indicator
+   │
+   └── 6. combine_responses                             (data_utils.py)
+            Merge filters + indicators + geography + an aiSummary per dataset
+            yields {stage:"pipeline complete", data:{datasets:[...], token_usage:<int>}}
+```
