@@ -2,7 +2,7 @@
 
 ## Overview
 
-An Azure-hosted API that turns plain-Englisha querise into ranked educational dataset recommendations from the DfE's Explore Educational Statistics (EES) platform. A user asks *"pupil attendance for London secondary schools 2023"*; the system returns relevant datasets, each with the specific filters and indicators worth selecting.
+An Azure-hosted API that turns plain-Englisha queries into ranked educational dataset recommendations from the DfE's Explore Educational Statistics (EES) platform. A user asks *"pupil attendance for London secondary schools 2023"*; the system returns relevant datasets, each with the specific filters and indicators worth selecting.
 
 It combines **Azure Cognitive Search** (hybrid BM25 + vector) with a multi-stage **Azure OpenAI** pipeline (GPT-4.1-mini by default). Results stream back to the client as **Server-Sent Events (SSE)** so partial results appear progressively.
 
@@ -55,7 +55,7 @@ ees-natural-language-search/
    │        yields {stage:"retrieved datasets", data:{datasets:[{title, relevanceScore, rawRelevanceScore}]}}
    │
    ├── 2. run_reranking_agent                           (reranker.py -> Azure OpenAI)
-   │        LLM shortlist datasets and extracts queryRequirements (filters, geography, timePeriod).
+   │        LLM shortlists datasets and extracts queryRequirements (filters, geography, timePeriod).
    │        yields {stage:"reranker complete, data:<reranker JSON>}
    │
    ├── 3. geography_matching                            (geography_levels_utils.py -> Blob Storage)
@@ -116,3 +116,30 @@ One LLM call per shortlisted dataset, all gathered concurrently. Each returns a 
 
 ### `openai_client.py`
 `generate_answer(...)` calls Azure OpenAI chat completions with `temperature=0, top_p=1, seed=42` (deterministic-ish) and returns the full response object
+
+---
+
+## API Reference
+
+### `GET /api/health_check`
+Returns `{ message: "API working" }`.
+
+### `POST /api/vectorizer_middleware`
+Generates embeddings for Azure Search skillset/indexer integration. Uses `AZURE_OPENAI_EMBEDDING_DEPLOYMENT` and `EMBEDDING_DIMENSIONS` (default 1536).
+```json
+//request
+{ "values": [ { "recordId": "1", "data": { "text": "text to embed" } } ] }
+//response
+{ "values": [ { "recordId": "1", "data": { "embedding": [0.12, ...] } } ] }
+```
+
+### `POST /api/natural_language_search_function`
+```json
+{"user_query": "pupil attendance in London secondary schools in 2023",
+"publication": "Pupil attendance in schools"}
+```
+Response is `text/event-stream`
+
+---
+
+
