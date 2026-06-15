@@ -34,10 +34,10 @@ ees-natural-language-search/
 │   ├── data_utils.py                # Filter retrieval, response merge, score conversion
 │   └── geography_level_utils.py     # Fuzzay location matching + geographic-level grouping
 │
-├── routes/
-│   ├── natural_language_search_function.py  # POST /api/natural_language_search_function (SSE)
-│   ├── healthcheck.py                       # GET /api/health_check
-│   └── vectorizer_middleware.py             # POST /api/vectorizer_middleware (embeddings for indexers)
+└── routes/
+    ├── natural_language_search_function.py  # POST /api/natural_language_search_function (SSE)
+    ├── healthcheck.py                       # GET /api/health_check
+    └── vectorizer_middleware.py             # POST /api/vectorizer_middleware (embeddings for indexers)
 ```
 
 ---
@@ -142,4 +142,23 @@ Response is `text/event-stream`
 
 ---
 
+## Local Development
 
+**Prerequisites:** Python (CI pipeline targets **3.14**), [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local), and access to the Azure Search  / OpneAI / Storage resources.
+
+```powershell
+pip install -r requirements.txt
+Copy-Item local.settings.example.json local.settings.json  # then fill in values
+func start                                                  # serves on http://localhost:7071
+```
+
+Test:
+```powershell
+curl -X POST https://localhost:7071/api/natural_language_search_function `
+    -H "Content-Type: application/json" `
+    -d '{"user_query": "Show me the percentage of pupils reported as on holiday in the last 4 weeks", "publication": "Pupil attendance in schools"}'
+```
+
+`core/config.py` loads `local.settings.json` into environment locally if you plan on running it with uvicorn
+
+---
