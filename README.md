@@ -71,3 +71,16 @@ ees-natural-language-search/
             Merge filters + indicators + geography + an aiSummary per dataset
             yields {stage:"pipeline complete", data:{datasets:[...], token_usage:<int>}}
 ```
+
+### SSE events
+
+| Stage | `data` payload |
+|---|---|
+|`starting pipeline` | *(none)* |
+|`retrieved datasets` | `{datasets:[{title, relevanceScore, rawRelevanceScore}]}` |
+| `reranker complete` | The reranker's JSON: `queryRequirements`, `shortlistedDatasets` (each with `relevanceScore` added), `confidence` |
+| `pipeline complete `| `{datasets" [{fileId, filters, indicators, geographicLevels, aiSummary}], token_usage}` |
+| `error` *(from route, on exception)* | `{error: <message>}` |
+
+---
+
