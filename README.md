@@ -84,3 +84,35 @@ ees-natural-language-search/
 
 ---
 
+## Components in depth
+
+### `workflow.py` - orchestrator
+The most important file. Accumulates `token_usage` across all LLM calls and `yield`s after each stage. If the reranker shortlists nothing, downstream stages simply produce empty results.
+
+### search_client.py - Azure Search and embeddings
+- Module-level `filter_client` and `dataset_client` are created at import. Credential is `AzureKeyCredential` if `AZURE_SEARCH_KEY` is set, else `DefaultAzureCredential()`.
+- `get_embeddings(input_text, model_name, dimensions=1536)` -> `**returns (embeddings, total_tokens)**`. Lists are batched in groups of 15 with up to 2 attempts and exponential backoff on transient errors.
+- `hybrid_search(...)` runs BM25 + vector search against the filter index (`top=10`, vector `weight=0.5`), optionally filtered by `publicationTitle` and `latestData`.
+- `multi_index_search(...)` groups filter hits by `fileId`, keeps the `max @search.score` per dataset, then fetches each dataset doc via `dataset_client.get_document(...)`. Returns `(query, datasets, max_scores, grouped_filters)`.
+
+### `reranker.py` - rerank + requirement extraction
+Sends the query plus trimmed dataset metadata `(fileId, title, content, filters, timePeriodRange)` to the LLM. Returns a dict of artifacts used downstream:
+`reranked_datasets`, `query_requirements`, `geography_requirements`, `grouped_filters/indicators/title_description/geographic_levels`, token count, and the raw JSON. The LLM output schema: `queryRequirements{filters[], geography[], timePeriod}`, `shortlistedDatasets[{fileId, title, relevanceReason, relevantFilters[]}]`, `confidence`.
+
+### `filter_selection.py` / `indicator_selection.py` - selection agents
+One LLM call per shortlisted dataset, all gathered concurrently. Each returns a list of raw JSON strings plus a token total.
+- Filter output: `{"<fileId>": { "filterValues": { "<value>": {relevant(Yes/No), reasoning} } } }`
+- Indicator output: `{"<fileId>" { "<indicators>": {relevant(Yes/No), reasoning} } }`
+
+### `data_utils.py`
+- `retrieve_and_transform_filter_data(...)` pulls full filter values from the filter index and flattens them per dataset.
+- `combine responses(...)` keeps only values marked `relevant: true`, attaches `geographicLevels` and an `aiSummary`, and flattens to a list of `{fileId, ...}`.
+- `rrf_to_percentage(score)` scales an RRF score to 0-100
+
+### `geography_level_utils.py`
+- `get_location_matches(...)` loads `locations_dict.json` from Blob Storage and fuzzy-matches with RapidFuzz via a custom `hybrid_scorer`, returning the top 5 matches >= threshold.
+- `hybrid_scorer` only accepts a perfect `token_set_ratio` (100) when >= 2 tokens overlap and the candidate isn't much shorter than they query; otherwise falls back to `WRatio`
+- `geo_filter_and_group_matches(...)` keeps matches whose geographic level is allowed for each dataset, using `PROPERTY_TO_GEO_LEVEL` mapping
+
+### `openai_client.py`
+`generate_answer(...)` calls Azure OpenAI chat completions with `temperature=0, top_p=1, seed=42` (deterministic-ish) and returns the full response object
