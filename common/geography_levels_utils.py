@@ -1,5 +1,6 @@
 import os
 import json
+import requests
 import logging
 from collections import defaultdict
 from rapidfuzz import process, fuzz
@@ -63,14 +64,59 @@ def hybrid_scorer(a: str, b: str, **kwargs) -> float:
 
     return fuzz.WRatio(a, b)
 
-def get_location_matches(query:str, location_dict: defaultdict, threshold: int=90):
+def flatten_by_legend(data):
+    flattened = defaultdict(list)
 
-    # In-place code until json file is setup in storage account
-    # LOCATION_DICT_PATH = 'locations_dict.json'
-    # base_path = os.getcwd()
-    # file_path = os.path.join(base_path, "common", 'locations_dict.json')
-    # with open(file_path, "r") as f:
-    #     location_dict = json.load(f)
+    def walk(items, legend):
+        for item in items:
+            if all(k in item for k in ("id", "label", "value")):
+                flattened[legend].append({
+                    "id": item["id"],
+                    "label": item["label"],
+                    "value": item["value"]
+                })
+
+            if "options" in item:
+                walk(item["options"], legend)
+
+    for section in data.values():
+        legend = section["legend"]
+        walk(section.get("options", []), legend)
+
+    return dict(flattened)
+
+def get_geographical_matches(grouped_geographic_levels: defaultdict, geography_requirements: list, threshold: int=90):
+    for file_id, geo_info in grouped_geographic_levels.items():
+        rvid = geo_info['releaseVersionId']
+        subid = geo_info['subjectId']
+        valid_geo_per_file = defaultdict(list)
+        response = requests.get(f'https://data.dev.explore-education-statistics.service.gov.uk/api/meta/subject/{subid}')
+        if response.ok:
+            valid_geographies = flatten_by_legend(response.json()['locations'])
+            level_results = defaultdict(list)
+            for level in valid_geographies:
+                options = valid_geographies[level]
+                for query in geography_requirements:
+                    matches = process.extract(
+                        query,
+                        options,
+                        scorer=hybrid_scorer,
+                        processor=lambda x: x.get('label') if isinstance(x, dict) else x,
+                        limit=10
+                    )
+                    results = [x for x,score,_ in matches if score>=threshold]
+                    level_results[level].extend(results)
+            valid_geo_per_file[file_id] = level_results
+                            
+        else:
+            logging.error('Could not retrieve valid locations from subjectId')
+            valid_geo_per_file[file_id] = []
+    
+    return valid_geo_per_file
+
+
+# Functions below are legacy code that is no longer used in the main pipeline
+def get_location_matches(query:str, threshold: int=90):
 
     location_dict = get_file_from_blob('locations_dict.json')
 
@@ -107,7 +153,7 @@ def geo_filter_and_group_matches(matches_per_location, valid_geo_levels_per_id):
     result = {}
 
     for file_id, allowed_levels in valid_geo_levels_per_id.items():
-        allowed_levels = set(allowed_levels)
+        allowed_levels = set(allowed_levels['geographicLevels'])
         grouped_matches = defaultdict(list)
 
         for location_matches in matches_per_location:
@@ -120,5 +166,3 @@ def geo_filter_and_group_matches(matches_per_location, valid_geo_levels_per_id):
         result[file_id] = dict(grouped_matches)
 
     return result
-
-
