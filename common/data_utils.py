@@ -76,6 +76,7 @@ def combine_responses(model_responses: list, indicator_responses:list, geo_dict:
         for file_id, title_desc in grouped_title_description.items():
             if file_id in combined:
                 combined[file_id]["aiSummary"] = f'''This data is relevant because {title_desc['relevance_reason']}\n It contains information about {title_desc['description']}'''
+                combined[file_id]['title'] = title_desc['title']
 
         combined_responses.append(combined)
     
