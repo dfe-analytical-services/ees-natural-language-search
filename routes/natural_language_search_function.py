@@ -13,12 +13,11 @@ async def stream_response(user_query, publication):
     try:
         async for step in run_workflow(user_query, publication):
             yield f"data: {json.dumps(step)}\n\n"
-            await asyncio.sleep(1)
     except Exception as e:
         yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
 
-@router.post("/natural_language_search_function")
+@router.post("/api/natural_language_search_function")
 async def natural_language_search_function(request: Request):
     try:
         body = await request.json()

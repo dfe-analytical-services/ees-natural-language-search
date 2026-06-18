@@ -5,16 +5,16 @@ import os
 router = APIRouter()
 
 client = AsyncAzureOpenAI(
-    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-    base_url=f'{os.getenv("AZURE_OPENAI_ENDPOINT")}openai/deployments/{os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")}/embeddings?api-version={os.getenv("AZURE_OPENAI_API_VERSION")}',
-    api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+        azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+        api_key=os.environ["AZURE_OPENAI_API_KEY"],
+        api_version=os.environ["AZURE_OPENAI_API_VERSION"],
 )
 
 MODEL_NAME = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT")
 DIMENSIONS = int(os.getenv("EMBEDDING_DIMENSIONS", "1536"))
 
 
-@router.post("/vectorizer_middleware")
+@router.post("/api/vectorizer_middleware")
 async def vectorizer_middleware(req: Request):
     try:
         body = await req.json()

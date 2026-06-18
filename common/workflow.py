@@ -34,11 +34,11 @@ async def run_workflow(user_query: str, publication: str):
     total_tokens_used += reranking_results["total_tokens_used"]
     reranker_response = json.loads(reranking_results["reranker_response_raw"])
 
-    for item in reranker_response.get("shortlisted_datasets", []):
-        file_id = item.get("file_id")
+    for item in reranker_response.get("shortlistedDatasets", []):
+        file_id = item.get("fileId")
         item["relevanceScore"] = rrf_to_percentage(scores.get(file_id))
         if file_id in grouped_title_description:
-            grouped_title_description[file_id]['relevance_reason'] = item.get('relevance_reason', '')
+            grouped_title_description[file_id]['relevance_reason'] = item.get('relevanceReason', '')
     yield {'stage': 'reranker complete', 'data': reranker_response}
 
     logging.info("Getting geography matches")
