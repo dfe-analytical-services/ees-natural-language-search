@@ -149,7 +149,7 @@ Response is `text/event-stream`
 ```powershell
 pip install -r requirements.txt
 Copy-Item local.settings.example.json local.settings.json  # then fill in values
-func start                                                  # serves on http://localhost:7071
+func start                                                 # serves on http://localhost:7071
 ```
 
 Test:
