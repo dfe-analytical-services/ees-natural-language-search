@@ -2,6 +2,9 @@ parameters:
   - name: artifactName
     type: string
     default: 'drop'
+  - name: publishBuild
+    type: boolean
+    default: false
 
 stages:
   - stage: CI
@@ -11,4 +14,4 @@ stages:
       - template: ../jobs/python-build.yml
         parameters:
           artifactName: ${{ parameters.artifactName }}
-          publishBuild: ${{ eq(variables['Build.SourceBranch'], 'refs/heads/main') }}
+          publishBuild: ${{ parameters.publishBuild }}
