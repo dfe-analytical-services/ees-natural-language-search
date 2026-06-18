@@ -4,9 +4,9 @@ import logging
 from common.reranker import run_reranking_agent
 from common.retrieve_datasets import retrieve_datasets
 from common.filter_selection import run_filter_selection_agent
+from common.geography_levels_utils import get_geographical_matches
 from common.indicator_selection import run_indicator_selection_agent
 from common.data_utils import retrieve_and_transform_filter_data, combine_responses, rrf_to_percentage
-from common.geography_levels_utils import get_location_matches, geo_filter_and_group_matches
 
 async def run_workflow(user_query: str, publication: str):
     total_tokens_used = 0
@@ -42,7 +42,8 @@ async def run_workflow(user_query: str, publication: str):
     yield {'stage': 'reranker complete', 'data': reranker_response}
 
     logging.info("Getting geography matches")
-    geo_dict = geo_filter_and_group_matches([get_location_matches(x, {}) for x in geography_requirements], grouped_geographic_levels)
+    # geo_dict = geo_filter_and_group_matches([get_location_matches(x) for x in geography_requirements], grouped_geographic_levels)
+    geo_dict = get_geographical_matches(grouped_geographic_levels, geography_requirements)
 
     # Can pass grouped filters into this in order to only pass the retrieved filters to the filter selection agent
     logging.info("Transforming dataset information for LLM ingestion")
