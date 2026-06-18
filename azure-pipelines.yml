@@ -17,12 +17,24 @@ pr:
 pool:
   vmImage: ubuntu-latest
 
+parameters:
+  - name: forceDeployToEnvironment
+    displayName: Set to either dev, test or preprod to force a deploy to that environment from the chosen branch.
+    type: string
+    values:
+      - none
+      - dev
+    #  TODO Uncomment when the test and preprod environments are ready to be deployed to
+    #  - test
+    #  - preprod
+    default: 'none'
+
 variables:
   - group: Common
   - name: artifactName
     value: 'drop'
   # TODO Read the function app resource name as an output variable from the 'EES - Search - Infrastructure and Deploy' pipeline?
-  - name:  azureFunctionAppNameDev
+  - name: azureFunctionAppNameDev
     value: 's101d01-ees-fa-nlsearch'
 
 stages:
@@ -33,6 +45,7 @@ stages:
   - template: pipelines/templates/stages/deploy.yml
     parameters:
       artifactName: $(artifactName)
+      condition: and(succeeded(), or(eq('${{ parameters.forceDeployToEnvironment }}', 'dev'), and(eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'PullRequest'))))
       environmentName: Dev
       functionAppName: $(azureFunctionAppNameDev)
       serviceConnection: $(serviceConnectionDev)

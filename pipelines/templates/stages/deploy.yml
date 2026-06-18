@@ -2,6 +2,8 @@ parameters:
   - name: artifactName
     type: string
     default: 'drop'
+  - name: condition
+    type: string
   - name: environmentName
     type: string
   - name: functionAppName
@@ -13,7 +15,7 @@ stages:
   - stage: Deploy
     displayName: 'Deploy to ${{ parameters.environmentName }}'
     dependsOn: CI
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'PullRequest'))
+    condition: ${{ parameters.condition }}
 
     jobs:
       - template: ../jobs/deploy-function-app.yml
