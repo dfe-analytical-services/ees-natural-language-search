@@ -4,7 +4,7 @@ from azurefunctions.extensions.http.fastapi import Request, StreamingResponse
 
 from core.app import fastapi_app
 
-app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
 
 @app.function_name(name="ees_fa_nlsearch_proxy")
