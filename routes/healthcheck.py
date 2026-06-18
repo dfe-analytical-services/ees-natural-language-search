@@ -1,8 +1,7 @@
-from fastapi import APIRouter
+from azurefunctions.extensions.http.fastapi import Request, JSONResponse
 
-router = APIRouter()
-
-@router.get("/api/health_check")
-async def health_check():
-    return {"message": "API working"}
-
+async def health_check(req: Request) -> JSONResponse:
+    return JSONResponse(
+        content={"message": "API working"},
+        status_code=200,
+    )
