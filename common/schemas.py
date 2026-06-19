@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class LLMValidationError(Exception):
     """Raised when a critical LLM response cannot be validated and the pipeline cannot meaningfully continue"""
 
-# Reranker Agent
+# Reranker Model
 class QueryRequirements(BaseModel):
     filters: list[str] = Field(default_factory=list)
     geography: list[str] = Field(default_factory=list)
@@ -32,7 +32,7 @@ class RerankerResponse(BaseModel):
     shortlistedDatasets: list[ShortlistedDataset] = Field(default_factory=list)
     confidence: Optional[str] = None
 
-# Filter Selection Agent
+# Filter Selection Model
 class FilterValueDecision(BaseModel):
     relevant: bool = False
     reasoning: str = ""
@@ -43,7 +43,7 @@ class FilterDatasetResult(BaseModel):
 class FilterSelectionResponse(RootModel[dict[str, FilterDatasetResult]]):
     """keyed by fileId"""
 
-# Indicator Selection Agent
+# Indicator Selection Model
 class IndicatorDecision(BaseModel):
     relevant: bool = False
     reasoning: str = ""
