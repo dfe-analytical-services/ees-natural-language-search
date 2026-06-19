@@ -48,7 +48,7 @@ class IndicatorDecision(BaseModel):
     relevant: bool = False
     reasoning: str = ""
 
-class IndicatorSelectionResponse(RootModel[dict[str, IndicatorDecision]]):
+class IndicatorSelectionResponse(RootModel[dict[str, dict[str, IndicatorDecision]]]):
     """keyed by fileId"""
 
 # Parsing Functionalities
