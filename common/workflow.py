@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 from common.reranker import run_reranking_agent
 from common.retrieve_datasets import retrieve_datasets
@@ -32,7 +31,7 @@ async def run_workflow(user_query: str, publication: str):
     grouped_title_description = reranking_results["grouped_title_description"]
     grouped_geographic_levels = reranking_results["grouped_geographic_levels"]
     total_tokens_used += reranking_results["total_tokens_used"]
-    reranker_response = json.loads(reranking_results["reranker_response_raw"])
+    reranker_response = reranking_results["reranker_response"].model_dump()
 
     for item in reranker_response.get("shortlistedDatasets", []):
         file_id = item.get("fileId")
@@ -43,7 +42,7 @@ async def run_workflow(user_query: str, publication: str):
 
     logging.info("Getting geography matches")
     # geo_dict = geo_filter_and_group_matches([get_location_matches(x) for x in geography_requirements], grouped_geographic_levels)
-    geo_dict = get_geographical_matches(grouped_geographic_levels, geography_requirements)
+    geo_dict = await get_geographical_matches(grouped_geographic_levels, geography_requirements)
 
     # Can pass grouped filters into this in order to only pass the retrieved filters to the filter selection agent
     logging.info("Transforming dataset information for LLM ingestion")

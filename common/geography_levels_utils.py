@@ -85,11 +85,11 @@ def flatten_by_legend(data):
 
     return dict(flattened)
 
-def get_geographical_matches(grouped_geographic_levels: defaultdict, geography_requirements: list, threshold: int=90):
+async def get_geographical_matches(grouped_geographic_levels: defaultdict, geography_requirements: list, threshold: int=90):
+    valid_geo_per_file = defaultdict(list)
     for file_id, geo_info in grouped_geographic_levels.items():
         rvid = geo_info['releaseVersionId']
         subid = geo_info['subjectId']
-        valid_geo_per_file = defaultdict(list)
         response = requests.get(f'https://data.dev.explore-education-statistics.service.gov.uk/api/meta/subject/{subid}')
         if response.ok:
             valid_geographies = flatten_by_legend(response.json()['locations'])
