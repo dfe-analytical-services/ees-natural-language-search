@@ -1,7 +1,7 @@
 import json
-import logging
 from collections import defaultdict
 from common.search_client import filter_client
+from common.schemas import FilterSelectionResponse, IndicatorSelectionResponse, parse_llm_response
 
 def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filters: defaultdict=None):
     ## Retrieve full dataset level information from Azure AI Search
@@ -43,26 +43,29 @@ def combine_responses(model_responses: list, indicator_responses:list, geo_dict:
     combined_responses = []
 
     for model_raw, indicator_raw in zip(model_responses, indicator_responses):
-        model_json = json.loads(model_raw)
-        indicator_json = json.loads(indicator_raw)
+
+        model_parsed = parse_llm_response(model_raw, FilterSelectionResponse, context="filter selection")
+        indicator_parsed = parse_llm_response(indicator_raw, IndicatorSelectionResponse, context="indicator selection")
+        model_data = model_parsed.root if model_parsed else {}
+        indicator_data = indicator_parsed.root if indicator_parsed else {}
         combined = {}
 
-        for file_id, file_data in model_json.items():
+        for file_id, file_data in model_data.items():
             filters = [
                 filter_value
-                for filter_value, details in file_data.get("filterValues", {}).items()
-                if details.get("relevant") is True
+                for filter_value, details in file_data.filterValues.items()
+                if details.relevant is True
             ]
 
             if filters:
                 combined.setdefault(file_id, {"filters": [], "indicators": []})
                 combined[file_id]["filters"] = filters
 
-        for file_id, file_data in indicator_json.items():
+        for file_id, file_data in indicator_data.items():
             indicators = [
                 indicator_name
                 for indicator_name, details in file_data.items()
-                if details.get("relevant") is True
+                if details.relevant is True
             ]
 
             if indicators:
