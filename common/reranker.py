@@ -1,8 +1,8 @@
 import json
 import logging
 from datetime import datetime
-from common.search_client import multi_index_search
 from common.openai_client import generate_answer
+from common.schemas import parse_llm_response, RerankerResponse, LLMValidationError
 
 llm_reranker_sys_prompt = """You are a data retrieval specialist. Your job is to analysze a user's query and determine which datasets from a provided list can meaningfully contribute to ansawering it.
 
@@ -103,16 +103,29 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
 
     total_tokens_used += used_tokens
 
-    reranker_json = json.loads(reranker_response)
+    reranker_parsed = parse_llm_response(reranker_response, RerankerResponse, context='ranker')
+    if reranker_parsed is None:
+        raise LLMValidationError("The reranking step returned a malformed response, the query could not be processed.")
 
     reranked_datasets = [
-        d["fileId"] for d in reranker_json["shortlistedDatasets"]
+        d.fileId for d in reranker_parsed.shortlistedDatasets
     ]
 
     logging.info("Extracting filter, indicator and geography requirements from query")
     
-    query_requirements = reranker_json["queryRequirements"]["filters"]
-    geography_requirements = reranker_json["queryRequirements"]["geography"]
+    query_requirements = reranker_parsed.queryRequirements.filters
+    geography_requirements = reranker_parsed.queryRequirements.geography
+
+    # reranker_json = json.loads(reranker_response)
+
+    # reranked_datasets = [
+    #     d["fileId"] for d in reranker_json["shortlistedDatasets"]
+    # ]
+
+    # logging.info("Extracting filter, indicator and geography requirements from query")
+    
+    # query_requirements = reranker_json["queryRequirements"]["filters"]
+    # geography_requirements = reranker_json["queryRequirements"]["geography"]
 
     # 3. Collect dataset-level metadata for reranked datasets
     grouped_filters = {
