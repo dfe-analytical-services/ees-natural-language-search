@@ -169,5 +169,5 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
         "grouped_title_description": grouped_title_description,
         "grouped_geographic_levels": grouped_geographic_levels,
         "total_tokens_used": total_tokens_used,
-        "reranker_response_raw": reranker_response,
+        "reranker_response": reranker_parsed
     }
