@@ -1,5 +1,4 @@
 import json
-import asyncio
 
 from fastapi import APIRouter
 from fastapi import Request
@@ -24,7 +23,7 @@ async def natural_language_search_function(request: Request):
     except Exception:
         body = {}
 
-    user_query = body.get("user_query")
+    user_query = body.get("userQuery")
     publication = body.get("publication")
 
     return StreamingResponse(
