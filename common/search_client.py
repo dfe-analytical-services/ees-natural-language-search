@@ -25,9 +25,11 @@ dataset_client = SearchClient(
     credential=credential
 )
 
+
 def batch(items, size=20):
     for i in range(0, len(items), size):
         yield items[i:i+size]
+
 
 async def get_embeddings(input_text: str | list[str], model_name: str, dimensions: int = 1536):
     client = AsyncAzureOpenAI(
@@ -35,7 +37,7 @@ async def get_embeddings(input_text: str | list[str], model_name: str, dimension
         api_key=os.environ["AZURE_OPENAI_API_KEY"],
         api_version=os.environ["AZURE_OPENAI_API_VERSION"],
     )
-    
+
     if isinstance(input_text, list):
         all_embeddings = []
         total_tokens = 0
@@ -68,7 +70,6 @@ async def get_embeddings(input_text: str | list[str], model_name: str, dimension
 
         return all_embeddings, total_tokens
 
-
     response = await client.embeddings.create(
         input = input_text,
         model = model_name,
@@ -79,7 +80,8 @@ async def get_embeddings(input_text: str | list[str], model_name: str, dimension
 
     return embeddings, response.usage.total_tokens
 
-async def hybrid_search(user_query: str, publication: str = None, top: int=10, weight: int=0.5):
+
+async def hybrid_search(user_query: str, publication_id: str | None = None, top: int = 10, weight: float = 0.5):
     query_vector, _ = await get_embeddings(user_query, 'text-embedding-3-large')
 
     vector_query = VectorizedQuery(
@@ -92,16 +94,17 @@ async def hybrid_search(user_query: str, publication: str = None, top: int=10, w
     results = filter_client.search(
         search_text=user_query,
         vector_queries=[vector_query],
-        filter = f"publicationTitle eq '{publication}' and latestData eq true" if publication else publication,
+        filter=f"publicationId eq '{publication_id}' and latestData eq true" if publication_id else None,
         top=top
     )
 
     return user_query, results
 
-async def multi_index_search(user_query: str, publication: str, top: int=10):
-    query, results = await hybrid_search(user_query=user_query, 
-                                   publication=publication, 
-                                   top=top)
+
+async def multi_index_search(user_query: str, publication_id: str, top: int = 10):
+    query, results = await hybrid_search(user_query=user_query,
+                                         publication_id=publication_id,
+                                         top=top)
     dataset_ids = set()
     grouped_filters = defaultdict(list)
     scores = defaultdict(list)
