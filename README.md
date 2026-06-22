@@ -2,7 +2,7 @@
 
 ## Overview
 
-An Azure-hosted API that turns plain-Englisha queries into ranked educational dataset recommendations from the DfE's Explore Educational Statistics (EES) platform. A user asks *"pupil attendance for London secondary schools 2023"*; the system returns relevant datasets, each with the specific filters and indicators worth selecting.
+An Azure-hosted API that turns plain-English queries into ranked educational dataset recommendations from the DfE's Explore Educational Statistics (EES) platform. A user asks *"pupil attendance for London secondary schools 2023"*; the system returns relevant datasets, each with the specific filters and indicators worth selecting.
 
 It combines **Azure Cognitive Search** (hybrid BM25 + vector) with a multi-stage **Azure OpenAI** pipeline (GPT-4.1-mini by default). Results stream back to the client as **Server-Sent Events (SSE)** so partial results appear progressively.
 
@@ -43,8 +43,8 @@ ees-natural-language-search/
 ---
 
 ## How a request flows
- 1. `function_app.py` receives every HTTP routea and proxies it into the FastAPI ASGI app, streaming the response body back through an `asyncio.Queue`.
- 2. The route handler in `natural_language_search_function.py` calls `run_workflow(...)`, whic is an **async generator** which yields plain dicts; the route serialises each one as `data: <json>\n\n` and is also where exceptions become a `{"error": ...}` SSE event.
+ 1. `function_app.py` receives every HTTP route and proxies it into the FastAPI ASGI app, streaming the response body back through an `asyncio.Queue`.
+ 2. The route handler in `natural_language_search_function.py` calls `run_workflow(...)`, which is an **async generator** which yields plain dicts; the route serialises each one as `data: <json>\n\n` and is also where exceptions become a `{"error": ...}` SSE event.
  3. `common/workflow.py` runs the pipeline stage by stage, yielding after each.
 
  ```
