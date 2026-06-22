@@ -7,12 +7,13 @@ from common.geography_levels_utils import get_geographical_matches
 from common.indicator_selection import run_indicator_selection_agent
 from common.data_utils import retrieve_and_transform_filter_data, combine_responses, rrf_to_percentage
 
-async def run_workflow(user_query: str, publication: str):
+
+async def run_workflow(user_query: str, publication_id: str):
     total_tokens_used = 0
     yield {"stage": "starting pipeline"}
 
     logging.info("Retrieving Datasets")
-    relevant_datasets, scores, grouped_filters = await retrieve_datasets(user_query=user_query, publication=publication)
+    relevant_datasets, scores, grouped_filters = await retrieve_datasets(user_query=user_query, publication_id=publication_id)
 
     scored_datasets = {'datasets': [{'title': r['title'], 
                                      'relevanceScore': rrf_to_percentage(scores[r['fileId']]),
@@ -65,5 +66,3 @@ async def run_workflow(user_query: str, publication: str):
     final_response = combine_responses(model_responses, indicator_responses, geo_dict, grouped_title_description)
 
     yield {'stage': 'pipeline complete', 'data': {'datasets': final_response, 'token_usage': total_tokens_used}}
-
-
