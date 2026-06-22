@@ -135,7 +135,7 @@ Generates embeddings for Azure Search skillset/indexer integration. Uses `AZURE_
 
 ### `POST /api/natural_language_search_function`
 ```json
-{"user_query": "pupil attendance in London secondary schools in 2023",
+{"userQuery": "pupil attendance in London secondary schools in 2023",
 "publication": "Pupil attendance in schools"}
 ```
 Response is `text/event-stream`
@@ -156,7 +156,7 @@ Test:
 ```powershell
 curl -X POST https://localhost:7071/api/natural_language_search_function `
     -H "Content-Type: application/json" `
-    -d '{"user_query": "Show me the percentage of pupils reported as on holiday in the last 4 weeks", "publication": "Pupil attendance in schools"}'
+    -d '{"userQuery": "Show me the percentage of pupils reported as on holiday in the last 4 weeks", "publication": "Pupil attendance in schools"}'
 ```
 
 `core/config.py` loads `local.settings.json` into environment locally if you plan on running it with uvicorn
