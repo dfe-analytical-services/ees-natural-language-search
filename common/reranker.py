@@ -18,12 +18,13 @@ Identify and return only the datasets that are **directly relevant and usable** 
 ## Relevance Criteria
 A dataset is considered usable if it meets ALL of the following:
 - Its content, schema, or described variables plausibly contain data needed to answer the query
-- Its temporal range, geographic scope, or domain is compatible with what the query requires
+- Its geographic scope, or domain is compatible with what the query requires
 - It is not redundant given other already-selected datasets (prefer the more specific or complete one)
 
 A dataset should be EXCLUDED if:
 - It is only tangentially related by topic but lacks the necessary variables or granularity 
-- It's scope (time range, geography, entity type) doesn't match what the query demands
+- It's geography or entity type doesn't match what the query demands
+- There are NO temporal reasons to completely exclude a dataset.
 - It duplicates information alreaday covered by a higher quality selected dataset
 
 ---
@@ -61,9 +62,7 @@ Return a JSON object with this exact structure:
     "confidence": "high | medium | low",
 }
 
-Return only valid JSON. DO not include any text before or after the JSON object.
-Do not wrap the JSON in markdown code blocks, backticks, or any other formatting. 
-Return raw JSON only. The first character of your response should be { and the last must be }.
+If no datasets are shortlisted, ignore the previous instructions for a structured response and give an explanation as to why. The reasons should point out specific parts of the system prompt that led to this behaviour.
 """
 
 llm_reranker_user_prompt = """**User Query**:
@@ -116,18 +115,6 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
     query_requirements = reranker_parsed.queryRequirements.filters
     geography_requirements = reranker_parsed.queryRequirements.geography
 
-    # reranker_json = json.loads(reranker_response)
-
-    # reranked_datasets = [
-    #     d["fileId"] for d in reranker_json["shortlistedDatasets"]
-    # ]
-
-    # logging.info("Extracting filter, indicator and geography requirements from query")
-    
-    # query_requirements = reranker_json["queryRequirements"]["filters"]
-    # geography_requirements = reranker_json["queryRequirements"]["geography"]
-
-    # 3. Collect dataset-level metadata for reranked datasets
     grouped_filters = {
         k: grouped_filters[k]
         for k in reranked_datasets
