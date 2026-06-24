@@ -78,7 +78,7 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
     Retrieves, reranks datasets using an LLM, and returns all required artifacts.
     """
     relevant_keys = ['fileId','title','content', 'filters','timePeriodRange']
-    total_tokens_used = 0
+    total_tokens_used = {'input':0, 'output':0}
 
     reranking_datasets = [
         {k: r[k] for k in relevant_keys}
@@ -96,11 +96,12 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
         system_prompt=llm_reranker_sys_prompt,
     )
     
-    reranker_response, used_tokens = response.choices[0].message.content, response.usage.total_tokens
+    reranker_response, used_input_tokens, used_output_tokens = response.choices[0].message.content, response.usage.prompt_tokens, response.usage.completion_tokens
 
     logging.info("Reranked datasets")
 
-    total_tokens_used += used_tokens
+    total_tokens_used['input'] += used_input_tokens
+    total_tokens_used['output'] += used_output_tokens
 
     reranker_parsed = parse_llm_response(reranker_response, RerankerResponse, context='ranker')
     if reranker_parsed is None:
