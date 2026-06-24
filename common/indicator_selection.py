@@ -74,8 +74,11 @@ async def run_indicator_selection_agent(
 
     model_responses = await asyncio.gather(*tasks)
 
-    total_tokens_used = sum(
-        response.usage.total_tokens for response in model_responses
+    input_tokens_used = sum(
+        response.usage.prompt_tokens for response in model_responses
+    )
+    output_tokens_used = sum(
+        response.usage.completion_tokens for response in model_responses
     )
 
     contents = [
@@ -83,4 +86,4 @@ async def run_indicator_selection_agent(
         for response in model_responses
     ]
 
-    return contents, total_tokens_used
+    return contents, {'input':input_tokens_used, 'output':output_tokens_used}
