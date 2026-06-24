@@ -9,7 +9,9 @@ from common.data_utils import retrieve_and_transform_filter_data, combine_respon
 
 
 async def run_workflow(user_query: str, publication_id: str):
-    total_tokens_used = 0
+    costPer1kTokensInput =  0.0004
+    costPer1kTokensOutput = 0.0014
+    total_tokens_used = {'input':0, 'output':0}
     yield {"stage": "starting pipeline"}
 
     logging.info("Retrieving Datasets")
@@ -31,7 +33,8 @@ async def run_workflow(user_query: str, publication_id: str):
     grouped_indicators = reranking_results["grouped_indicators"]
     grouped_title_description = reranking_results["grouped_title_description"]
     grouped_geographic_levels = reranking_results["grouped_geographic_levels"]
-    total_tokens_used += reranking_results["total_tokens_used"]
+    total_tokens_used['input'] += reranking_results["total_tokens_used"]['input']
+    total_tokens_used['output'] += reranking_results["total_tokens_used"]['output']
     reranker_response = reranking_results["reranker_response"].model_dump()
 
     for item in reranker_response.get("shortlistedDatasets", []):
@@ -60,9 +63,11 @@ async def run_workflow(user_query: str, publication_id: str):
                                     user_query,
                                     query_requirements,)
     )
-    total_tokens_used+=(filter_tokens_used + indicator_tokens_used)
-
+    total_tokens_used['input']+=(filter_tokens_used['input'] + indicator_tokens_used['input'])
+    total_tokens_used['output']+=(filter_tokens_used['output'] + indicator_tokens_used['output'])
+    cost = (costPer1kTokensInput*(total_tokens_used['input']/1000)) + (costPer1kTokensOutput*(total_tokens_used['output']/1000))
+    
     logging.info("Consolidating Pipeline Responses")
     final_response = combine_responses(model_responses, indicator_responses, geo_dict, grouped_title_description)
 
-    yield {'stage': 'pipeline complete', 'data': {'datasets': final_response, 'token_usage': total_tokens_used}}
+    yield {'stage': 'pipeline complete', 'data': {'datasets': final_response, 'token_usage': total_tokens_used, 'cost': cost}}
