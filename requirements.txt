@@ -4,4 +4,5 @@ azure-search-documents==11.6.0
 azurefunctions-extensions-http-fastapi==1.0.1
 fastapi==0.136.3
 openai==2.30.0
+pydantic-client==2.0.6
 RapidFuzz==3.14.5

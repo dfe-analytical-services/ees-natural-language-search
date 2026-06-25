@@ -1,7 +1,8 @@
-import json
 from collections import defaultdict
 from common.search_client import filter_client
 from common.schemas import FilterSelectionResponse, IndicatorSelectionResponse, parse_llm_response
+from schemas.subject_meta import SubjectMetaResponse
+
 
 def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filters: defaultdict=None):
     ## Retrieve full dataset level information from Azure AI Search
@@ -39,10 +40,10 @@ def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filt
 
     return transformed
 
-def combine_responses(model_responses: list, indicator_responses:list, geo_dict: defaultdict, grouped_title_description: defaultdict):
+def combine_responses(filter_responses: list, indicator_responses:list, grouped_subject_meta: dict[str, SubjectMetaResponse], geo_dict: defaultdict, grouped_title_description: defaultdict):
     combined_responses = []
 
-    for model_raw, indicator_raw in zip(model_responses, indicator_responses):
+    for model_raw, indicator_raw in zip(filter_responses, indicator_responses):
 
         model_parsed = parse_llm_response(model_raw, FilterSelectionResponse, context="filter selection")
         indicator_parsed = parse_llm_response(indicator_raw, IndicatorSelectionResponse, context="indicator selection")
@@ -62,9 +63,10 @@ def combine_responses(model_responses: list, indicator_responses:list, geo_dict:
                 combined[file_id]["filters"] = filters
 
         for file_id, file_data in indicator_data.items():
+            indicator_lookup_by_label = grouped_subject_meta[file_id].indicator_lookup_by_label
             indicators = [
-                indicator_name
-                for indicator_name, details in file_data.items()
+                indicator_lookup_by_label[indicator_label].id
+                for indicator_label, details in file_data.items()
                 if details.relevant is True
             ]
 
