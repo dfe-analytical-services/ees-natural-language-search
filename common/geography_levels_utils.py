@@ -1,10 +1,11 @@
 import os
 import json
-import requests
 import logging
 from collections import defaultdict
 from rapidfuzz import process, fuzz
 from azure.storage.blob import BlobServiceClient
+
+from schemas.subject_meta import SubjectMetaResponse
 
 PROPERTY_TO_GEO_LEVEL = {
     'Country':'National',
@@ -85,32 +86,26 @@ def flatten_by_legend(data):
 
     return dict(flattened)
 
-async def get_geographical_matches(grouped_geographic_levels: defaultdict, geography_requirements: list, threshold: int=90):
+async def get_geographical_matches(grouped_geographic_levels: defaultdict, grouped_subject_meta: dict[str,SubjectMetaResponse], geography_requirements: list, threshold: int=90):
     valid_geo_per_file = defaultdict(list)
     for file_id, geo_info in grouped_geographic_levels.items():
-        rvid = geo_info['releaseVersionId']
-        subid = geo_info['subjectId']
-        response = requests.get(f'https://data.dev.explore-education-statistics.service.gov.uk/api/meta/subject/{subid}')
-        if response.ok:
-            valid_geographies = flatten_by_legend(response.json()['locations'])
-            level_results = defaultdict(list)
-            for level in valid_geographies:
-                options = valid_geographies[level]
-                for query in geography_requirements:
-                    matches = process.extract(
-                        query,
-                        options,
-                        scorer=hybrid_scorer,
-                        processor=lambda x: x.get('label') if isinstance(x, dict) else x,
-                        limit=10
-                    )
-                    results = [x for x,score,_ in matches if score>=threshold]
-                    level_results[level].extend(results)
-            valid_geo_per_file[file_id] = level_results
-                            
-        else:
-            logging.error('Could not retrieve valid locations from subjectId')
-            valid_geo_per_file[file_id] = []
+        # TODO Now that this isn't using subject id from geo_info, geo_info isn't used at all? What's the point of it?
+        subject_meta = grouped_subject_meta[file_id]
+        valid_geographies = flatten_by_legend(subject_meta.locations)
+        level_results = defaultdict(list)
+        for level in valid_geographies:
+            options = valid_geographies[level]
+            for query in geography_requirements:
+                matches = process.extract(
+                    query,
+                    options,
+                    scorer=hybrid_scorer,
+                    processor=lambda x: x.get('label') if isinstance(x, dict) else x,
+                    limit=10
+                )
+                results = [x for x,score,_ in matches if score>=threshold]
+                level_results[level].extend(results)
+        valid_geo_per_file[file_id] = level_results
     
     return valid_geo_per_file
 

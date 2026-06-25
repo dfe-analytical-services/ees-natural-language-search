@@ -3,9 +3,9 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "python",
+
     "PYTHON_ENABLE_HTTP_STREAMING": "true",
     "PYTHON_ENABLE_INIT_INDEXING": "1",
-    
 
     "AZURE_SEARCH_ENDPOINT": "",
     "AZURE_SEARCH_KEY": "",
@@ -17,6 +17,8 @@
     "AZURE_OPENAI_DEPLOYMENT": "gpt-4.1-mini",
     "AZURE_OPENAI_EMBEDDING_DEPLOYMENT": "text-embedding-3-large",
     "AZURE_OPENAI_API_VERSION": "2024-10-21",
+
+    "EES_URL_API_DATA": "http://localhost:5000/api",
 
     "LOCATIONS_DICT_CONTAINER_NAME": "",
     "SEARCH_STORAGE_CONN_STRING": ""
