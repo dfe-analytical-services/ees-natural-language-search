@@ -45,7 +45,6 @@ async def run_workflow(user_query: str, publication_id: str):
     yield {'stage': 'reranker complete', 'data': reranker_response}
 
     logging.info("Getting geography matches")
-    # geo_dict = geo_filter_and_group_matches([get_location_matches(x) for x in geography_requirements], grouped_geographic_levels)
     geo_dict = await get_geographical_matches(grouped_geographic_levels, geography_requirements)
 
     # Can pass grouped filters into this in order to only pass the retrieved filters to the filter selection agent

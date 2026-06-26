@@ -110,9 +110,7 @@ One LLM call per shortlisted dataset, all gathered concurrently. Each returns a 
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 
 ### `geography_level_utils.py`
-- `get_location_matches(...)` loads `locations_dict.json` from Blob Storage and fuzzy-matches with RapidFuzz via a custom `hybrid_scorer`, returning the top 5 matches >= threshold.
 - `hybrid_scorer` only accepts a perfect `token_set_ratio` (100) when >= 2 tokens overlap and the candidate isn't much shorter than they query; otherwise falls back to `WRatio`
-- `geo_filter_and_group_matches(...)` keeps matches whose geographic level is allowed for each dataset, using `PROPERTY_TO_GEO_LEVEL` mapping
 
 ### `openai_client.py`
 `generate_answer(...)` calls Azure OpenAI chat completions with `temperature=0, top_p=1, seed=42` (deterministic-ish) and returns the full response object
@@ -134,11 +132,16 @@ Generates embeddings for Azure Search skillset/indexer integration. Uses `AZURE_
 ```
 
 ### `POST /api/natural_language_search_function`
+
+Replace `publicationId` with the ID of the publication you want to search.
+
 ```json
-{"userQuery": "pupil attendance in London secondary schools in 2023",
-"publication": "Pupil attendance in schools"}
+{
+  "userQuery": "pupil attendance in London secondary schools in 2023",
+  "publicationId": "00000000-0000-0000-0000-000000000000"
+}
 ```
-Response is `text/event-stream`
+The response is returned as `text/event-stream`.
 
 ---
 
@@ -153,10 +156,13 @@ func start                                                 # serves on http://lo
 ```
 
 Test:
+
+Replace `publicationId` with the ID of the publication you want to search.
+
 ```powershell
 curl -X POST https://localhost:7071/api/natural_language_search_function `
     -H "Content-Type: application/json" `
-    -d '{"userQuery": "Show me the percentage of pupils reported as on holiday in the last 4 weeks", "publication": "Pupil attendance in schools"}'
+    -d '{"userQuery": "Show me the percentage of pupils reported as on holiday in the last 4 weeks", "publicationId": "00000000-0000-0000-0000-000000000000"}'
 ```
 
 `core/config.py` loads `local.settings.json` into environment locally if you plan on running it with uvicorn
