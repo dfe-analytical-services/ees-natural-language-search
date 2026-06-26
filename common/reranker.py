@@ -1,16 +1,15 @@
-import json
 import logging
 from datetime import datetime
 from common.openai_client import generate_answer
 from common.schemas import parse_llm_response, RerankerResponse, LLMValidationError
 
-llm_reranker_sys_prompt = """You are a data retrieval specialist. Your job is to analysze a user's query and determine which datasets from a provided list can meaningfully contribute to ansawering it.
+llm_reranker_sys_prompt = """You are a data retrieval specialist. Your job is to analyse a user's query and determine which datasets from a provided list can meaningfully contribute to answering it.
 
 ## Your Task
 Given:
 1. A **user query**
 2. A **list of dataset metadata dictionaries**
-Breakdown the query into separate requirements that the user has mentioned
+Break down the query into separate requirements that the user has mentioned
 Identify and return only the datasets that are **directly relevant and usable** to answer the query.
 
 ---
@@ -23,11 +22,14 @@ A dataset is considered usable if it meets ALL of the following:
 
 A dataset should be EXCLUDED if:
 - It is only tangentially related by topic but lacks the necessary variables or granularity 
-- It's geography or entity type doesn't match what the query demands
+- Its geography or entity type doesn't match what the query demands
 - There are NO temporal reasons to completely exclude a dataset.
-- It duplicates information alreaday covered by a higher quality selected dataset
+- It duplicates information already covered by a higher quality selected dataset
 
 ---
+
+## Time Period Criteria
+If a user requests data for the last 10 years, a dataset is considered usable if it contains data for at least one day within the requested 10-year period.
 
 ## Reasoning Process
 Before returning your answer, think through each dataset systematically:
@@ -56,13 +58,15 @@ Return a JSON object with this exact structure:
             "fileId": "<exact fileId from metadata>",
             "title": "<exact title from metadata>",
             "relevanceReason": "1-2 brief sentences explaining exactly why this dataset addresses the query for a user summary. This should be separate from the dataset description.",
-            "relevantFilters": ["a list of the exact filter names that were deemed to be releavnt to the user query"]
+            "relevantFilters": ["a list of the exact filter names that were deemed to be relevant to the user query"]
         }
     ],
-    "confidence": "high | medium | low",
+    "confidence": "high | medium | low"
 }
 
-If no datasets are shortlisted, ignore the previous instructions for a structured response and give an explanation as to why. The reasons should point out specific parts of the system prompt that led to this behaviour.
+Return only valid JSON. DO NOT include any text before or after the JSON object.
+DO NOT wrap the JSON in markdown code blocks, backticks, or any other formatting. 
+Return raw JSON only. The first character of your response should be { and the last must be }.
 """
 
 llm_reranker_user_prompt = """**User Query**:
@@ -72,6 +76,7 @@ llm_reranker_user_prompt = """**User Query**:
 {dataset_metadata_list}
 
 The date today is {today_date}"""
+
 
 async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_filters: list):
     """
@@ -95,7 +100,7 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
         ),
         system_prompt=llm_reranker_sys_prompt,
     )
-    
+
     reranker_response, used_input_tokens, used_output_tokens = response.choices[0].message.content, response.usage.prompt_tokens, response.usage.completion_tokens
 
     logging.info("Reranked datasets")
@@ -112,7 +117,7 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
     ]
 
     logging.info("Extracting filter, indicator and geography requirements from query")
-    
+
     query_requirements = reranker_parsed.queryRequirements.filters
     geography_requirements = reranker_parsed.queryRequirements.geography
 
