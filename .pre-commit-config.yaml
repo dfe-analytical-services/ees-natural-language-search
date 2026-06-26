@@ -1,0 +1,36 @@
+default_language_version:
+  python: python3
+
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-merge-conflict
+    -   id: check-toml
+    -   id: check-yaml
+    -   id: check-added-large-files
+        # Azure templates use expressions that aren't valid YAML
+        exclude: ^(azure-pipelinesw\.ym$|pipelines/)
+
+-   repo: https://github.com/pycqa/isort
+    rev: 8.0.1
+    hooks:
+    -   id: isort
+        name: isort (python)
+
+-   repo: https://github.com/psf/black
+    rev: 26.5.1
+    hooks:
+    -   id: black
+
+-   repo: https://github.com/pycqa/flake8
+    rev: 7.3.0
+    hooks:
+    -   id: flake8
+
+-   repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.11.24
+    hooks:
+    -   id: uv-lock
