@@ -22,11 +22,11 @@ parameters:
     displayName: Set to either dev, test or preprod to force a deploy to that environment from the chosen branch.
     type: string
     values:
-      - none
-      - dev
+    - none
+    - dev
     #  TODO Uncomment when the test and preprod environments are ready to be deployed to
-    #  - test
-    #  - preprod
+    # - test
+    # - preprod
     default: 'none'
 
 variables:
@@ -36,16 +36,23 @@ variables:
   # TODO Read the function app resource name as an output variable from the 'EES - Search - Infrastructure and Deploy' pipeline?
   - name: azureFunctionAppNameDev
     value: 's101d01-ees-fa-nlsearch'
+  #- name: forceDeployToEnvironment
+  #  value: ${{parameters.forceDeployToEnvironment}}
+  - name: isDeployableBranch
+    value: ${{and(or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(parameters.forceDeployToEnvironment, 'none')), ne(variables['Build.Reason'], 'PullRequest'))}}
+  - name: isDeployableToDev
+    value: ${{and(or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(parameters.forceDeployToEnvironment, 'dev')), ne(variables['Build.Reason'], 'PullRequest'))}}
 
 stages:
   - template: pipelines/templates/stages/ci.yml
     parameters:
       artifactName: $(artifactName)
+      publishBuild: eq(variables.isDeployableBranch, true)
 
   - template: pipelines/templates/stages/deploy.yml
     parameters:
       artifactName: $(artifactName)
-      condition: and(succeeded(), or(eq('${{ parameters.forceDeployToEnvironment }}', 'dev'), and(eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'PullRequest'))))
+      condition: and(succeeded(), eq(variables.isDeployableToDev, 'true'))
       environmentName: Dev
       functionAppName: $(azureFunctionAppNameDev)
       serviceConnection: $(serviceConnectionDev)
