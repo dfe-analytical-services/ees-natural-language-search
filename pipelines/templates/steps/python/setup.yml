@@ -1,6 +1,5 @@
 parameters:
   pythonVersion: '3.14'
-  requirementsFile: 'requirements.txt'
 
 steps:
   - task: UsePythonVersion@0
@@ -10,8 +9,12 @@ steps:
 
   - script: |
       python -m pip install --upgrade pip
-    displayName: 'Upgrade pip'
+      python -m pip install uv
+    displayName: 'Upgrade pip and install uv'
 
   - script: |
-      pip install --target="./.python_packages/lib/site-packages" -r ${{ parameters.requirementsFile }}
-    displayName: 'Install dependencies'
+      uv export --frozen --no-dev --no-hashes --no-emit-project -o 
+      "$(Agent.TempDirectory)/requirements.txt"
+      pip install --target="./.python_packages/lib/site-packages" -r 
+      "$(Agent.TempDirectory)/requirements.txt"
+      displayName: 'Vendor dependencies (uv export -> .python_packages)'
