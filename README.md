@@ -111,7 +111,6 @@ One LLM call per shortlisted dataset, all gathered concurrently. Each returns a 
 
 ### `geography_level_utils.py`
 - `hybrid_scorer` only accepts a perfect `token_set_ratio` (100) when >= 2 tokens overlap and the candidate isn't much shorter than they query; otherwise falls back to `WRatio`
-- `geo_filter_and_group_matches(...)` keeps matches whose geographic level is allowed for each dataset, using `PROPERTY_TO_GEO_LEVEL` mapping
 
 ### `openai_client.py`
 `generate_answer(...)` calls Azure OpenAI chat completions with `temperature=0, top_p=1, seed=42` (deterministic-ish) and returns the full response object

@@ -24,6 +24,7 @@ PROPERTY_TO_GEO_LEVEL = {
     'PoliceForceArea':'Police force area'
 }
 
+
 def hybrid_scorer(a: str, b: str, **kwargs) -> float:
     a_tokens = set(a.lower().split())
     b_tokens = set(b.lower().split())
@@ -42,6 +43,7 @@ def hybrid_scorer(a: str, b: str, **kwargs) -> float:
         return 100.0
 
     return fuzz.WRatio(a, b)
+
 
 def flatten_by_legend(data):
     flattened = defaultdict(list)
@@ -64,12 +66,14 @@ def flatten_by_legend(data):
 
     return dict(flattened)
 
+
 async def get_geographical_matches(grouped_geographic_levels: defaultdict, geography_requirements: list, threshold: int=90):
     valid_geo_per_file = defaultdict(list)
     for file_id, geo_info in grouped_geographic_levels.items():
         rvid = geo_info['releaseVersionId']
         subid = geo_info['subjectId']
-        response = requests.get(f'https://data.dev.explore-education-statistics.service.gov.uk/api/meta/subject/{subid}')
+        response = requests.get(
+            f'https://data.dev.explore-education-statistics.service.gov.uk/api/meta/subject/{subid}')
         if response.ok:
             valid_geographies = flatten_by_legend(response.json()['locations'])
             level_results = defaultdict(list)
@@ -86,28 +90,9 @@ async def get_geographical_matches(grouped_geographic_levels: defaultdict, geogr
                     results = [x for x,score,_ in matches if score>=threshold]
                     level_results[level].extend(results)
             valid_geo_per_file[file_id] = level_results
-                            
+
         else:
             logging.error('Could not retrieve valid locations from subjectId')
             valid_geo_per_file[file_id] = []
-    
+
     return valid_geo_per_file
-
-
-def geo_filter_and_group_matches(matches_per_location, valid_geo_levels_per_id):
-    result = {}
-
-    for file_id, allowed_levels in valid_geo_levels_per_id.items():
-        allowed_levels = set(allowed_levels['geographicLevels'])
-        grouped_matches = defaultdict(list)
-
-        for location_matches in matches_per_location:
-            for match in location_matches:
-                geo_level = PROPERTY_TO_GEO_LEVEL.get(match["property"])
-
-                if geo_level in allowed_levels:
-                    grouped_matches[geo_level].append(match)
-
-        result[file_id] = dict(grouped_matches)
-
-    return result
