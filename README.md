@@ -110,7 +110,6 @@ One LLM call per shortlisted dataset, all gathered concurrently. Each returns a 
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 
 ### `geography_level_utils.py`
-- `get_location_matches(...)` loads `locations_dict.json` from Blob Storage and fuzzy-matches with RapidFuzz via a custom `hybrid_scorer`, returning the top 5 matches >= threshold.
 - `hybrid_scorer` only accepts a perfect `token_set_ratio` (100) when >= 2 tokens overlap and the candidate isn't much shorter than they query; otherwise falls back to `WRatio`
 - `geo_filter_and_group_matches(...)` keeps matches whose geographic level is allowed for each dataset, using `PROPERTY_TO_GEO_LEVEL` mapping
 
