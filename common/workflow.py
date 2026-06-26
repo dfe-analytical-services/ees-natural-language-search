@@ -41,7 +41,6 @@ async def run_workflow(user_query: str, publication_id: str):
     grouped_filters = reranking_results["grouped_filters"]
     grouped_indicators = reranking_results["grouped_indicators"]
     grouped_title_description = reranking_results["grouped_title_description"]
-    grouped_geographic_levels = reranking_results["grouped_geographic_levels"]
     total_tokens_used['input'] += reranking_results["total_tokens_used"]['input']
     total_tokens_used['output'] += reranking_results["total_tokens_used"]['output']
     reranker_response = reranking_results["reranker_response"].model_dump()
@@ -57,14 +56,13 @@ async def run_workflow(user_query: str, publication_id: str):
     ees_data_api_client = EesDataApiClient(base_url=os.environ["EES_URL_API_DATA"])
 
     grouped_subject_meta: dict[str, SubjectMetaResponse] = {}
-    for item in reranker_response.get("shortlistedDatasets", []):
-        file_id = item.get("fileId")
+    for file_id in reranked_datasets:
         relevant_dataset = relevant_datasets_by_id[file_id]
         subject_id = relevant_dataset["subjectId"]
         grouped_subject_meta[file_id] = ees_data_api_client.get_subject_meta(subject_id=subject_id)
 
     logging.info("Getting geography matches")
-    geo_dict = await get_geographical_matches(grouped_geographic_levels, grouped_subject_meta, geography_requirements)
+    geo_dict = await get_geographical_matches(reranked_datasets, grouped_subject_meta, geography_requirements)
 
     # Can pass grouped filters into this in order to only pass the retrieved filters to the filter selection agent
     logging.info("Transforming dataset information for LLM ingestion")

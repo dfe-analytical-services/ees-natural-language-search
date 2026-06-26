@@ -1,7 +1,3 @@
-import requests
-import os
-import json
-import logging
 from collections import defaultdict
 from rapidfuzz import process, fuzz
 
@@ -71,10 +67,9 @@ def flatten_by_legend(data):
     return dict(flattened)
 
 
-async def get_geographical_matches(grouped_geographic_levels: defaultdict, grouped_subject_meta: dict[str,SubjectMetaResponse], geography_requirements: list, threshold: int=90):
+async def get_geographical_matches(reranked_datasets: list, grouped_subject_meta: dict[str,SubjectMetaResponse], geography_requirements: list, threshold: int=90):
     valid_geo_per_file = defaultdict(list)
-    for file_id, geo_info in grouped_geographic_levels.items():
-        # TODO Now that this isn't using subject id from geo_info, geo_info isn't used at all? What's the point of it?
+    for file_id in reranked_datasets:
         subject_meta = grouped_subject_meta[file_id]
         valid_geographies = flatten_by_legend(subject_meta.locations)
         level_results = defaultdict(list)

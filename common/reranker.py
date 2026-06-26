@@ -142,14 +142,6 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
         if d["fileId"] in reranked_datasets
     }
 
-    grouped_geographic_levels = {
-        d["fileId"]: {
-            'geographicLevels': d['geographicLevelsLabels']
-        }
-        for d in relevant_datasets
-        if d["fileId"] in reranked_datasets
-    }
-
     return {
         "reranked_datasets": reranked_datasets,
         "relevant_datasets": relevant_datasets,
@@ -158,7 +150,6 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
         "grouped_filters": grouped_filters,
         "grouped_indicators": grouped_indicators,
         "grouped_title_description": grouped_title_description,
-        "grouped_geographic_levels": grouped_geographic_levels,
         "total_tokens_used": total_tokens_used,
         "reranker_response": reranker_parsed
     }
