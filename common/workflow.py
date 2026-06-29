@@ -9,7 +9,7 @@ from common.filter_selection import run_filter_selection_agent
 from common.geography_levels_utils import get_geographical_matches
 from common.indicator_selection import run_indicator_selection_agent
 from common.data_utils import retrieve_and_transform_filter_data, combine_responses, rrf_to_percentage
-from schemas.subject_meta import SubjectMetaResponse
+from schemas.subject_meta_response import SubjectMetaResponse
 
 
 async def run_workflow(user_query: str, publication_id: str):
