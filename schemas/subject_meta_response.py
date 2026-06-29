@@ -1,3 +1,7 @@
+"""
+Subject Meta response Pydantic models
+"""
+
 from functools import cached_property
 from pydantic import BaseModel, Field, ConfigDict
 

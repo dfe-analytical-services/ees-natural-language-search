@@ -1,6 +1,6 @@
 from pydantic_client import RequestsWebClient, get
 
-from schemas.subject_meta import SubjectMetaResponse
+from schemas.subject_meta_response import SubjectMetaResponse
 
 
 class EesDataApiClient(RequestsWebClient):

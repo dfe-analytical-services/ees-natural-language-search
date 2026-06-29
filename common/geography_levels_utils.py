@@ -1,7 +1,7 @@
 from collections import defaultdict
 from rapidfuzz import process, fuzz
 
-from schemas.subject_meta import SubjectMetaResponse
+from schemas.subject_meta_response import SubjectMetaResponse
 
 PROPERTY_TO_GEO_LEVEL = {
     'Country':'National',
@@ -86,5 +86,5 @@ async def get_geographical_matches(reranked_datasets: list, grouped_subject_meta
                 results = [x for x,score,_ in matches if score>=threshold]
                 level_results[level].extend(results)
         valid_geo_per_file[file_id] = level_results
-    
+
     return valid_geo_per_file

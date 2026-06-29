@@ -1,7 +1,9 @@
 from collections import defaultdict
+from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
-from common.schemas import FilterSelectionResponse, IndicatorSelectionResponse, parse_llm_response
-from schemas.subject_meta import SubjectMetaResponse
+from schemas.filter_selection_response import FilterSelectionResponse
+from schemas.indicator_selection_response import IndicatorSelectionResponse
+from schemas.subject_meta_response import SubjectMetaResponse
 
 
 def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filters: defaultdict=None):
@@ -24,9 +26,9 @@ def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filt
     results_by_file_id = defaultdict(list)
     for doc in results:
         results_by_file_id[doc["fileId"]].append(doc)
-        
+
     results_by_file_id = dict(results_by_file_id)
-    
+
     transformed = {
         file_id: {
             "filters": [
@@ -39,6 +41,7 @@ def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filt
     }
 
     return transformed
+
 
 def combine_responses(filter_responses: list, indicator_responses:list, grouped_subject_meta: dict[str, SubjectMetaResponse], geo_dict: defaultdict, grouped_title_description: defaultdict):
     combined_responses = []
@@ -73,19 +76,18 @@ def combine_responses(filter_responses: list, indicator_responses:list, grouped_
             if indicators:
                 combined.setdefault(file_id, {"filters": [], "indicators": []})
                 combined[file_id]["indicators"] = indicators
-        
+
         for file_id, geo_matches in geo_dict.items():
             if file_id in combined:
                 combined[file_id]["geographicLevels"] = geo_matches
-        
+
         for file_id, title_desc in grouped_title_description.items():
             if file_id in combined:
                 combined[file_id]["aiSummary"] = f'''This data is relevant because {title_desc['relevance_reason']}\n It contains information about {title_desc['description']}'''
                 combined[file_id]['title'] = title_desc['title']
 
         combined_responses.append(combined)
-    
-    
+
     final_response = [
         {"fileId": key, **value}
         for item in combined_responses
@@ -93,6 +95,7 @@ def combine_responses(filter_responses: list, indicator_responses:list, grouped_
     ]
 
     return final_response
+
 
 def rrf_to_percentage(rrf_score: float):
     RRF_K = 60
