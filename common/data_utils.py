@@ -3,6 +3,7 @@ from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
 from schemas.filter_selection_response import FilterSelectionResponse
 from schemas.indicator_selection_response import IndicatorSelectionResponse
+from schemas.time_period_selection_response import TimePeriodSelectionResponse
 from schemas.subject_meta_response import SubjectMetaResponse
 
 
@@ -43,18 +44,25 @@ def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filt
     return transformed
 
 
-def combine_responses(filter_responses: list, indicator_responses:list, grouped_subject_meta: dict[str, SubjectMetaResponse], geo_dict: defaultdict, grouped_title_description: defaultdict):
+def combine_responses(filter_responses: list, 
+                      indicator_responses:list, 
+                      time_period_responses:list, 
+                      grouped_subject_meta: dict[str, SubjectMetaResponse], 
+                      geo_dict: defaultdict, 
+                      grouped_title_description: defaultdict):
     combined_responses = []
 
-    for model_raw, indicator_raw in zip(filter_responses, indicator_responses):
+    for filter_raw, indicator_raw, time_period_raw in zip(filter_responses, indicator_responses, time_period_responses):
 
-        model_parsed = parse_llm_response(model_raw, FilterSelectionResponse, context="filter selection")
+        filter_parsed = parse_llm_response(filter_raw, FilterSelectionResponse, context="filter selection")
         indicator_parsed = parse_llm_response(indicator_raw, IndicatorSelectionResponse, context="indicator selection")
-        model_data = model_parsed.root if model_parsed else {}
+        time_period_parsed = parse_llm_response(time_period_raw, TimePeriodSelectionResponse, context="time period selection")
+        filter_data = filter_parsed.root if filter_parsed else {}
         indicator_data = indicator_parsed.root if indicator_parsed else {}
+        time_period_data = time_period_parsed.model_dump() if time_period_parsed else {}
         combined = {}
 
-        for file_id, file_data in model_data.items():
+        for file_id, file_data in filter_data.items():
             filters = [
                 filter_value
                 for filter_value, details in file_data.filterValues.items()
@@ -76,6 +84,10 @@ def combine_responses(filter_responses: list, indicator_responses:list, grouped_
             if indicators:
                 combined.setdefault(file_id, {"filters": [], "indicators": []})
                 combined[file_id]["indicators"] = indicators
+        
+        for file_id, time_period in time_period_data.items():
+            if file_id in combined:
+                combined[file_id]["timePeriod"] = time_period
 
         for file_id, geo_matches in geo_dict.items():
             if file_id in combined:
