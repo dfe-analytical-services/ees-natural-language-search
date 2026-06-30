@@ -12,7 +12,7 @@ You will be given:
 
 You must return a start and end time period that best fits the query requirements of the user
 If the dataset does not cover the entire requested time period, choose the largest overlap
-If the user asks for the last 10 years of data and teh dataset covers one day of the last 10 years, that will be the largest overlap
+If the user asks for the last 10 years of data and the dataset covers one day of the last 10 years, that will be the largest overlap
 
 ## Output Format
 Return a JSON object in this exact structure:
