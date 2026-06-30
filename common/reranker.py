@@ -31,7 +31,7 @@ A dataset should be EXCLUDED if:
 ---
 
 ## Time Period Criteria
-If a user requests data for the last 10 years, a dataset is considered usable if it contains data for at least one day within the requested 10-year period.
+If a user requests data for the last 10 years, a dataset is DEFINITELY usable if it contains data for at least one day within the requested 10-year period.
 
 ## Reasoning Process
 Before returning your answer, think through each dataset systematically:
