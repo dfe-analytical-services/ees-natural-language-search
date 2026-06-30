@@ -6,6 +6,7 @@ from clients.ees_data_api_client import EesDataApiClient
 from common.reranker import run_reranking_agent
 from common.retrieve_datasets import retrieve_datasets
 from common.filter_selection import run_filter_selection_agent
+from common.time_period_selection import run_time_period_selection_agent
 from common.geography_levels_utils import get_geographical_matches
 from common.indicator_selection import run_indicator_selection_agent
 from common.data_utils import retrieve_and_transform_filter_data, combine_responses, rrf_to_percentage
@@ -67,9 +68,9 @@ async def run_workflow(user_query: str, publication_id: str):
     # Can pass grouped filters into this in order to only pass the retrieved filters to the filter selection agent
     logging.info("Transforming dataset information for LLM ingestion")
     transformed_data = retrieve_and_transform_filter_data(reranked_datasets, grouped_filters)
-
-    logging.info("Running filter selection and indicator selection models")
-    (filter_responses, filter_tokens_used), (indicator_responses, indicator_tokens_used) = await asyncio.gather(
+    
+    logging.info("Running filter selection, indicator selection, and time period selection models")
+    (filter_responses, filter_tokens_used), (indicator_responses, indicator_tokens_used), (time_period_responses, time_period_tokens_used) = await asyncio.gather(
         run_filter_selection_agent(transformed_data,
                                     grouped_title_description,
                                     user_query,
@@ -77,13 +78,17 @@ async def run_workflow(user_query: str, publication_id: str):
         run_indicator_selection_agent(grouped_indicators,
                                     grouped_title_description,
                                     user_query,
-                                    query_requirements,)
+                                    query_requirements,),
+        run_time_period_selection_agent(reranked_datasets, 
+                                        grouped_subject_meta,
+                                        user_query, 
+                                        query_requirements)
     )
-    total_tokens_used['input']+=(filter_tokens_used['input'] + indicator_tokens_used['input'])
-    total_tokens_used['output']+=(filter_tokens_used['output'] + indicator_tokens_used['output'])
+    total_tokens_used['input']+=(filter_tokens_used['input'] + indicator_tokens_used['input'] + time_period_tokens_used['input'])
+    total_tokens_used['output']+=(filter_tokens_used['output'] + indicator_tokens_used['output'] + time_period_tokens_used['output'])
     cost = (costPer1kTokensInput*(total_tokens_used['input']/1000)) + (costPer1kTokensOutput*(total_tokens_used['output']/1000))
     
     logging.info("Consolidating Pipeline Responses")
-    final_response = combine_responses(filter_responses, indicator_responses, grouped_subject_meta, geo_dict, grouped_title_description)
+    final_response = combine_responses(filter_responses, indicator_responses, time_period_responses, grouped_subject_meta, geo_dict, grouped_title_description)
 
     yield {'stage': 'pipeline complete', 'data': {'datasets': final_response, 'token_usage': total_tokens_used, 'cost': cost}}
