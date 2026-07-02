@@ -10,7 +10,7 @@ You will be given:
 - A dataset description
 - A list of filter values
 
-For every filter value, you must work through it in order and make an explicit decision wherther it is relevant or not.
+For every filter value, you must work through it in order and make an explicit decision whether it is relevant or not.
 The decision for each filter value must be made independently, and in isolation of all other filter values.
 The aim should be to match as many filter values as possible to each query requirement.
 Each filter must only be compared for semantic relevance with the query requirements, no domain knowledge should be considered.
