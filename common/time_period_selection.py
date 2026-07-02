@@ -18,15 +18,13 @@ If the user asks for the last 10 years of data and the dataset covers one day of
 Return a JSON object in this exact structure:
 {   
     "<exact fileId from input>": {
-        "timePeriod":{
-            "start":{
-                "code":"<exact code>"
-                "year":"<exact year>"
-            }
-            "end":{
-                "code":"<exact code>"
-                "year":"<exact year>"
-            }
+        "start":{
+            "code":"<exact code>"
+            "year":"<exact year>"
+        }
+        "end":{
+            "code":"<exact code>"
+            "year":"<exact year>"
         }
     }
 }
