@@ -51,7 +51,7 @@ Return a JSON object with this exact structure:
             ],
         "geography":
             [
-                "Concise name of each distinct geography requirement extracted from the query. If nothing is identified then it should be National"
+                "Concise name of each distinct geography requirement extracted from the query. It can be as granular as a specific school. If nothing is identified then it should be National"
             ],
         "timePeriod": "The specific time interval that the user wants the data for. If nothing is identified then return None."
     },

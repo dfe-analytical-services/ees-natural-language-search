@@ -11,8 +11,13 @@ class FilterValueDecision(BaseModel):
 
 
 class FilterDatasetResult(BaseModel):
-    filterValues: dict[str, FilterValueDecision] = Field(default_factory=dict)
+    """Filter decisions for a single dataset."""
+
+    filterValues: dict[str, FilterValueDecision] = Field(
+        default_factory=dict,
+        description="Keyed by filter item label",
+    )
 
 
 class FilterSelectionResponse(RootModel[dict[str, FilterDatasetResult]]):
-    """keyed by fileId"""
+    """Filter selection results, keyed by dataset fileId."""

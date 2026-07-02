@@ -62,7 +62,7 @@ async def run_time_period_selection_agent(
         prompt = llm_time_period_user_prompt.format(
             raw_query=user_query,
             query_requirements=query_requirements,
-            time_period_list=subject_meta.timePeriod.options,
+            time_period_list=subject_meta.time_period.options,
             file_id=file_id
         )
 

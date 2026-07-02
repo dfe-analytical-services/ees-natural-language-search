@@ -44,47 +44,46 @@ def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filt
     return transformed
 
 
-def combine_responses(filter_responses: list, 
-                      indicator_responses:list, 
-                      time_period_responses:list, 
-                      grouped_subject_meta: dict[str, SubjectMetaResponse], 
-                      geo_dict: defaultdict, 
+def combine_responses(filter_responses: list,
+                      indicator_responses:list,
+                      time_period_responses:list,
+                      grouped_subject_meta: dict[str, SubjectMetaResponse],
+                      geo_dict: defaultdict,
                       grouped_title_description: defaultdict):
     combined_responses = []
 
     for filter_raw, indicator_raw, time_period_raw in zip(filter_responses, indicator_responses, time_period_responses):
 
-        filter_parsed = parse_llm_response(filter_raw, FilterSelectionResponse, context="filter selection")
-        indicator_parsed = parse_llm_response(indicator_raw, IndicatorSelectionResponse, context="indicator selection")
-        time_period_parsed = parse_llm_response(time_period_raw, TimePeriodSelectionResponse, context="time period selection")
-        filter_data = filter_parsed.root if filter_parsed else {}
-        indicator_data = indicator_parsed.root if indicator_parsed else {}
-        time_period_data = time_period_parsed.root if time_period_parsed else {}
+        filter_selection_parsed = parse_llm_response(filter_raw, FilterSelectionResponse, context="filter selection")
+        indicator_selection_parsed = parse_llm_response(indicator_raw, IndicatorSelectionResponse, context="indicator selection")
+        time_period_selection_parsed = parse_llm_response(time_period_raw, TimePeriodSelectionResponse, context="time period selection")
+        filter_data = filter_selection_parsed.root if filter_selection_parsed else {}
+        indicator_data = indicator_selection_parsed.root if indicator_selection_parsed else {}
+        time_period_data = time_period_selection_parsed.root if time_period_selection_parsed else {}
         combined = {}
 
-        for file_id, file_data in filter_data.items():
+        for file_id, dataset_filters in filter_data.items():
             filters = [
-                filter_value
-                for filter_value, details in file_data.filterValues.items()
-                if details.relevant is True
+                filter_item_label
+                for filter_item_label, decision in dataset_filters.filterValues.items()
+                if decision.relevant is True
             ]
 
             if filters:
                 combined.setdefault(file_id, {"filters": [], "indicators": []})
                 combined[file_id]["filters"] = filters
 
-        for file_id, file_data in indicator_data.items():
-            indicator_lookup_by_label = grouped_subject_meta[file_id].indicator_lookup_by_label
+        for file_id, dataset_indicators in indicator_data.items():
             indicators = [
-                indicator_lookup_by_label[indicator_label].id
-                for indicator_label, details in file_data.items()
-                if details.relevant is True
+                grouped_subject_meta[file_id].get_indicator(indicator_label).id
+                for indicator_label, decision in dataset_indicators.items()
+                if decision.relevant is True
             ]
 
             if indicators:
                 combined.setdefault(file_id, {"filters": [], "indicators": []})
                 combined[file_id]["indicators"] = indicators
-        
+
         for file_id, dataset_time_period  in time_period_data.items():
             if file_id in combined:
                 combined[file_id]["timePeriod"] = dataset_time_period.model_dump()

@@ -11,7 +11,7 @@ You will be given:
 - A dataset description
 - A list of indicator values
 
-For every indicator, you must work through it in order and make an explicit decision wherther it is relevant or not.
+For every indicator, you must work through it in order and make an explicit decision whether it is relevant or not.
 
 ## Output Format
 Return a JSON object in this exact structure:
