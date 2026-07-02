@@ -2,10 +2,7 @@
 Time period selection response Pydantic models
 """
 
-from typing import TypeVar
 from pydantic import BaseModel, Field, RootModel
-
-T = TypeVar("T")
 
 
 class TimePoint(BaseModel):
@@ -13,14 +10,10 @@ class TimePoint(BaseModel):
     year: str = ""
 
 
-class TimePeriod(BaseModel):
+class DatasetTimePeriodResult(BaseModel):
     start: TimePoint = Field(default_factory=TimePoint)
     end: TimePoint = Field(default_factory=TimePoint)
 
 
-class FileTimePeriodResult(BaseModel):
-    timePeriod: TimePeriod = Field(default_factory=TimePeriod)
-
-
-class TimePeriodSelectionResponse(RootModel[dict[str, FileTimePeriodResult]]):
-    """keyed by fileId"""
+class TimePeriodSelectionResponse(RootModel[dict[str, DatasetTimePeriodResult]]):
+    """Time period selection results, keyed by dataset fileId."""

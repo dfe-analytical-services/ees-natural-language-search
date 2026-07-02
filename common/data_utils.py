@@ -59,7 +59,7 @@ def combine_responses(filter_responses: list,
         time_period_parsed = parse_llm_response(time_period_raw, TimePeriodSelectionResponse, context="time period selection")
         filter_data = filter_parsed.root if filter_parsed else {}
         indicator_data = indicator_parsed.root if indicator_parsed else {}
-        time_period_data = time_period_parsed.model_dump() if time_period_parsed else {}
+        time_period_data = time_period_parsed.root if time_period_parsed else {}
         combined = {}
 
         for file_id, file_data in filter_data.items():
@@ -85,9 +85,9 @@ def combine_responses(filter_responses: list,
                 combined.setdefault(file_id, {"filters": [], "indicators": []})
                 combined[file_id]["indicators"] = indicators
         
-        for file_id, time_period in time_period_data.items():
+        for file_id, dataset_time_period  in time_period_data.items():
             if file_id in combined:
-                combined[file_id]["timePeriod"] = time_period
+                combined[file_id]["timePeriod"] = dataset_time_period.model_dump()
 
         for file_id, geo_matches in geo_dict.items():
             if file_id in combined:
