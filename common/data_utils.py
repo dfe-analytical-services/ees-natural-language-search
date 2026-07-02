@@ -62,22 +62,22 @@ def combine_responses(filter_responses: list,
         time_period_data = time_period_selection_parsed.root if time_period_selection_parsed else {}
         combined = {}
 
-        for file_id, file_data in filter_data.items():
+        for file_id, dataset_filters in filter_data.items():
             filters = [
                 filter_item_label
-                for filter_item_label, details in file_data.filterValues.items()
-                if details.relevant is True
+                for filter_item_label, decision in dataset_filters.filter_values.items()
+                if decision.relevant is True
             ]
 
             if filters:
                 combined.setdefault(file_id, {"filters": [], "indicators": []})
                 combined[file_id]["filters"] = filters
 
-        for file_id, file_data in indicator_data.items():
+        for file_id, dataset_indicators in indicator_data.items():
             indicators = [
                 grouped_subject_meta[file_id].get_indicator(indicator_label).id
-                for indicator_label, details in file_data.items()
-                if details.relevant is True
+                for indicator_label, decision in dataset_indicators.items()
+                if decision.relevant is True
             ]
 
             if indicators:
