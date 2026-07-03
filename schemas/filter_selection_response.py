@@ -1,23 +1,24 @@
 """
-Filter selection response Pydantic models
+Filter item selection response Pydantic models
 """
 
 from pydantic import BaseModel, Field, RootModel
 
 
-class FilterValueDecision(BaseModel):
+class FilterItemDecision(BaseModel):
     relevant: bool = False
     reasoning: str = ""
 
 
-class FilterDatasetResult(BaseModel):
-    """Filter decisions for a single dataset."""
+class FilterItemDatasetResult(BaseModel):
+    """Filter item decisions for a single dataset."""
 
-    filterValues: dict[str, FilterValueDecision] = Field(
+    filter_items: dict[str, FilterItemDecision] = Field(
+        alias="filterItems",
         default_factory=dict,
-        description="Keyed by filter item label",
+        description="Keyed by composite filter item descriptor: filter label, filter item group ID, and filter item label",
     )
 
 
-class FilterSelectionResponse(RootModel[dict[str, FilterDatasetResult]]):
-    """Filter selection results, keyed by dataset fileId."""
+class FilterSelectionResponse(RootModel[dict[str, FilterItemDatasetResult]]):
+    """Filter item selection results, keyed by dataset file ID."""

@@ -2,7 +2,7 @@ import asyncio
 import logging
 from common.openai_client import generate_answer
 
-llm_indicator_sys_prompt="""You are a indicator selection agent. Your job is to determine which indicators from a dataset are required to answer a user's data query.
+llm_indicator_sys_prompt="""You are an indicator selection agent. Your job is to determine which indicators from a dataset are required to answer a user's data query.
 Indicators are non filterable columns that contain mutually exclusive information that the user can choose to view.
 
 ## Your Task
@@ -16,7 +16,7 @@ For every indicator, you must work through it in order and make an explicit deci
 ## Output Format
 Return a JSON object in this exact structure:
 {   
-    "<exact fileId from input>": {
+    "<exact file ID from input>": {
         "<indicator_name>":{
             "relevant": true|false,
             "reasoning": one concise sentence about why the relevance is true or false

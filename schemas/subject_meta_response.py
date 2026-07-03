@@ -70,32 +70,39 @@ class SubjectMetaResponse(_SubjectMetaBaseResponseModel):
 
 
     @cached_property
-    def _filter_item_lookup(self) -> dict[tuple[str, str, str], FilterItem]:
-        """Keyed by (filter label, filter item group label, filter item label).
+    def _filter_item_lookup(self) -> dict[tuple[str, str], FilterItem]:
+        """Keyed by (filter item group id, filter item label).
 
-        Filter item labels are only unique within a filter item group, and filter item group labels only
-        within a filter, so the full triple is needed.
+        Assumes filter item labels are unique within a filter item group.
         """
         return {
-            (filter_.label, filter_item.label, filter_item.label): filter_item
+            (filter_item_group.id, filter_item.label): filter_item
             for filter_ in self.filters.values()
             for filter_item_group in filter_.filter_item_groups.values()
             for filter_item in filter_item_group.filter_items
         }
 
 
-    def get_filter_item(self,
-                        filter_label: str,
-                        filter_item_group_label: str,
-                        filter_item_label: str) -> FilterItem:
-        return self._filter_item_lookup[(filter_label, filter_item_group_label, filter_item_label)]
+    def get_filter_item(
+        self,
+        filter_item_group_id: str,
+        filter_item_label: str
+    ) -> FilterItem:
+        filter_item = self._filter_item_lookup.get(
+            (filter_item_group_id, filter_item_label)
+        )
+        if filter_item is None:
+            raise KeyError(
+                f"Filter item for group ID '{filter_item_group_id}' and label '{filter_item_label}' not found"
+            )
+        return filter_item
 
 
     @cached_property
     def _indicator_lookup(self) -> dict[str, Indicator]:
         """Keyed by indicator label.
 
-        Assumes that indicator labels are unique across groups
+        Assumes that indicator labels are unique across groups.
         """
         return {
             indicator.label: indicator
@@ -105,4 +112,7 @@ class SubjectMetaResponse(_SubjectMetaBaseResponseModel):
 
 
     def get_indicator(self, indicator_label: str) -> Indicator:
-        return self._indicator_lookup[indicator_label]
+        indicator = self._indicator_lookup.get(indicator_label)
+        if indicator is None:
+            raise KeyError(f"Indicator for label '{indicator_label}' not found")
+        return indicator

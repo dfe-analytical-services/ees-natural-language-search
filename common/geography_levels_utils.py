@@ -48,6 +48,7 @@ def hybrid_scorer(a: str, b: str, **kwargs) -> float:
 def flatten_by_legend(data):
     flattened = defaultdict(list)
 
+    # TODO add Pydantic model for Locations to SubjectMetaResponse
     def walk(items, legend):
         for item in items:
             if all(k in item for k in ("id", "label", "value")):

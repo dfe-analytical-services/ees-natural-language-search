@@ -127,9 +127,9 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
     geography_requirements = reranker_parsed.queryRequirements.geography
 
     grouped_filters = {
-        k: grouped_filters[k]
-        for k in reranked_datasets
-        if k in grouped_filters
+        dataset_fileid: grouped_filters[dataset_fileid]
+        for dataset_fileid in reranked_datasets
+        if dataset_fileid in grouped_filters
     }
 
     grouped_indicators = {
