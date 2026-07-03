@@ -10,9 +10,9 @@ You will be given:
 - A user query that has been decomposed into its explicit information requirements
 - A list of available time period values
 
-You must return a start and end time period that best fits the query requirements of the user
-If the dataset does not cover the entire requested time period, choose the largest overlap
-If the user asks for the last 10 years of data and the dataset covers one day of the last 10 years, that will be the largest overlap
+You must return a start and end time period that best fits the query requirements of the user.
+If the dataset does not cover the entire requested time period, choose the largest overlap.
+If the user asks for the last 10 years of data and the dataset covers one day of the last 10 years, that will be the largest overlap.
 
 ## Output Format
 Return a JSON object in this exact structure:
@@ -28,8 +28,8 @@ Return a JSON object in this exact structure:
         }
     }
 }
-Return only valid JSON. DO not include any text before or after the JSON object.
-Do not wrap the JSON in markdown code blocks, backticks, or any other formatting. 
+Return only valid JSON. DO NOT include any text before or after the JSON object.
+DO NOT wrap the JSON in markdown code blocks, backticks, or any other formatting. 
 Return raw JSON only. The first character of your response should be { and the last must be }.
 """
 

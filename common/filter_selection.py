@@ -27,12 +27,12 @@ Return a JSON object in this exact structure:
         }
     }
 }
-Return only valid JSON. DO not include any text before or after the JSON object.
-Do not wrap the JSON in markdown code blocks, backticks, or any other formatting. 
+Return only valid JSON. DO NOT include any text before or after the JSON object.
+DO NOT wrap the JSON in markdown code blocks, backticks, or any other formatting. 
 Return raw JSON only. The first character of your response should be { and the last must be }.
 """
 
-llm_filtering_user_prompt="""## User Query
+llm_filtering_user_prompt = """## User Query
 {raw_query}
 
 ## Decomposed Query Requirements
@@ -48,15 +48,16 @@ FileID: {file_id}
 
 Now work through each filter value and return your suggestions in the specified JSON format.
 Try to suggest as many filters as possible that are semantically similar.
-DO NOT assume anything about the query requirements based on domain knowledge. 
+DO NOT assume anything about the query requirements based on domain knowledge.
 """
+
 
 async def run_filter_selection_agent(
     transformed,
     grouped_title_description,
     user_query,
     query_requirements):
-    
+
     logging.info("Filter Selection Model Running...")
     tasks = []
 

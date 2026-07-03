@@ -36,7 +36,6 @@ async def run_workflow(user_query: str, publication_id: str):
     logging.info("Running Reranker")
     reranking_results = await run_reranking_agent(user_query, relevant_datasets, grouped_filters)
     reranked_datasets = reranking_results["reranked_datasets"]
-    relevant_datasets = reranking_results["relevant_datasets"]
     query_requirements = reranking_results["query_requirements"]
     geography_requirements = reranking_results["geography_requirements"]
     grouped_filters = reranking_results["grouped_filters"]

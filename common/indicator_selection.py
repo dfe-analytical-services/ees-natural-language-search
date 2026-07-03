@@ -23,8 +23,8 @@ Return a JSON object in this exact structure:
         }
     }
 }
-Return only valid JSON. DO not include any text before or after the JSON object.
-Do not wrap the JSON in markdown code blocks, backticks, or any other formatting. 
+Return only valid JSON. DO NOT include any text before or after the JSON object.
+DO NOT wrap the JSON in markdown code blocks, backticks, or any other formatting. 
 Return raw JSON only. The first character of your response should be { and the last must be }.
 """
 
