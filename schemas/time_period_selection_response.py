@@ -16,4 +16,4 @@ class DatasetTimePeriodResult(BaseModel):
 
 
 class TimePeriodSelectionResponse(RootModel[dict[str, DatasetTimePeriodResult]]):
-    """Time period selection results, keyed by dataset fileId."""
+    """Time period selection results, keyed by dataset file ID."""

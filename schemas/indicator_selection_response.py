@@ -11,4 +11,4 @@ class IndicatorDecision(BaseModel):
 
 
 class IndicatorSelectionResponse(RootModel[dict[str, dict[str, IndicatorDecision]]]):
-    """Indicator selection results, keyed by dataset fileId, then indicator label."""
+    """Indicator selection results, keyed by dataset file ID, then indicator label."""

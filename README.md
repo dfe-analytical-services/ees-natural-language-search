@@ -79,7 +79,7 @@ ees-natural-language-search/
 |`starting pipeline` | *(none)* |
 |`retrieved datasets` | `{datasets:[{title, relevanceScore, rawRelevanceScore}]}` |
 | `reranker complete` | The reranker's JSON: `queryRequirements`, `shortlistedDatasets` (each with `relevanceScore` added), `confidence` |
-| `pipeline complete `| `{datasets" [{fileId, filters, indicators, geographicLevels, aiSummary}], token_usage}` |
+| `pipeline complete `| `{datasets:[{fileId, filters:[{id, label}], indicators:[{id, label}], geographicLevels, aiSummary}], token_usage}` |
 | `error` *(from route, on exception)* | `{error: <message>}` |
 
 ---
@@ -101,12 +101,12 @@ Sends the query plus trimmed dataset metadata `(fileId, title, content, filters,
 
 ### `filter_selection.py` / `indicator_selection.py` - selection agents
 One LLM call per shortlisted dataset, all gathered concurrently. Each returns a list of raw JSON strings plus a token total.
-- Filter output: `{"<fileId>": { "filterValues": { "<value>": {relevant(Yes/No), reasoning} } } }`
+- Filter output: `{"<fileId>": { "filterItems": { "<filter label>|||<filter item group ID>|||<filter item label>": {relevant(Yes/No), reasoning} } } }`
 - Indicator output: `{"<fileId>" { "<indicators>": {relevant(Yes/No), reasoning} } }`
 
 ### `data_utils.py`
 - `retrieve_and_transform_filter_data(...)` pulls full filter values from the filter index and flattens them per dataset.
-- `combine responses(...)` keeps only values marked `relevant: true`, attaches `geographicLevels` and an `aiSummary`, and flattens to a list of `{fileId, ...}`.
+- `combine responses(...)` keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and an `aiSummary`, and flattens to a list of `{fileId, ...}`.
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 
 ### `geography_level_utils.py`

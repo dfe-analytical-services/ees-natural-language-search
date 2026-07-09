@@ -67,7 +67,7 @@ Return a JSON object with this exact structure:
 }
 
 Return only valid JSON. DO NOT include any text before or after the JSON object.
-DO NOT wrap the JSON in markdown code blocks, backticks, or any other formatting. 
+DO NOT wrap the JSON in markdown code blocks, backticks, or any other formatting.
 Return raw JSON only. The first character of your response should be { and the last must be }.
 """
 
@@ -84,6 +84,9 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
     """
     Retrieves, reranks datasets using an LLM, and returns all required artifacts.
     """
+
+    # TODO Add indicators to reranking_datasets and adjust prompt and RerankerResponse to include them?
+
     relevant_keys = ['fileId','title','content', 'filters','timePeriodRange']
     total_tokens_used = {'input':0, 'output':0}
 
@@ -124,9 +127,9 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
     geography_requirements = reranker_parsed.queryRequirements.geography
 
     grouped_filters = {
-        k: grouped_filters[k]
-        for k in reranked_datasets
-        if k in grouped_filters
+        dataset_fileid: grouped_filters[dataset_fileid]
+        for dataset_fileid in reranked_datasets
+        if dataset_fileid in grouped_filters
     }
 
     grouped_indicators = {
@@ -146,7 +149,6 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
 
     return {
         "reranked_datasets": reranked_datasets,
-        "relevant_datasets": relevant_datasets,
         "query_requirements": query_requirements,
         "geography_requirements": geography_requirements,
         "grouped_filters": grouped_filters,

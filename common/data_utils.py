@@ -13,32 +13,40 @@ def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filt
     results = filter_client.search(
         search_text="*",
         filter=filter_expr,
-        select=['fileId', 'filterName','filterValues','filterCategory']
+        # TODO rename fields in the search index to use consistent terminology:
+        # filterCategory is the field named used in the index for the filter label
+        # filterName is the filter item group label. When the group label is 'Default', filterName contains the filter label instead.
+        # filterValues is a list of the filter item labels
+        select=['fileId', 'filterGroupId', 'filterCategory','filterName', 'filterValues']
     )
 
-    results = [{'fileId': r['fileId'], 'filterName':r['filterName'],'filterValues':r['filterValues'], 'filterCategory':r['filterCategory']} for r in results]
+    # Each document in the search results represents a filter item group.
+    # Transform the filter item group results into a list of dicts with each dict containing the file Id, filter item group Id, filter label, and a list of filter item labels.
+    # Multiple results can be returned for the same file ID when the file contains multiple filter item groups or filters. Each filter contains at least one filter item group.
+    results = [{'fileId': r['fileId'], 'filterItemGroupId':r['filterGroupId'], 'filterLabel':r['filterCategory'], 'filterItemGroupLabelOrFilterLabel':r['filterName'], 'filterItemLabels':r['filterValues']} for r in results]
+    
     if shortlisted_filters:
         results = [
             d
             for d in results
-            if d.get("fileId") in shortlisted_filters and d.get("filterName") in shortlisted_filters.get(d.get("fileId"), [])
+            if d.get("fileId") in shortlisted_filters and d.get("filterItemGroupLabelOrFilterLabel") in shortlisted_filters.get(d.get("fileId"), [])
         ]
-    ## Flatten the list of filters and filter values for easier LLM consumption
+    # Flatten the list of filter labels and filter item labels for easier LLM consumption
     results_by_file_id = defaultdict(list)
-    for doc in results:
-        results_by_file_id[doc["fileId"]].append(doc)
+    for result in results:
+        results_by_file_id[result["fileId"]].append(result)
 
     results_by_file_id = dict(results_by_file_id)
 
     transformed = {
         file_id: {
-            "filters": [
-                f"{value}"
-                for item in filters
-                for value in item["filterValues"]
+            "filterItems": [
+                f"{result['filterLabel']}|||{result.get('filterItemGroupId')}|||{filter_item_label}"
+                for result in results
+                for filter_item_label in result["filterItemLabels"]
             ]
         }
-        for file_id, filters in results_by_file_id.items()
+        for file_id, results in results_by_file_id.items()
     }
 
     return transformed
@@ -64,9 +72,16 @@ def combine_responses(filter_responses: list,
 
         for file_id, dataset_filters in filter_data.items():
             filters = [
-                filter_item_label
-                for filter_item_label, decision in dataset_filters.filterValues.items()
+                {
+                    "id": grouped_subject_meta[file_id].get_filter_item(
+                        filter_item_group_id=filter_item_group_id,
+                        filter_item_label=filter_item_label,
+                    ).id,
+                    "label": filter_item_label,
+                }
+                for filter_item_descriptor, decision in dataset_filters.filter_items.items()
                 if decision.relevant is True
+                for _, filter_item_group_id, filter_item_label in [filter_item_descriptor.split("|||")]
             ]
 
             if filters:
@@ -75,7 +90,10 @@ def combine_responses(filter_responses: list,
 
         for file_id, dataset_indicators in indicator_data.items():
             indicators = [
-                grouped_subject_meta[file_id].get_indicator(indicator_label).id
+                {
+                    "id": grouped_subject_meta[file_id].get_indicator(indicator_label).id,
+                    "label": indicator_label,
+                }
                 for indicator_label, decision in dataset_indicators.items()
                 if decision.relevant is True
             ]
