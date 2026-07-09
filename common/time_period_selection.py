@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from common.openai_client import generate_answer
-from schemas.subject_meta_response import SubjectMetaResponse
+from schemas.dataset import Dataset
 
 llm_time_period_sys_prompt="""You are a time period selection agent. Your job is to determine which starting and ending time period from a dataset best fit the requirement in a user's data query.
 
@@ -50,7 +50,7 @@ DO NOT assume anything about the query requirements based on domain knowledge.
 
 async def run_time_period_selection_agent(
     reranked_datasets,
-    grouped_subject_meta: dict[str,SubjectMetaResponse],
+    grouped_datasets: dict[str, Dataset],
     user_query,
     query_requirements):
     
@@ -58,7 +58,7 @@ async def run_time_period_selection_agent(
     tasks = []
 
     for file_id in reranked_datasets:
-        subject_meta = grouped_subject_meta[file_id]
+        subject_meta = grouped_datasets[file_id].subject_meta
         prompt = llm_time_period_user_prompt.format(
             raw_query=user_query,
             query_requirements=query_requirements,

@@ -1,7 +1,6 @@
 from collections import defaultdict
 from rapidfuzz import process, fuzz
-
-from schemas.subject_meta_response import SubjectMetaResponse
+from schemas.dataset import Dataset
 
 PROPERTY_TO_GEO_LEVEL = {
     'Country':'National',
@@ -68,10 +67,10 @@ def flatten_by_legend(data):
     return dict(flattened)
 
 
-async def get_geographical_matches(reranked_datasets: list, grouped_subject_meta: dict[str,SubjectMetaResponse], geography_requirements: list, threshold: int=90):
+async def get_geographical_matches(reranked_datasets: list, grouped_datasets: dict[str,Dataset], geography_requirements: list, threshold: int=90):
     valid_geo_per_file = defaultdict(list)
     for file_id in reranked_datasets:
-        subject_meta = grouped_subject_meta[file_id]
+        subject_meta = grouped_datasets[file_id].subject_meta
         valid_geographies = flatten_by_legend(subject_meta.locations)
         level_results = defaultdict(list)
         for level in valid_geographies:

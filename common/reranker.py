@@ -138,22 +138,12 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
         if d["fileId"] in reranked_datasets
     }
 
-    grouped_title_description = {
-        d["fileId"]: {
-            "title": d["title"],
-            "description": d["content"],
-        }
-        for d in relevant_datasets
-        if d["fileId"] in reranked_datasets
-    }
-
     return {
         "reranked_datasets": reranked_datasets,
         "query_requirements": query_requirements,
         "geography_requirements": geography_requirements,
         "grouped_filters": grouped_filters,
         "grouped_indicators": grouped_indicators,
-        "grouped_title_description": grouped_title_description,
         "total_tokens_used": total_tokens_used,
         "reranker_response": reranker_parsed
     }
