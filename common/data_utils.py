@@ -112,7 +112,7 @@ def combine_responses(filter_responses: list,
 
         for file_id, relevance_reason in grouped_relevance_reasons.items():
             if file_id in combined:
-                combined[file_id]["aiSummary"] = relevance_reason
+                combined[file_id]["relevanceReason"] = relevance_reason
 
         combined_responses.append(combined)
 
