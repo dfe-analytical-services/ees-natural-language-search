@@ -1,10 +1,10 @@
 from collections import defaultdict
 from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
+from schemas.dataset import Dataset
 from schemas.filter_selection_response import FilterSelectionResponse
 from schemas.indicator_selection_response import IndicatorSelectionResponse
 from schemas.time_period_selection_response import TimePeriodSelectionResponse
-from schemas.subject_meta_response import SubjectMetaResponse
 
 
 def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filters: defaultdict=None):
@@ -55,9 +55,9 @@ def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filt
 def combine_responses(filter_responses: list,
                       indicator_responses:list,
                       time_period_responses:list,
-                      grouped_subject_meta: dict[str, SubjectMetaResponse],
+                      grouped_datasets: dict[str, Dataset],
                       geo_dict: defaultdict,
-                      grouped_title_description: defaultdict):
+                      grouped_relevance_reasons: defaultdict):
     combined_responses = []
 
     for filter_raw, indicator_raw, time_period_raw in zip(filter_responses, indicator_responses, time_period_responses):
@@ -73,7 +73,7 @@ def combine_responses(filter_responses: list,
         for file_id, dataset_filters in filter_data.items():
             filters = [
                 {
-                    "id": grouped_subject_meta[file_id].get_filter_item(
+                    "id": grouped_datasets[file_id].subject_meta.get_filter_item(
                         filter_item_group_id=filter_item_group_id,
                         filter_item_label=filter_item_label,
                     ).id,
@@ -91,7 +91,7 @@ def combine_responses(filter_responses: list,
         for file_id, dataset_indicators in indicator_data.items():
             indicators = [
                 {
-                    "id": grouped_subject_meta[file_id].get_indicator(indicator_label).id,
+                    "id": grouped_datasets[file_id].subject_meta.get_indicator(indicator_label).id,
                     "label": indicator_label,
                 }
                 for indicator_label, decision in dataset_indicators.items()
@@ -110,18 +110,29 @@ def combine_responses(filter_responses: list,
             if file_id in combined:
                 combined[file_id]["geographicLevels"] = geo_matches
 
-        for file_id, title_desc in grouped_title_description.items():
+        for file_id, relevance_reason in grouped_relevance_reasons.items():
             if file_id in combined:
-                combined[file_id]["aiSummary"] = f'''This data is relevant because {title_desc['relevance_reason']}\n It contains information about {title_desc['description']}'''
-                combined[file_id]['title'] = title_desc['title']
+                combined[file_id]["aiSummary"] = relevance_reason
 
         combined_responses.append(combined)
 
-    final_response = [
-        {"fileId": key, **value}
-        for item in combined_responses
-        for key, value in item.items()
-    ]
+    final_response = []
+    for item in combined_responses:
+        for file_id, value in item.items():
+            dataset = grouped_datasets[file_id]
+            final_response.append({
+                "dataSetFileId": dataset.dataSetFileId,
+                "fileId": file_id,
+                "publicationId": dataset.publicationId,
+                "publicationSlug": dataset.publicationSlug,
+                "publicationTitle": dataset.publicationTitle,
+                "releaseSlug": dataset.releaseSlug,
+                "releaseVersionId": dataset.releaseVersionId,
+                "subjectId": dataset.subjectId,
+                "title": dataset.title,
+                "description": dataset.description,
+                **value,
+            })
 
     return final_response
 

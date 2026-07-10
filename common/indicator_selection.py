@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from common.openai_client import generate_answer
+from schemas.dataset import Dataset
 
 llm_indicator_sys_prompt="""You are an indicator selection agent. Your job is to determine which indicators from a dataset are required to answer a user's data query.
 Indicators are non filterable columns that contain mutually exclusive information that the user can choose to view.
@@ -48,21 +49,21 @@ DO NOT assume anything about the query requirements based on domain knowledge.
 
 async def run_indicator_selection_agent(
     grouped_indicators,
-    grouped_title_description,
-    user_query,
-    query_requirements):
+    grouped_datasets: dict[str, Dataset],
+    user_query: str,
+    query_requirements: list[str]):
     
     logging.info("Indicator Selection Model running...")
     tasks = []
 
-    for dataset, indicators in grouped_indicators.items():
+    for file_id, indicators in grouped_indicators.items():
         prompt = llm_indicator_user_prompt.format(
             raw_query=user_query,
             query_requirements=query_requirements,
-            dataset_name=grouped_title_description[dataset]["title"],
-            dataset_description=grouped_title_description[dataset]["description"],
+            dataset_name=grouped_datasets[file_id].title,
+            dataset_description=grouped_datasets[file_id].description,
             indicator_list=indicators,
-            file_id=dataset
+            file_id=file_id
         )
 
         tasks.append(

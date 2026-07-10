@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from common.openai_client import generate_answer
+from schemas.dataset import Dataset
 
 llm_filtering_sys_prompt = """You are a filter suggestion agent.
 Your task is to determine which filter items from a dataset are semantically relevant to a user's data query.
@@ -86,20 +87,20 @@ DO NOT assume anything about the query requirements based on domain knowledge.
 
 
 async def run_filter_selection_agent(
-    transformed, grouped_title_description, user_query, query_requirements
+    transformed, grouped_datasets: dict[str, Dataset], user_query: str, query_requirements: list[str]
 ):
 
     logging.info("Filter Selection Model Running...")
     tasks = []
 
-    for dataset, filters in transformed.items():
+    for file_id, filters in transformed.items():
         prompt = llm_filtering_user_prompt.format(
             raw_query=user_query,
             query_requirements=query_requirements,
-            dataset_name=grouped_title_description[dataset]["title"],
-            dataset_description=grouped_title_description[dataset]["description"],
+            dataset_name=grouped_datasets[file_id].title,
+            dataset_description=grouped_datasets[file_id].description,
             filter_list=filters,
-            file_id=dataset,
+            file_id=file_id,
         )
 
         tasks.append(
