@@ -2,7 +2,7 @@ import asyncio
 import logging
 from common.openai_client import generate_answer
 from schemas.dataset import Dataset
-from schemas.workflow_response import TokenUsage
+from schemas.token_usage import TokenUsage
 
 llm_time_period_sys_prompt="""You are a time period selection agent. Your job is to determine which starting and ending time period from a dataset best fit the requirement in a user's data query.
 

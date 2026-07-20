@@ -2,7 +2,7 @@ import asyncio
 import logging
 from common.openai_client import generate_answer
 from schemas.dataset import Dataset
-from schemas.workflow_response import TokenUsage
+from schemas.token_usage import TokenUsage
 
 llm_indicator_sys_prompt="""You are an indicator selection agent. Your job is to determine which indicators from a dataset are required to answer a user's data query.
 Indicators are non filterable columns that contain mutually exclusive information that the user can choose to view.

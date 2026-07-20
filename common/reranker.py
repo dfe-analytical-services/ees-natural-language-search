@@ -3,8 +3,9 @@ from datetime import datetime
 from common.llm_response_parser import parse_llm_response
 from common.openai_client import generate_answer
 from schemas.llm_validation_error import LLMValidationError
+from schemas.relevant_dataset_response import RelevantDatasetResponse
 from schemas.reranker_response import RerankerResponse
-from schemas.workflow_response import TokenUsage
+from schemas.token_usage import TokenUsage
 
 llm_reranker_sys_prompt = """You are a data retrieval specialist. Your job is to analyse a user's query and determine which datasets from a provided list can meaningfully contribute to answering it.
 
@@ -81,18 +82,22 @@ llm_reranker_user_prompt = """**User Query**:
 The date today is {today_date}"""
 
 
-async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_filters: list):
+async def run_reranking_agent(user_query: str, relevant_datasets: list[RelevantDatasetResponse], grouped_filters: list):
     """
     Retrieves, reranks datasets using an LLM, and returns all required artifacts.
     """
 
     # TODO Add indicators to reranking_datasets and adjust prompt and RerankerResponse to include them?
 
-    relevant_keys = ['fileId','title','content', 'filters','timePeriodRange']
-
     reranking_datasets = [
-        {k: r[k] for k in relevant_keys}
-        for r in relevant_datasets
+        {
+            "fileId": dataset.fileId,
+            "title": dataset.title,
+            "content": dataset.description,
+            "filters": dataset.filters,
+            "timePeriodRange": dataset.timePeriodRange.model_dump(by_alias=True)
+        }
+        for dataset in relevant_datasets
     ]
 
     logging.info("Reranking datasets")
@@ -132,9 +137,9 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
     }
 
     grouped_indicators = {
-        d["fileId"]: d["indicators"]
-        for d in relevant_datasets
-        if d["fileId"] in reranked_datasets
+        dataset.fileId: dataset.indicators
+        for dataset in relevant_datasets
+        if dataset.fileId in reranked_datasets
     }
 
     return {

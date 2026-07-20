@@ -2,7 +2,7 @@ import asyncio
 import logging
 from common.openai_client import generate_answer
 from schemas.dataset import Dataset
-from schemas.workflow_response import TokenUsage
+from schemas.token_usage import TokenUsage
 
 llm_filtering_sys_prompt = """You are a filter suggestion agent.
 Your task is to determine which filter items from a dataset are semantically relevant to a user's data query.
