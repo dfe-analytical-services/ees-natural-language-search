@@ -2,6 +2,7 @@ from collections import defaultdict
 from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
 from schemas.dataset import Dataset
+from schemas.final_dataset_response import FinalDatasetResponse
 from schemas.filter_selection_response import FilterSelectionResponse
 from schemas.indicator_selection_response import IndicatorSelectionResponse
 from schemas.time_period_selection_response import TimePeriodSelectionResponse
@@ -52,13 +53,13 @@ def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filt
     return transformed
 
 
-def combine_responses(filter_responses: list,
-                      indicator_responses:list,
-                      time_period_responses:list,
+def combine_final_dataset_responses(filter_responses: list,
+                      indicator_responses: list,
+                      time_period_responses: list,
                       grouped_datasets: dict[str, Dataset],
                       geo_dict: defaultdict,
-                      grouped_relevance_reasons: defaultdict):
-    combined_responses = []
+                      grouped_relevance_reasons: defaultdict) -> list[FinalDatasetResponse]:
+    combined_responses: list[dict] = []
 
     for filter_raw, indicator_raw, time_period_raw in zip(filter_responses, indicator_responses, time_period_responses):
 
@@ -104,7 +105,7 @@ def combine_responses(filter_responses: list,
 
         for file_id, dataset_time_period  in time_period_data.items():
             if file_id in combined:
-                combined[file_id]["timePeriod"] = dataset_time_period.model_dump()
+                combined[file_id]["timePeriod"] = dataset_time_period
 
         for file_id, geo_matches in geo_dict.items():
             if file_id in combined:
@@ -116,23 +117,25 @@ def combine_responses(filter_responses: list,
 
         combined_responses.append(combined)
 
-    final_response = []
+    final_response: list[FinalDatasetResponse] = []
     for item in combined_responses:
         for file_id, value in item.items():
             dataset = grouped_datasets[file_id]
-            final_response.append({
-                "dataSetFileId": dataset.dataSetFileId,
-                "fileId": file_id,
-                "publicationId": dataset.publicationId,
-                "publicationSlug": dataset.publicationSlug,
-                "publicationTitle": dataset.publicationTitle,
-                "releaseSlug": dataset.releaseSlug,
-                "releaseVersionId": dataset.releaseVersionId,
-                "subjectId": dataset.subjectId,
-                "title": dataset.title,
-                "description": dataset.description,
-                **value,
-            })
+            final_response.append(
+                FinalDatasetResponse(
+                    dataSetFileId=dataset.dataSetFileId,
+                    fileId=file_id,
+                    publicationId=dataset.publicationId,
+                    publicationSlug=dataset.publicationSlug,
+                    publicationTitle=dataset.publicationTitle,
+                    releaseSlug=dataset.releaseSlug,
+                    releaseVersionId=dataset.releaseVersionId,
+                    subjectId=dataset.subjectId,
+                    title=dataset.title,
+                    description=dataset.description,
+                    **value,
+                )
+            )
 
     return final_response
 

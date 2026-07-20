@@ -11,16 +11,17 @@ from common.geography_levels_utils import get_geographical_matches
 from common.indicator_selection import run_indicator_selection_agent
 from common.data_utils import (
     retrieve_and_transform_filter_data,
-    combine_responses,
+    combine_final_dataset_responses,
     rrf_to_percentage,
 )
 from schemas.dataset import Dataset
+from schemas.workflow_response import PipelineCompleteData, PipelineCompleteEvent, TokenUsage
 
 
 async def run_workflow(user_query: str, publication_id: str):
     costPer1kTokensInput =  0.0004
     costPer1kTokensOutput = 0.0014
-    total_tokens_used = {'input':0, 'output':0}
+    total_tokens_used = TokenUsage()
     yield {"stage": "starting pipeline"}
 
     logging.info("Retrieving Datasets")
@@ -59,8 +60,8 @@ async def run_workflow(user_query: str, publication_id: str):
     geography_requirements = reranking_results["geography_requirements"]
     grouped_filters = reranking_results["grouped_filters"]
     grouped_indicators = reranking_results["grouped_indicators"]
-    total_tokens_used['input'] += reranking_results["total_tokens_used"]['input']
-    total_tokens_used['output'] += reranking_results["total_tokens_used"]['output']
+    total_tokens_used.input += reranking_results["total_tokens_used"].input
+    total_tokens_used.output += reranking_results["total_tokens_used"].output
     reranker_response = reranking_results["reranker_response"].model_dump()
 
     # TODO Do this in run_reranking_agent?
@@ -107,7 +108,7 @@ async def run_workflow(user_query: str, publication_id: str):
     # Can pass grouped filters into this in order to only pass the retrieved filters to the filter selection agent
     logging.info("Transforming dataset information for LLM ingestion")
     transformed_data = retrieve_and_transform_filter_data(reranked_datasets, grouped_filters)
-    
+
     logging.info("Running filter selection, indicator selection, and time period selection models")
     (
         (filter_responses, filter_tokens_used),
@@ -130,12 +131,22 @@ async def run_workflow(user_query: str, publication_id: str):
             reranked_datasets, grouped_datasets, user_query, query_requirements
         ),
     )
-    total_tokens_used['input']+=(filter_tokens_used['input'] + indicator_tokens_used['input'] + time_period_tokens_used['input'])
-    total_tokens_used['output']+=(filter_tokens_used['output'] + indicator_tokens_used['output'] + time_period_tokens_used['output'])
-    cost = (costPer1kTokensInput*(total_tokens_used['input']/1000)) + (costPer1kTokensOutput*(total_tokens_used['output']/1000))
+    total_tokens_used.input += (
+        filter_tokens_used.input
+        + indicator_tokens_used.input
+        + time_period_tokens_used.input
+    )
+    total_tokens_used.output += (
+        filter_tokens_used.output
+        + indicator_tokens_used.output
+        + time_period_tokens_used.output
+    )
+    cost = (costPer1kTokensInput * (total_tokens_used.input / 1000)) + (
+        costPer1kTokensOutput * (total_tokens_used.output / 1000)
+    )
 
-    logging.info("Consolidating Pipeline Responses")
-    final_response = combine_responses(
+    logging.info("Combining final dataset responses")
+    final_dataset_responses = combine_final_dataset_responses(
         filter_responses,
         indicator_responses,
         time_period_responses,
@@ -144,4 +155,12 @@ async def run_workflow(user_query: str, publication_id: str):
         grouped_relevance_reasons,
     )
 
-    yield {'stage': 'pipeline complete', 'data': {'datasets': final_response, 'token_usage': total_tokens_used, 'cost': cost}}
+    pipeline_complete_event = PipelineCompleteEvent(
+        data=PipelineCompleteData(
+            datasets=final_dataset_responses,
+            token_usage=total_tokens_used,
+            cost=cost,
+        )
+    )
+
+    yield pipeline_complete_event.model_dump()

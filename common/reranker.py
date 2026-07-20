@@ -4,6 +4,7 @@ from common.llm_response_parser import parse_llm_response
 from common.openai_client import generate_answer
 from schemas.llm_validation_error import LLMValidationError
 from schemas.reranker_response import RerankerResponse
+from schemas.workflow_response import TokenUsage
 
 llm_reranker_sys_prompt = """You are a data retrieval specialist. Your job is to analyse a user's query and determine which datasets from a provided list can meaningfully contribute to answering it.
 
@@ -88,7 +89,6 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
     # TODO Add indicators to reranking_datasets and adjust prompt and RerankerResponse to include them?
 
     relevant_keys = ['fileId','title','content', 'filters','timePeriodRange']
-    total_tokens_used = {'input':0, 'output':0}
 
     reranking_datasets = [
         {k: r[k] for k in relevant_keys}
@@ -110,8 +110,7 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list, grouped_
 
     logging.info("Reranked datasets")
 
-    total_tokens_used['input'] += used_input_tokens
-    total_tokens_used['output'] += used_output_tokens
+    total_tokens_used = TokenUsage(input=used_input_tokens, output=used_output_tokens)
 
     reranker_parsed = parse_llm_response(reranker_response, RerankerResponse, context='ranker')
     if reranker_parsed is None:

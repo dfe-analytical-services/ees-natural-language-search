@@ -68,7 +68,7 @@ ees-natural-language-search/
    │        Per-dataset relevance decisions for each filter value/indicator
    │
    └── 6. combine_responses                             (data_utils.py)
-            Merge filters + indicators + geography + an aiSummary per dataset
+            Merge filters + indicators + geography + a relevance reason per dataset
             yields {stage:"pipeline complete", data:{datasets:[...], token_usage:<int>}}
 ```
 
@@ -79,7 +79,7 @@ ees-natural-language-search/
 |`starting pipeline` | *(none)* |
 |`retrieved datasets` | `{datasets:[{title, relevanceScore, rawRelevanceScore}]}` |
 | `reranker complete` | The reranker's JSON: `queryRequirements`, `shortlistedDatasets` (each with `relevanceScore` added), `confidence` |
-| `pipeline complete `| `{datasets:[{fileId, filters:[{id, label}], indicators:[{id, label}], geographicLevels, aiSummary}], token_usage}` |
+| `pipeline complete `| `{datasets:[{fileId, filters:[{id, label}], indicators:[{id, label}], geographicLevels, relevanceReason}], token_usage}` |
 | `error` *(from route, on exception)* | `{error: <message>}` |
 
 ---
@@ -106,7 +106,7 @@ One LLM call per shortlisted dataset, all gathered concurrently. Each returns a 
 
 ### `data_utils.py`
 - `retrieve_and_transform_filter_data(...)` pulls full filter values from the filter index and flattens them per dataset.
-- `combine responses(...)` keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and an `aiSummary`, and flattens to a list of `{fileId, ...}`.
+- `combine responses(...)` keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and flattens to a list of `{fileId, ...}`.
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 
 ### `geography_level_utils.py`
