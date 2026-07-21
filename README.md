@@ -20,7 +20,7 @@ ees-natural-language-search/
 ├── azure-pipelines.yml              # CI/CD
 │
 ├── core/
-│   ├── app.py                       # Builds the FastAPI app, registers routes
+│   ├── app.py                       # Builds the FastAPI app, registers the main routes
 |   └── config.py                    # Loads local.settings.json into os.environ (local only)
 | 
 ├── common/                          # All business logic
@@ -32,43 +32,43 @@ ees-natural-language-search/
 │   ├── filter_selection.py          # LLM agent: pick relevant filter values per dataset
 │   ├── indicator_selection.py       # LLM agent: pick relevant indicators per dataset
 │   ├── data_utils.py                # Filter retrieval, response merge, score conversion
-│   └── geography_level_utils.py     # Fuzzay location matching + geographic-level grouping
+│   └── geography_levels_utils.py    # Fuzzy location matching + geographic-level grouping
 │
 └── routes/
     ├── natural_language_search_function.py  # POST /api/natural_language_search_function (SSE)
-    ├── healthcheck.py                       # GET /api/health_check
+    ├── healthcheck.py                       # GET /health_check
     └── vectorizer_middleware.py             # POST /api/vectorizer_middleware (embeddings for indexers)
 ```
 
 ---
 
 ## How a request flows
- 1. `function_app.py` receives every HTTP route and proxies it into the FastAPI ASGI app, streaming the response body back through an `asyncio.Queue`.
+ 1. `function_app.py` proxies the main API routes into the FastAPI ASGI app, while the health check is registered directly as an Azure Functions route. Streaming responses are forwarded through an `asyncio.Queue`.
  2. The route handler in `natural_language_search_function.py` calls `run_workflow(...)`, which is an **async generator** which yields plain dicts; the route serialises each one as `data: <json>\n\n` and is also where exceptions become a `{"error": ...}` SSE event.
  3. `common/workflow.py` runs the pipeline stage by stage, yielding after each.
 
  ```
  run_workflow(user_query, publication)
    │
-   ├── 1. retrieve_datasets -> multi_index_search       (search_client.py -> Azure Search)
-   │        Hybrid BM25 + vector search over the Filter index; dataset docs fetchewd by id.
-   │        yields {stage:"retrieved datasets", data:{datasets:[{title, relevanceScore, rawRelevanceScore}]}}
+   ├── 1. retrieve_relevant_datasets -> multi_index_search       (search_client.py -> Azure Search)
+   │        Hybrid BM25 + vector search over the Filter index; dataset docs fetched by id.
+   │        yields {stage:"retrieved datasets", data:{datasets:[RelevantDatasetResponse, ...]}}
    │
-   ├── 2. run_reranking_agent                           (reranker.py -> Azure OpenAI)
+   ├── 2. run_reranking_agent                                    (reranker.py -> Azure OpenAI)
    │        LLM shortlists datasets and extracts queryRequirements (filters, geography, timePeriod).
-   │        yields {stage:"reranker complete, data:<reranker JSON>}
+   │        yields {stage:"reranker complete", data:<reranker JSON>}
    │
-   ├── 3. geography_matching                            (geography_levels_utils.py -> Blob Storage)
+   ├── 3. get_geographical_matches                               (geography_levels_utils.py -> EES Data API subject meta)
    │        Fuzzy-match mentioned locations, group by allowed geographic levels per dataset
    │
-   ├── 4. retrieve_and_transform_filter_data            (data_utils.py -> Azure Search filter index)
+   ├── 4. retrieve_and_transform_filter_data                     (data_utils.py -> Azure Search filter index)
    │        Fetch full filter values for shortlisted datasets, flattened for the LLM
    │
-   ├── 5. filter + indicator agents in parallel         (asyncio.gather -> Azure OpenAI)
+   ├── 5. filter + indicator agents in parallel                  (asyncio.gather -> Azure OpenAI)
    │        Per-dataset relevance decisions for each filter value/indicator
    │
-   └── 6. combine_responses                             (data_utils.py)
-            Merge filters + indicators + geography + an aiSummary per dataset
+   └── 6. combine_final_dataset_responses                        (data_utils.py)
+            Merge filters + indicators + geography + a relevance reason per dataset
             yields {stage:"pipeline complete", data:{datasets:[...], token_usage:<int>}}
 ```
 
@@ -77,9 +77,9 @@ ees-natural-language-search/
 | Stage | `data` payload |
 |---|---|
 |`starting pipeline` | *(none)* |
-|`retrieved datasets` | `{datasets:[{title, relevanceScore, rawRelevanceScore}]}` |
+|`retrieved datasets` | `{datasets:[RelevantDatasetResponse, ...]}` |
 | `reranker complete` | The reranker's JSON: `queryRequirements`, `shortlistedDatasets` (each with `relevanceScore` added), `confidence` |
-| `pipeline complete `| `{datasets:[{fileId, filters:[{id, label}], indicators:[{id, label}], geographicLevels, aiSummary}], token_usage}` |
+| `pipeline complete` | `{datasets:[{fileId, filters:[{id, label}], indicators:[{id, label}], timePeriod, geographicLevels, relevanceReason}], token_usage, cost}` |
 | `error` *(from route, on exception)* | `{error: <message>}` |
 
 ---
@@ -106,10 +106,10 @@ One LLM call per shortlisted dataset, all gathered concurrently. Each returns a 
 
 ### `data_utils.py`
 - `retrieve_and_transform_filter_data(...)` pulls full filter values from the filter index and flattens them per dataset.
-- `combine responses(...)` keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and an `aiSummary`, and flattens to a list of `{fileId, ...}`.
+- `combine_final_dataset_responses(...)` keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and flattens to a list of `{fileId, ...}`.
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 
-### `geography_level_utils.py`
+### `geography_levels_utils.py`
 - `hybrid_scorer` only accepts a perfect `token_set_ratio` (100) when >= 2 tokens overlap and the candidate isn't much shorter than they query; otherwise falls back to `WRatio`
 
 ### `openai_client.py`
@@ -119,7 +119,7 @@ One LLM call per shortlisted dataset, all gathered concurrently. Each returns a 
 
 ## API Reference
 
-### `GET /api/health_check`
+### `GET /health_check`
 Returns `{ message: "API working" }`.
 
 ### `POST /api/vectorizer_middleware`

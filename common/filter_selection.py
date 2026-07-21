@@ -2,6 +2,7 @@ import asyncio
 import logging
 from common.openai_client import generate_answer
 from schemas.dataset import Dataset
+from schemas.token_usage import TokenUsage
 
 llm_filtering_sys_prompt = """You are a filter suggestion agent.
 Your task is to determine which filter items from a dataset are semantically relevant to a user's data query.
@@ -87,7 +88,10 @@ DO NOT assume anything about the query requirements based on domain knowledge.
 
 
 async def run_filter_selection_agent(
-    transformed, grouped_datasets: dict[str, Dataset], user_query: str, query_requirements: list[str]
+    transformed,
+    grouped_datasets: dict[str, Dataset],
+    user_query: str,
+    query_requirements: list[str],
 ):
 
     logging.info("Filter Selection Model Running...")
@@ -114,13 +118,11 @@ async def run_filter_selection_agent(
 
     model_responses = await asyncio.gather(*tasks)
 
-    input_tokens_used = sum(
-        response.usage.prompt_tokens for response in model_responses
-    )
-    output_tokens_used = sum(
-        response.usage.completion_tokens for response in model_responses
-    )
-
     contents = [response.choices[0].message.content for response in model_responses]
 
-    return contents, {"input": input_tokens_used, "output": output_tokens_used}
+    tokens_used = TokenUsage(
+        input=sum(response.usage.prompt_tokens for response in model_responses),
+        output=sum(response.usage.completion_tokens for response in model_responses),
+    )
+
+    return contents, tokens_used

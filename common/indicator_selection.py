@@ -2,6 +2,7 @@ import asyncio
 import logging
 from common.openai_client import generate_answer
 from schemas.dataset import Dataset
+from schemas.token_usage import TokenUsage
 
 llm_indicator_sys_prompt="""You are an indicator selection agent. Your job is to determine which indicators from a dataset are required to answer a user's data query.
 Indicators are non filterable columns that contain mutually exclusive information that the user can choose to view.
@@ -75,16 +76,14 @@ async def run_indicator_selection_agent(
 
     model_responses = await asyncio.gather(*tasks)
 
-    input_tokens_used = sum(
-        response.usage.prompt_tokens for response in model_responses
-    )
-    output_tokens_used = sum(
-        response.usage.completion_tokens for response in model_responses
-    )
-
     contents = [
         response.choices[0].message.content
         for response in model_responses
     ]
 
-    return contents, {'input':input_tokens_used, 'output':output_tokens_used}
+    tokens_used = TokenUsage(
+        input=sum(response.usage.prompt_tokens for response in model_responses),
+        output=sum(response.usage.completion_tokens for response in model_responses),
+    )
+
+    return contents, tokens_used

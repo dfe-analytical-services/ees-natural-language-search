@@ -1,8 +1,10 @@
 import logging
+from common.data_utils import rrf_to_percentage
 from common.search_client import multi_index_search
+from schemas.relevant_dataset_response import RelevantDatasetResponse
 
 
-async def retrieve_datasets(user_query: str, publication_id: str):
+async def retrieve_relevant_datasets(user_query: str, publication_id: str) -> tuple[list[RelevantDatasetResponse], dict, dict]:
     '''
     Get relevant datasets from Azure AI Search
     '''
@@ -13,4 +15,25 @@ async def retrieve_datasets(user_query: str, publication_id: str):
 
     logging.info("Retrieved relevant datasets")
 
-    return relevant_datasets, scores, grouped_filters
+    relevant_datasets_responses = [
+        RelevantDatasetResponse(
+            dataSetFileId=dataset["dataSetFileId"],
+            fileId=dataset["fileId"],
+            publicationId=dataset["publicationId"],
+            publicationSlug=dataset["publicationSlug"],
+            publicationTitle=dataset["publicationTitle"],
+            releaseSlug=dataset["releaseSlug"],
+            releaseVersionId=dataset["releaseVersionId"],
+            subjectId=dataset["subjectId"],
+            title=dataset["title"],
+            description=dataset["content"],
+            filters=dataset["filters"],
+            indicators=dataset["indicators"],
+            timePeriodRange=dataset["timePeriodRange"],
+            rawRelevanceScore=scores[dataset["fileId"]],
+            relevanceScore=rrf_to_percentage(scores[dataset["fileId"]]),
+        )
+        for dataset in relevant_datasets
+    ]
+
+    return relevant_datasets_responses, scores, grouped_filters
