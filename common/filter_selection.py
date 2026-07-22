@@ -4,6 +4,8 @@ from common.openai_client import generate_answer
 from schemas.dataset import Dataset
 from schemas.token_usage import TokenUsage
 
+logger = logging.getLogger(__name__)
+
 llm_filtering_sys_prompt = """You are a filter suggestion agent.
 Your task is to determine which filter items from a dataset are semantically relevant to a user's data query.
 
@@ -94,7 +96,7 @@ async def run_filter_selection_agent(
     query_requirements: list[str],
 ):
 
-    logging.info("Filter Selection Model Running...")
+    logger.info("Filter selection model running...")
     tasks = []
 
     for file_id, filters in transformed.items():

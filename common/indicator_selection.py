@@ -4,6 +4,8 @@ from common.openai_client import generate_answer
 from schemas.dataset import Dataset
 from schemas.token_usage import TokenUsage
 
+logger = logging.getLogger(__name__)
+
 llm_indicator_sys_prompt="""You are an indicator selection agent. Your job is to determine which indicators from a dataset are required to answer a user's data query.
 Indicators are non filterable columns that contain mutually exclusive information that the user can choose to view.
 
@@ -54,7 +56,7 @@ async def run_indicator_selection_agent(
     user_query: str,
     query_requirements: list[str]):
     
-    logging.info("Indicator Selection Model running...")
+    logger.info("Indicator selection model running...")
     tasks = []
 
     for file_id, indicators in grouped_indicators.items():

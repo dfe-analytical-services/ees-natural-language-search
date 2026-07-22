@@ -4,6 +4,8 @@ from common.openai_client import generate_answer
 from schemas.dataset import Dataset
 from schemas.token_usage import TokenUsage
 
+logger = logging.getLogger(__name__)
+
 llm_time_period_sys_prompt="""You are a time period selection agent. Your job is to determine which starting and ending time period from a dataset best fit the requirement in a user's data query.
 
 ## Your Task
@@ -57,7 +59,7 @@ async def run_time_period_selection_agent(
     query_requirements: list[str],
 ):
 
-    logging.info("Time Period Selection Model Running...")
+    logger.info("Time period selection model running...")
     tasks = []
 
     for file_id in reranked_datasets:
