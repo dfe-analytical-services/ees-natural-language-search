@@ -7,6 +7,8 @@ from schemas.relevant_dataset_response import RelevantDatasetResponse
 from schemas.reranker_response import RerankerResponse
 from schemas.token_usage import TokenUsage
 
+logger = logging.getLogger(__name__)
+
 llm_reranker_sys_prompt = """You are a data retrieval specialist. Your job is to analyse a user's query and determine which datasets from a provided list can meaningfully contribute to answering it.
 
 ## Your Task
@@ -100,7 +102,7 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list[RelevantD
         for dataset in relevant_datasets
     ]
 
-    logging.info("Reranking datasets")
+    logger.info("Reranking datasets")
     # 2. Rerank retrieved datasets using the LLM
     response = await generate_answer(
         user_query=llm_reranker_user_prompt.format(
@@ -113,7 +115,7 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list[RelevantD
 
     reranker_response, used_input_tokens, used_output_tokens = response.choices[0].message.content, response.usage.prompt_tokens, response.usage.completion_tokens
 
-    logging.info("Reranked datasets")
+    logger.info("Reranked datasets")
 
     total_tokens_used = TokenUsage(input=used_input_tokens, output=used_output_tokens)
 
@@ -125,7 +127,7 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list[RelevantD
         d.fileId for d in reranker_parsed.shortlistedDatasets
     ]
 
-    logging.info("Extracting filter, indicator and geography requirements from query")
+    logger.info("Extracting filter, indicator and geography requirements from query")
 
     query_requirements = reranker_parsed.queryRequirements.filters
     geography_requirements = reranker_parsed.queryRequirements.geography

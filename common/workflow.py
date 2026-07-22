@@ -18,13 +18,15 @@ from schemas.dataset import Dataset
 from schemas.event_responses import PipelineCompleteEventData, PipelineCompleteEventResponse, RetrievedDatasetsEventData, RetrievedDatasetsEventResponse, StartEventResponse
 from schemas.token_usage import TokenUsage
 
+logger = logging.getLogger(__name__)
+
 
 async def run_workflow(user_query: str, publication_id: str):
     total_tokens_used = TokenUsage()
 
     yield StartEventResponse().model_dump()
 
-    logging.info("Retrieving relevant datasets")
+    logger.info("Retrieving relevant datasets")
     relevant_dataset_responses, scores, grouped_filters = await retrieve_relevant_datasets(user_query=user_query, publication_id=publication_id)
 
     retrieved_datasets_event = RetrievedDatasetsEventResponse(
@@ -33,7 +35,7 @@ async def run_workflow(user_query: str, publication_id: str):
 
     yield retrieved_datasets_event.model_dump(by_alias=True)
 
-    logging.info("Running reranker")
+    logger.info("Running reranker")
     reranking_results = await run_reranking_agent(user_query, relevant_dataset_responses, grouped_filters)
 
     total_tokens_used.input += reranking_results["total_tokens_used"].input
@@ -64,7 +66,7 @@ async def run_workflow(user_query: str, publication_id: str):
         for item in reranker_response.get("shortlistedDatasets", [])
     }
 
-    logging.info("Getting subject meta for shortlisted datasets")
+    logger.info("Getting subject meta for shortlisted datasets")
     ees_data_api_client = EesDataApiClient(base_url=os.environ["EES_URL_API_DATA"])
 
     grouped_datasets: dict[str, Dataset] = {}
@@ -87,16 +89,16 @@ async def run_workflow(user_query: str, publication_id: str):
             subject_meta=subject_meta,
         )
 
-    logging.info("Getting geography matches")
+    logger.info("Getting geography matches")
     geo_dict = await get_geographical_matches(
         reranked_datasets, grouped_datasets, geography_requirements
     )
 
     # Can pass grouped filters into this in order to only pass the retrieved filters to the filter selection agent
-    logging.info("Transforming dataset information for LLM ingestion")
+    logger.info("Transforming dataset information for LLM ingestion")
     transformed_data = retrieve_and_transform_filter_data(reranked_datasets, grouped_filters)
 
-    logging.info("Running filter selection, indicator selection, and time period selection models")
+    logger.info("Running filter selection, indicator selection, and time period selection models")
     (
         (filter_responses, filter_tokens_used),
         (indicator_responses, indicator_tokens_used),
@@ -129,7 +131,7 @@ async def run_workflow(user_query: str, publication_id: str):
         + time_period_tokens_used.output
     )
 
-    logging.info("Combining final dataset responses")
+    logger.info("Combining final dataset responses")
     final_dataset_responses = combine_final_dataset_responses(
         filter_responses,
         indicator_responses,

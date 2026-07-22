@@ -3,6 +3,8 @@ from common.data_utils import rrf_to_percentage
 from common.search_client import multi_index_search
 from schemas.relevant_dataset_response import RelevantDatasetResponse
 
+logger = logging.getLogger(__name__)
+
 
 async def retrieve_relevant_datasets(user_query: str, publication_id: str) -> tuple[list[RelevantDatasetResponse], dict, dict]:
     '''
@@ -13,7 +15,7 @@ async def retrieve_relevant_datasets(user_query: str, publication_id: str) -> tu
         publication_id=publication_id
     )
 
-    logging.info("Retrieved relevant datasets")
+    logger.info("Retrieved relevant datasets")
 
     relevant_datasets_responses = [
         RelevantDatasetResponse(
