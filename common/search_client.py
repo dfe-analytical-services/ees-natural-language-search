@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 import os
 import time
 from openai import AsyncAzureOpenAI
@@ -101,12 +102,14 @@ async def hybrid_search(user_query: str, publication_id: str | None = None, top:
     return user_query, results
 
 
-async def multi_index_search(user_query: str, publication_id: str, top: int = 10):
-    query, results = await hybrid_search(user_query=user_query,
-                                         publication_id=publication_id,
-                                         top=top)
+async def multi_index_search(
+    user_query: str, publication_id: str, top: int = 10
+) -> tuple[str, list[dict], dict, Mapping[str, list[str]]]:
+    query, results = await hybrid_search(
+        user_query=user_query, publication_id=publication_id, top=top
+    )
     dataset_ids = set()
-    grouped_filters = defaultdict(list)
+    grouped_filters = defaultdict(list[str])
     scores = defaultdict(list)
     for r in results:
         dataset_ids.add(r['fileId'])

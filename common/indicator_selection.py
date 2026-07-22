@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from common.openai_client import generate_answer
-from schemas.dataset import Dataset
+from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
@@ -52,29 +52,30 @@ DO NOT assume anything about the query requirements based on domain knowledge.
 
 async def run_indicator_selection_agent(
     grouped_indicators,
-    grouped_datasets: dict[str, Dataset],
+    datasets_by_id: dict[str, DatasetWithSubjectMeta],
     user_query: str,
     query_requirements: list[str]):
     
     logger.info("Indicator selection model running...")
-    tasks = []
+    tasks: list[asyncio.Task] = []
 
     for file_id, indicators in grouped_indicators.items():
         prompt = llm_indicator_user_prompt.format(
             raw_query=user_query,
             query_requirements=query_requirements,
-            dataset_name=grouped_datasets[file_id].title,
-            dataset_description=grouped_datasets[file_id].description,
+            dataset_name=datasets_by_id[file_id].title,
+            dataset_description=datasets_by_id[file_id].description,
             indicator_list=indicators,
             file_id=file_id
         )
 
-        tasks.append(
+        task = asyncio.create_task(
             generate_answer(
                 user_query=prompt,
                 system_prompt=llm_indicator_sys_prompt,
             )
         )
+        tasks.append(task)
 
     model_responses = await asyncio.gather(*tasks)
 

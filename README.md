@@ -52,22 +52,27 @@ ees-natural-language-search/
    │
    ├── 1. retrieve_relevant_datasets -> multi_index_search       (search_client.py -> Azure Search)
    │        Hybrid BM25 + vector search over the Filter index; dataset docs fetched by id.
-   │        yields {stage:"retrieved datasets", data:{datasets:[RelevantDatasetResponse, ...]}}
+   │        Also returns grouped filter labels per dataset for downstream narrowing.
+   │        yields {stage:"retrieved datasets", data:{datasets:[...]}}
    │
    ├── 2. run_reranking_agent                                    (reranker.py -> Azure OpenAI)
    │        LLM shortlists datasets and extracts queryRequirements (filters, geography, timePeriod).
-   │        yields {stage:"reranker complete", data:<reranker JSON>}
+   │        Workflow augments the shortlisted datasets dataset metadata and relevanceScore obtained at the previous step.
+   │        yields {stage:"reranker complete", data:{confidence, datasets:[...], query_requirements, token_usage, cost}}
    │
-   ├── 3. get_geographical_matches                               (geography_levels_utils.py -> EES Data API subject meta)
+   ├── 3. Build reranked dataset map with subject metadata       (workflow.py + EES Data API subject meta)
+   │        Build reranked_datasets_by_id from reranker datasets + subject meta
+   │
+   ├── 4. get_geographical_matches                               (geography_levels_utils.py)
    │        Fuzzy-match mentioned locations, group by allowed geographic levels per dataset
    │
-   ├── 4. retrieve_and_transform_filter_data                     (data_utils.py -> Azure Search filter index)
+   ├── 5. retrieve_and_transform_filter_data                     (data_utils.py -> Azure Search filter index)
    │        Fetch full filter values for shortlisted datasets, flattened for the LLM
    │
-   ├── 5. filter + indicator agents in parallel                  (asyncio.gather -> Azure OpenAI)
+   ├── 6. filter + indicator + time period agents in parallel    (asyncio.gather -> Azure OpenAI)
    │        Per-dataset relevance decisions for each filter value/indicator
    │
-   └── 6. combine_final_dataset_responses                        (data_utils.py)
+   └── 7. combine_final_dataset_responses                        (data_utils.py)
             Merge filters + indicators + geography + a relevance reason per dataset
             yields {stage:"pipeline complete", data:{datasets:[...], token_usage:<int>}}
 ```
@@ -77,9 +82,9 @@ ees-natural-language-search/
 | Stage | `data` payload |
 |---|---|
 |`starting pipeline` | *(none)* |
-|`retrieved datasets` | `{datasets:[RelevantDatasetResponse, ...]}` |
-| `reranker complete` | The reranker's JSON: `queryRequirements`, `shortlistedDatasets` (each with `relevanceScore` added), `confidence` |
-| `pipeline complete` | `{datasets:[{fileId, filters:[{id, label}], indicators:[{id, label}], timePeriod, geographicLevels, relevanceReason}], token_usage, cost}` |
+|`retrieved datasets` | `{datasets:[...]}` |
+|`reranker complete` | `{confidence, datasets:[...], query_requirements, token_usage, cost}` |
+|`pipeline complete` | `{datasets:[{fileId, filters:[{id, label}], indicators:[{id, label}], timePeriod, geographicLevels, relevanceReason}], token_usage, cost}` |
 | `error` *(from route, on exception)* | `{error: <message>}` |
 
 ---
@@ -87,7 +92,7 @@ ees-natural-language-search/
 ## Components in depth
 
 ### `workflow.py` - orchestrator
-The most important file. Accumulates `token_usage` across all LLM calls and `yield`s after each stage. If the reranker shortlists nothing, downstream stages simply produce empty results.
+The most important file. Accumulates `token_usage` across all LLM calls and `yield`s after each stage. It builds a `reranked_datasets_by_id` map with dataset metadata plus subject meta and passes that through geography/filter/indicator/time period stages. If the reranker shortlists nothing, downstream stages simply produce empty results.
 
 ### search_client.py - Azure Search and embeddings
 - Module-level `filter_client` and `dataset_client` are created at import. Credential is `AzureKeyCredential` if `AZURE_SEARCH_KEY` is set, else `DefaultAzureCredential()`.
@@ -96,11 +101,12 @@ The most important file. Accumulates `token_usage` across all LLM calls and `yie
 - `multi_index_search(...)` groups filter hits by `fileId`, keeps the `max @search.score` per dataset, then fetches each dataset doc via `dataset_client.get_document(...)`. Returns `(query, datasets, max_scores, grouped_filters)`.
 
 ### `reranker.py` - rerank + requirement extraction
-Sends the query plus trimmed dataset metadata `(fileId, title, content, filters, timePeriodRange)` to the LLM. Returns a dict of artifacts used downstream:
-`reranked_datasets`, `query_requirements`, `geography_requirements`, `grouped_filters/indicators/title_description/geographic_levels`, token count, and the raw JSON. The LLM output schema: `queryRequirements{filters[], geography[], timePeriod}`, `shortlistedDatasets[{fileId, title, relevanceReason, relevantFilters[]}]`, `confidence`.
+Sends the query plus trimmed dataset metadata `(fileId, title, content, filters, timePeriodRange)` to the LLM. Returns a typed `RerankingAgentResult` used downstream:
+`grouped_filters`, `grouped_indicators`, `reranker_response`, and `total_tokens_used`. The LLM output schema remains:
+`queryRequirements{filters[], geography[], timePeriod}`, `shortlistedDatasets[{fileId, title, relevanceReason, relevantFilters[]}]`, `confidence`.
 
-### `filter_selection.py` / `indicator_selection.py` - selection agents
-One LLM call per shortlisted dataset, all gathered concurrently. Each returns a list of raw JSON strings plus a token total.
+### `filter_selection.py` / `indicator_selection.py` / `time_period_selection.py` - selection agents
+One LLM call per reranked dataset, all gathered concurrently. Each returns a list of raw JSON strings plus a token total.
 - Filter output: `{"<fileId>": { "filterItems": { "<filter label>|||<filter item group ID>|||<filter item label>": {relevant(Yes/No), reasoning} } } }`
 - Indicator output: `{"<fileId>" { "<indicators>": {relevant(Yes/No), reasoning} } }`
 
