@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from common.openai_client import generate_answer
+from clients.openai_client import generate_answer
 from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.token_usage import TokenUsage
 
