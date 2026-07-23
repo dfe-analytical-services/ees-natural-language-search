@@ -1,16 +1,16 @@
 from collections import defaultdict
 from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
-from schemas.dataset import Dataset
+from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.final_dataset_response import FinalDatasetResponse
 from schemas.filter_selection_response import FilterSelectionResponse
 from schemas.indicator_selection_response import IndicatorSelectionResponse
 from schemas.time_period_selection_response import TimePeriodSelectionResponse
 
 
-def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filters: defaultdict=None):
+def retrieve_and_transform_filter_data(file_ids: list[str], shortlisted_filters: defaultdict=None):
     ## Retrieve full dataset level information from Azure AI Search
-    filter_expr = "search.in(fileId, '{}', ',')".format(",".join(reranked_datasets))
+    filter_expr = "search.in(fileId, '{}', ',')".format(",".join(file_ids))
     results = filter_client.search(
         search_text="*",
         filter=filter_expr,
@@ -56,9 +56,9 @@ def retrieve_and_transform_filter_data(reranked_datasets: list, shortlisted_filt
 def combine_final_dataset_responses(filter_responses: list,
                       indicator_responses: list,
                       time_period_responses: list,
-                      grouped_datasets: dict[str, Dataset],
+                      datasets_by_id: dict[str, DatasetWithSubjectMeta],
                       geo_dict: defaultdict,
-                      grouped_relevance_reasons: defaultdict) -> list[FinalDatasetResponse]:
+                      relevance_reasons_by_id: dict[str, str]) -> list[FinalDatasetResponse]:
     combined_responses: list[dict] = []
 
     for filter_raw, indicator_raw, time_period_raw in zip(filter_responses, indicator_responses, time_period_responses):
@@ -74,7 +74,7 @@ def combine_final_dataset_responses(filter_responses: list,
         for file_id, dataset_filters in filter_data.items():
             filters = [
                 {
-                    "id": grouped_datasets[file_id].subject_meta.get_filter_item(
+                    "id": datasets_by_id[file_id].subject_meta.get_filter_item(
                         filter_item_group_id=filter_item_group_id,
                         filter_item_label=filter_item_label,
                     ).id,
@@ -92,7 +92,7 @@ def combine_final_dataset_responses(filter_responses: list,
         for file_id, dataset_indicators in indicator_data.items():
             indicators = [
                 {
-                    "id": grouped_datasets[file_id].subject_meta.get_indicator(indicator_label).id,
+                    "id": datasets_by_id[file_id].subject_meta.get_indicator(indicator_label).id,
                     "label": indicator_label,
                 }
                 for indicator_label, decision in dataset_indicators.items()
@@ -105,32 +105,32 @@ def combine_final_dataset_responses(filter_responses: list,
 
         for file_id, dataset_time_period  in time_period_data.items():
             if file_id in combined:
-                combined[file_id]["timePeriod"] = dataset_time_period
+                combined[file_id]["time_period"] = dataset_time_period
 
         for file_id, geo_matches in geo_dict.items():
             if file_id in combined:
-                combined[file_id]["geographicLevels"] = geo_matches
+                combined[file_id]["geographic_levels"] = geo_matches
 
-        for file_id, relevance_reason in grouped_relevance_reasons.items():
+        for file_id, relevance_reason in relevance_reasons_by_id.items():
             if file_id in combined:
-                combined[file_id]["relevanceReason"] = relevance_reason
+                combined[file_id]["relevance_reason"] = relevance_reason
 
         combined_responses.append(combined)
 
     final_response: list[FinalDatasetResponse] = []
     for item in combined_responses:
         for file_id, value in item.items():
-            dataset = grouped_datasets[file_id]
+            dataset = datasets_by_id[file_id]
             final_response.append(
                 FinalDatasetResponse(
-                    dataSetFileId=dataset.dataSetFileId,
-                    fileId=file_id,
-                    publicationId=dataset.publicationId,
-                    publicationSlug=dataset.publicationSlug,
-                    publicationTitle=dataset.publicationTitle,
-                    releaseSlug=dataset.releaseSlug,
-                    releaseVersionId=dataset.releaseVersionId,
-                    subjectId=dataset.subjectId,
+                    data_set_file_id=dataset.dataset_file_id,
+                    file_id=dataset.file_id,
+                    publication_id=dataset.publication_id,
+                    publication_slug=dataset.publication_slug,
+                    publication_title=dataset.publication_title,
+                    release_slug=dataset.release_slug,
+                    release_version_id=dataset.release_version_id,
+                    subject_id=dataset.subject_id,
                     title=dataset.title,
                     description=dataset.description,
                     **value,

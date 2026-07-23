@@ -2,30 +2,30 @@
 Relevant dataset response Pydantic models
 """
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
+from schemas.base_models import StrictCamelModel
 
-class TimePeriodRange(BaseModel):
-    model_config = ConfigDict(validate_by_name=True, populate_by_name=True, extra="forbid")
+
+class TimePeriodRange(StrictCamelModel):
 
     from_: str = Field(default="", alias="from")
     to: str = Field(default="")
 
 
-class RelevantDatasetResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+class RelevantDatasetResponse(StrictCamelModel):
 
-    dataSetFileId: str
-    fileId: str
-    publicationId: str
-    publicationSlug: str
-    publicationTitle: str
-    releaseSlug: str
-    releaseVersionId: str
-    subjectId: str
+    data_set_file_id: str
+    file_id: str
+    publication_id: str
+    publication_slug: str
+    publication_title: str
+    release_slug: str
+    release_version_id: str
+    subject_id: str
     title: str
     description: str
     filters: list[str]
     indicators: list[str]
-    timePeriodRange: TimePeriodRange
-    rawRelevanceScore: float
-    relevanceScore: float
+    time_period_range: TimePeriodRange
+    raw_relevance_score: float
+    relevance_score: float

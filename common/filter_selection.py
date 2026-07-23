@@ -1,13 +1,13 @@
 import asyncio
 import logging
-from common.openai_client import generate_answer
-from schemas.dataset import Dataset
+from clients.openai_client import generate_answer
+from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 
-llm_filtering_sys_prompt = """You are a filter suggestion agent.
-Your task is to determine which filter items from a dataset are semantically relevant to a user's data query.
+llm_filtering_sys_prompt = """
+You are a filter suggestion agent. Your task is to determine which filter items from a dataset are semantically relevant to a user's data query.
 
 # Definitions
 ## Filter
@@ -47,7 +47,7 @@ The decision for each filter item must be made independently.
 Do NOT let previous or subsequent filter items influence your current decision.
 Do NOT use external knowledge, domain knowledge, or any other information not contained in the query requirements and filter item.
 
-## Output Format
+## Output format
 Return a JSON object in this exact structure:
 {   
     "<exact file ID>": {
@@ -68,18 +68,19 @@ Return raw JSON only.
 The first character of your response should be { and the last must be }.
 """
 
-llm_filtering_user_prompt = """## User Query
+llm_filtering_user_prompt = """
+# User query
 {raw_query}
 
-## Decomposed Query Requirements
+# Decomposed query requirements
 {query_requirements}
 
-## Dataset
+# Dataset
 Name: {dataset_name}
 Description: {dataset_description}
 FileID: {file_id}
 
-## Filter Items
+# Filter items
 {filter_list}
 
 Each filter item uses the exact format `filter label|||filter item group ID|||filter item label`.
@@ -91,32 +92,31 @@ DO NOT assume anything about the query requirements based on domain knowledge.
 
 async def run_filter_selection_agent(
     transformed,
-    grouped_datasets: dict[str, Dataset],
+    datasets_by_id: dict[str, DatasetWithSubjectMeta],
     user_query: str,
     query_requirements: list[str],
 ):
 
     logger.info("Filter selection model running...")
-    tasks = []
+    tasks: list[asyncio.Task] = []
 
     for file_id, filters in transformed.items():
         prompt = llm_filtering_user_prompt.format(
             raw_query=user_query,
             query_requirements=query_requirements,
-            dataset_name=grouped_datasets[file_id].title,
-            dataset_description=grouped_datasets[file_id].description,
+            dataset_name=datasets_by_id[file_id].title,
+            dataset_description=datasets_by_id[file_id].description,
             filter_list=filters,
             file_id=file_id,
         )
 
-        tasks.append(
-            asyncio.create_task(
-                generate_answer(
-                    user_query=prompt,
-                    system_prompt=llm_filtering_sys_prompt,
-                )
+        task = asyncio.create_task(
+            generate_answer(
+                user_query=prompt,
+                system_prompt=llm_filtering_sys_prompt,
             )
         )
+        tasks.append(task)
 
     model_responses = await asyncio.gather(*tasks)
 

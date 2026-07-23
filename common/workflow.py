@@ -11,23 +11,33 @@ from common.geography_levels_utils import get_geographical_matches
 from common.indicator_selection import run_indicator_selection_agent
 from common.data_utils import (
     retrieve_and_transform_filter_data,
-    combine_final_dataset_responses,
-    rrf_to_percentage,
+    combine_final_dataset_responses
 )
-from schemas.dataset import Dataset
-from schemas.event_responses import PipelineCompleteEventData, PipelineCompleteEventResponse, RetrievedDatasetsEventData, RetrievedDatasetsEventResponse, StartEventResponse
+from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
+from schemas.event_responses import (
+    PipelineCompleteEventData,
+    PipelineCompleteEventResponse,
+    RetrievedDatasetsEventData,
+    RerankerEventResponse,
+    RerankerEventData,
+    RetrievedDatasetsEventResponse,
+    StartEventResponse,
+)
+from schemas.reranker_dataset_response import RerankerDatasetResponse
 from schemas.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 
 
 async def run_workflow(user_query: str, publication_id: str):
-    total_tokens_used = TokenUsage()
-
     yield StartEventResponse().model_dump()
 
     logger.info("Retrieving relevant datasets")
-    relevant_dataset_responses, scores, grouped_filters = await retrieve_relevant_datasets(user_query=user_query, publication_id=publication_id)
+    relevant_dataset_responses, grouped_filters = (
+        await retrieve_relevant_datasets(
+            user_query=user_query, publication_id=publication_id
+        )
+    )
 
     retrieved_datasets_event = RetrievedDatasetsEventResponse(
         data=RetrievedDatasetsEventData(datasets=relevant_dataset_responses)
@@ -36,69 +46,102 @@ async def run_workflow(user_query: str, publication_id: str):
     yield retrieved_datasets_event.model_dump(by_alias=True)
 
     logger.info("Running reranker")
-    reranking_results = await run_reranking_agent(user_query, relevant_dataset_responses, grouped_filters)
-
-    total_tokens_used.input += reranking_results["total_tokens_used"].input
-    total_tokens_used.output += reranking_results["total_tokens_used"].output
-    reranker_response = reranking_results["reranker_response"].model_dump()
-
-    # TODO Do this in run_reranking_agent?
-    for item in reranker_response.get("shortlistedDatasets", []):
-        file_id = item.get("fileId")
-        item["relevanceScore"] = rrf_to_percentage(scores.get(file_id))
-
-    yield {'stage': 'reranker complete', 'data': reranker_response}
+    reranker_result = await run_reranking_agent(
+        user_query, relevant_dataset_responses, grouped_filters
+    )
 
     relevant_datasets_by_id = {
-        dataset.fileId: dataset
+        dataset.file_id: dataset
         for dataset in relevant_dataset_responses
     }
 
-    reranked_datasets = reranking_results["reranked_datasets"]
-    query_requirements = reranking_results["query_requirements"]
-    geography_requirements = reranking_results["geography_requirements"]
-    grouped_filters = reranking_results["grouped_filters"]
-    grouped_indicators = reranking_results["grouped_indicators"]
+    reranker_datasets: list[RerankerDatasetResponse] = []
+    for dataset in reranker_result.reranker_response.shortlistedDatasets:
+        relevant_dataset = relevant_datasets_by_id.get(dataset.fileId)
+        if relevant_dataset is None:
+            raise KeyError(
+                f"Relevant dataset for file ID '{dataset.fileId}' not found"
+            )
 
-    # TODO Do this in run_reranking_agent?
-    grouped_relevance_reasons = {
-        item["fileId"]: item.get('relevanceReason', '')
-        for item in reranker_response.get("shortlistedDatasets", [])
+        # Use a combination of the relevant dataset data and the shortlisted reranker response data to create a reranker dataset response
+        reranker_datasets.append(
+            RerankerDatasetResponse(
+                data_set_file_id=relevant_dataset.data_set_file_id,
+                file_id=relevant_dataset.file_id,
+                publication_id=relevant_dataset.publication_id,
+                publication_slug=relevant_dataset.publication_slug,
+                publication_title=relevant_dataset.publication_title,
+                release_slug=relevant_dataset.release_slug,
+                release_version_id=relevant_dataset.release_version_id,
+                subject_id=relevant_dataset.subject_id,
+                title=relevant_dataset.title,
+                description=relevant_dataset.description,
+                relevance_reason=dataset.relevanceReason,
+                relevant_filters=dataset.relevantFilters,
+                relevance_score=relevant_dataset.relevance_score,
+            )
+        )
+
+    reranker_event = RerankerEventResponse(
+        data=RerankerEventData(
+            confidence=reranker_result.reranker_response.confidence,
+            shortlisted_datasets=reranker_datasets,
+            query_requirements=reranker_result.reranker_response.queryRequirements,
+            token_usage=reranker_result.total_tokens_used,
+            cost=calculate_token_cost(reranker_result.total_tokens_used),
+        ),
+    )
+
+    yield reranker_event.model_dump(by_alias=True)
+
+    total_tokens_used = TokenUsage(
+        input=reranker_result.total_tokens_used.input,
+        output=reranker_result.total_tokens_used.output,
+    )
+
+    relevance_reasons_by_id = {
+        dataset.file_id: dataset.relevance_reason
+        for dataset in reranker_datasets
     }
 
     logger.info("Getting subject meta for shortlisted datasets")
     ees_data_api_client = EesDataApiClient(base_url=os.environ["EES_URL_API_DATA"])
 
-    grouped_datasets: dict[str, Dataset] = {}
-    for file_id in reranked_datasets:
-        relevant_dataset = relevant_datasets_by_id[file_id]
+    # Add subject meta to the reranked datasets for use in getting the geographical matches,
+    # and in the filter selection, indicator selection, and time period selection agents
+    reranked_datasets_by_id: dict[str, DatasetWithSubjectMeta] = {}
+    for reranker_dataset in reranker_datasets:
         subject_meta = ees_data_api_client.get_subject_meta(
-            subject_id=relevant_dataset.subjectId
+            subject_id=reranker_dataset.subject_id
         )
-        grouped_datasets[file_id] = Dataset(
-            dataSetFileId=relevant_dataset.dataSetFileId,
-            fileId=relevant_dataset.fileId,
-            publicationId=relevant_dataset.publicationId,
-            publicationSlug=relevant_dataset.publicationSlug,
-            publicationTitle=relevant_dataset.publicationTitle,
-            releaseSlug=relevant_dataset.releaseSlug,
-            releaseVersionId=relevant_dataset.releaseVersionId,
-            subjectId=relevant_dataset.subjectId,
-            title=relevant_dataset.title,
-            description=relevant_dataset.description,
+        reranked_datasets_by_id[reranker_dataset.file_id] = DatasetWithSubjectMeta(
+            dataset_file_id=reranker_dataset.data_set_file_id,
+            file_id=reranker_dataset.file_id,
+            publication_id=reranker_dataset.publication_id,
+            publication_slug=reranker_dataset.publication_slug,
+            publication_title=reranker_dataset.publication_title,
+            release_slug=reranker_dataset.release_slug,
+            release_version_id=reranker_dataset.release_version_id,
+            subject_id=reranker_dataset.subject_id,
+            title=reranker_dataset.title,
+            description=reranker_dataset.description,
             subject_meta=subject_meta,
         )
 
     logger.info("Getting geography matches")
     geo_dict = await get_geographical_matches(
-        reranked_datasets, grouped_datasets, geography_requirements
+        reranked_datasets_by_id, reranker_result.reranker_response.queryRequirements.geography
     )
 
     # Can pass grouped filters into this in order to only pass the retrieved filters to the filter selection agent
     logger.info("Transforming dataset information for LLM ingestion")
-    transformed_data = retrieve_and_transform_filter_data(reranked_datasets, grouped_filters)
+    transformed_data = retrieve_and_transform_filter_data(
+        file_ids=list(reranked_datasets_by_id.keys()), shortlisted_filters=reranker_result.grouped_filters
+    )
 
-    logger.info("Running filter selection, indicator selection, and time period selection models")
+    logger.info(
+        "Running filter selection, indicator selection, and time period selection models"
+    )
     (
         (filter_responses, filter_tokens_used),
         (indicator_responses, indicator_tokens_used),
@@ -106,18 +149,20 @@ async def run_workflow(user_query: str, publication_id: str):
     ) = await asyncio.gather(
         run_filter_selection_agent(
             transformed_data,
-            grouped_datasets,
+            reranked_datasets_by_id,
             user_query,
-            query_requirements,
+            reranker_result.reranker_response.queryRequirements.filters,
         ),
         run_indicator_selection_agent(
-            grouped_indicators,
-            grouped_datasets,
+            reranker_result.grouped_indicators,
+            reranked_datasets_by_id,
             user_query,
-            query_requirements,
+            reranker_result.reranker_response.queryRequirements.filters,
         ),
         run_time_period_selection_agent(
-            reranked_datasets, grouped_datasets, user_query, query_requirements
+            reranked_datasets_by_id,
+            user_query,
+            reranker_result.reranker_response.queryRequirements.timePeriod
         ),
     )
     total_tokens_used.input += (
@@ -136,9 +181,9 @@ async def run_workflow(user_query: str, publication_id: str):
         filter_responses,
         indicator_responses,
         time_period_responses,
-        grouped_datasets,
+        reranked_datasets_by_id,
         geo_dict,
-        grouped_relevance_reasons,
+        relevance_reasons_by_id,
     )
 
     pipeline_complete_event = PipelineCompleteEventResponse(
@@ -149,7 +194,8 @@ async def run_workflow(user_query: str, publication_id: str):
         )
     )
 
-    yield pipeline_complete_event.model_dump()
+    yield pipeline_complete_event.model_dump(by_alias=True)
+
 
 def calculate_token_cost(tokens: TokenUsage) -> float:
     costPer1kTokensInput = 0.0004

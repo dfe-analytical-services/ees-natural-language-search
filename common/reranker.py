@@ -1,17 +1,20 @@
 import logging
+from collections.abc import Mapping
 from datetime import datetime
 from common.llm_response_parser import parse_llm_response
-from common.openai_client import generate_answer
+from clients.openai_client import generate_answer
 from schemas.llm_validation_error import LLMValidationError
 from schemas.relevant_dataset_response import RelevantDatasetResponse
+from schemas.reranking_agent_result import RerankingAgentResult
 from schemas.reranker_response import RerankerResponse
 from schemas.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 
-llm_reranker_sys_prompt = """You are a data retrieval specialist. Your job is to analyse a user's query and determine which datasets from a provided list can meaningfully contribute to answering it.
+llm_reranker_sys_prompt = """
+You are a data retrieval specialist. Your task is to analyse a user's query and determine which datasets from a provided list can meaningfully contribute to answering it.
 
-## Your Task
+# Task
 Given:
 1. A **user query**
 2. A **list of dataset metadata dictionaries**
@@ -70,21 +73,29 @@ Return a JSON object with this exact structure:
     "confidence": "high | medium | low"
 }
 
-Return only valid JSON. DO NOT include any text before or after the JSON object.
+Return only valid JSON.
+DO NOT include any text before or after the JSON object.
 DO NOT wrap the JSON in markdown code blocks, backticks, or any other formatting.
-Return raw JSON only. The first character of your response should be { and the last must be }.
+Return raw JSON only.
+The first character of your response should be { and the last must be }.
 """
 
-llm_reranker_user_prompt = """**User Query**:
+llm_reranker_user_prompt = """
+# User query
 {user_query}
 
-**Dataset Metadata**
+# Dataset metadata
 {dataset_metadata_list}
 
-The date today is {today_date}"""
+The date today is {today_date}.
+"""
 
 
-async def run_reranking_agent(user_query: str, relevant_datasets: list[RelevantDatasetResponse], grouped_filters: list):
+async def run_reranking_agent(
+    user_query: str,
+    relevant_datasets: list[RelevantDatasetResponse],
+    grouped_filters: Mapping[str, list[str]],
+) -> RerankingAgentResult:
     """
     Retrieves, reranks datasets using an LLM, and returns all required artifacts.
     """
@@ -93,11 +104,11 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list[RelevantD
 
     reranking_datasets = [
         {
-            "fileId": dataset.fileId,
+            "fileId": dataset.file_id,
             "title": dataset.title,
             "content": dataset.description,
             "filters": dataset.filters,
-            "timePeriodRange": dataset.timePeriodRange.model_dump(by_alias=True)
+            "timePeriodRange": dataset.time_period_range.model_dump(by_alias=True)
         }
         for dataset in relevant_datasets
     ]
@@ -123,33 +134,25 @@ async def run_reranking_agent(user_query: str, relevant_datasets: list[RelevantD
     if reranker_parsed is None:
         raise LLMValidationError("The reranking step returned a malformed response, the query could not be processed.")
 
-    reranked_datasets = [
+    reranked_dataset_file_ids = [
         d.fileId for d in reranker_parsed.shortlistedDatasets
     ]
 
-    logger.info("Extracting filter, indicator and geography requirements from query")
-
-    query_requirements = reranker_parsed.queryRequirements.filters
-    geography_requirements = reranker_parsed.queryRequirements.geography
-
-    grouped_filters = {
-        dataset_fileid: grouped_filters[dataset_fileid]
-        for dataset_fileid in reranked_datasets
-        if dataset_fileid in grouped_filters
+    shortlisted_grouped_filters = {
+        file_id: grouped_filters[file_id]
+        for file_id in reranked_dataset_file_ids
+        if file_id in grouped_filters
     }
 
     grouped_indicators = {
-        dataset.fileId: dataset.indicators
+        dataset.file_id: dataset.indicators
         for dataset in relevant_datasets
-        if dataset.fileId in reranked_datasets
+        if dataset.file_id in reranked_dataset_file_ids
     }
 
-    return {
-        "reranked_datasets": reranked_datasets,
-        "query_requirements": query_requirements,
-        "geography_requirements": geography_requirements,
-        "grouped_filters": grouped_filters,
-        "grouped_indicators": grouped_indicators,
-        "total_tokens_used": total_tokens_used,
-        "reranker_response": reranker_parsed
-    }
+    return RerankingAgentResult(
+        grouped_filters=shortlisted_grouped_filters,
+        grouped_indicators=grouped_indicators,
+        reranker_response=reranker_parsed,
+        total_tokens_used=total_tokens_used,
+    )

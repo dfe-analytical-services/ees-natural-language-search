@@ -3,34 +3,24 @@ Subject Meta response Pydantic models
 """
 
 from functools import cached_property
-from pydantic import BaseModel, Field, ConfigDict
-from pydantic.alias_generators import to_camel
+from pydantic import Field
 from typing import Any
 
-
-class _SubjectMetaBaseResponseModel(BaseModel):
-    """Base model for Subject Meta response Pydantic models."""
-
-    model_config = ConfigDict(
-        alias_generator=to_camel,  # map camelCase JSON keys to snake_case attributes
-        validate_by_alias=True,
-        validate_by_name=True,
-        extra="ignore",
-    )
+from schemas.base_models import CamelModel
 
 
-class FilterItem(_SubjectMetaBaseResponseModel):
+class FilterItem(CamelModel):
     id: str = Field(alias="value")
     label: str
 
 
-class FilterItemGroup(_SubjectMetaBaseResponseModel):
+class FilterItemGroup(CamelModel):
     id: str
     filter_items: list[FilterItem] = Field(alias="options")
     label: str
 
 
-class Filter(_SubjectMetaBaseResponseModel):
+class Filter(CamelModel):
     id: str
     auto_select_filter_item_id: str | None = None
     filter_item_groups: dict[str, FilterItemGroup] = Field(alias="options")
@@ -40,29 +30,29 @@ class Filter(_SubjectMetaBaseResponseModel):
     name: str
 
 
-class Indicator(_SubjectMetaBaseResponseModel):
+class Indicator(CamelModel):
     id: str = Field(alias="value")
     label: str
     name: str
 
 
-class IndicatorGroup(_SubjectMetaBaseResponseModel):
+class IndicatorGroup(CamelModel):
     id: str
     indicators: list[Indicator] = Field(alias="options")
     label: str
 
 
-class TimePeriod(_SubjectMetaBaseResponseModel):
+class TimePeriod(CamelModel):
     code: str
     label: str
     year: int
 
 
-class TimePeriods(_SubjectMetaBaseResponseModel):
+class TimePeriods(CamelModel):
     options: list[TimePeriod]
 
 
-class SubjectMetaResponse(_SubjectMetaBaseResponseModel):
+class SubjectMetaResponse(CamelModel):
     filters: dict[str, Filter]
     indicators: dict[str, IndicatorGroup]
     locations: dict[str, Any]
