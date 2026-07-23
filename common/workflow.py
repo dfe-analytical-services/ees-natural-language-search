@@ -11,7 +11,7 @@ from common.geography_levels_utils import get_geographical_matches
 from common.indicator_selection import run_indicator_selection_agent
 from common.data_utils import (
     retrieve_and_transform_filter_data,
-    combine_final_dataset_responses
+    combine_final_dataset_responses,
 )
 from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.event_responses import (
@@ -85,7 +85,7 @@ async def run_workflow(user_query: str, publication_id: str):
     reranker_event = RerankerEventResponse(
         data=RerankerEventData(
             confidence=reranker_result.reranker_response.confidence,
-            shortlisted_datasets=reranker_datasets,
+            datasets=reranker_datasets,
             query_requirements=reranker_result.reranker_response.queryRequirements,
             token_usage=reranker_result.total_tokens_used,
             cost=calculate_token_cost(reranker_result.total_tokens_used),
@@ -162,7 +162,7 @@ async def run_workflow(user_query: str, publication_id: str):
         run_time_period_selection_agent(
             reranked_datasets_by_id,
             user_query,
-            reranker_result.reranker_response.queryRequirements.timePeriod
+            reranker_result.reranker_response.queryRequirements.timePeriod,
         ),
     )
     total_tokens_used.input += (
