@@ -94,7 +94,7 @@ ees-natural-language-search/
 ### `workflow.py` - orchestrator
 The most important file. Accumulates `token_usage` across all LLM calls and `yield`s after each stage. It builds a `reranked_datasets_by_id` map with dataset metadata plus subject meta and passes that through geography/filter/indicator/time period stages. If the reranker shortlists nothing, downstream stages simply produce empty results.
 
-### search_client.py - Azure Search and embeddings
+### `search_client.py` - Azure Search and embeddings
 - Module-level `filter_client` and `dataset_client` are created at import. Credential is `AzureKeyCredential` if `AZURE_SEARCH_KEY` is set, else `DefaultAzureCredential()`.
 - `get_embeddings(input_text, model_name, dimensions=1536)` -> `**returns (embeddings, total_tokens)**`. Lists are batched in groups of 15 with up to 2 attempts and exponential backoff on transient errors.
 - `hybrid_search(...)` runs BM25 + vector search against the filter index (`top=10`, vector `weight=0.5`), optionally filtered by `publicationTitle` and `latestData`.
