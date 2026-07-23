@@ -6,7 +6,8 @@ from schemas.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 
-llm_indicator_sys_prompt="""You are an indicator selection agent. Your job is to determine which indicators from a dataset are required to answer a user's data query.
+llm_indicator_sys_prompt="""
+You are an indicator selection agent. Your task is to determine which indicators from a dataset are required to answer a user's data query.
 Indicators are non filterable columns that contain mutually exclusive information that the user can choose to view.
 
 # Task
@@ -27,23 +28,27 @@ Return a JSON object in this exact structure:
         }
     }
 }
-Return only valid JSON. DO NOT include any text before or after the JSON object.
+
+Return only valid JSON.
+DO NOT include any text before or after the JSON object.
 DO NOT wrap the JSON in markdown code blocks, backticks, or any other formatting. 
-Return raw JSON only. The first character of your response should be { and the last must be }.
+Return raw JSON only.
+The first character of your response should be { and the last must be }.
 """
 
-llm_indicator_user_prompt="""## User Query
+llm_indicator_user_prompt="""
+# User query
 {raw_query}
 
-## Decomposed query requirements
+# Decomposed query requirements
 {query_requirements}
 
-## Dataset
+# Dataset
 Name: {dataset_name}
 Description: {dataset_description}
 FileID: {file_id}
 
-## Indicators - process every one in order
+# Indicators - process every one in order
 {indicator_list}
 
 Now work through each indicator and return your selections in the specified JSON format.

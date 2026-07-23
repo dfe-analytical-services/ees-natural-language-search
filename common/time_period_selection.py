@@ -7,7 +7,8 @@ from schemas.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 
-llm_time_period_sys_prompt="""You are a time period selection agent. Your job is to determine which starting and ending time period from a dataset best fit the time period requirement extracted from a user's data query.
+llm_time_period_sys_prompt="""
+You are a time period selection agent. Your task is to determine which starting and ending time period from a dataset best fit the time period requirement extracted from a user's data query.
 
 # Inputs
 You will be given:

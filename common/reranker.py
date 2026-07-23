@@ -11,9 +11,10 @@ from schemas.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 
-llm_reranker_sys_prompt = """You are a data retrieval specialist. Your job is to analyse a user's query and determine which datasets from a provided list can meaningfully contribute to answering it.
+llm_reranker_sys_prompt = """
+You are a data retrieval specialist. Your task is to analyse a user's query and determine which datasets from a provided list can meaningfully contribute to answering it.
 
-## Your Task
+# Task
 Given:
 1. A **user query**
 2. A **list of dataset metadata dictionaries**
@@ -72,18 +73,22 @@ Return a JSON object with this exact structure:
     "confidence": "high | medium | low"
 }
 
-Return only valid JSON. DO NOT include any text before or after the JSON object.
+Return only valid JSON.
+DO NOT include any text before or after the JSON object.
 DO NOT wrap the JSON in markdown code blocks, backticks, or any other formatting.
-Return raw JSON only. The first character of your response should be { and the last must be }.
+Return raw JSON only.
+The first character of your response should be { and the last must be }.
 """
 
-llm_reranker_user_prompt = """**User Query**:
+llm_reranker_user_prompt = """
+# User query
 {user_query}
 
-**Dataset Metadata**
+# Dataset metadata
 {dataset_metadata_list}
 
-The date today is {today_date}"""
+The date today is {today_date}.
+"""
 
 
 async def run_reranking_agent(

@@ -6,8 +6,8 @@ from schemas.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 
-llm_filtering_sys_prompt = """You are a filter suggestion agent.
-Your task is to determine which filter items from a dataset are semantically relevant to a user's data query.
+llm_filtering_sys_prompt = """
+You are a filter suggestion agent. Your task is to determine which filter items from a dataset are semantically relevant to a user's data query.
 
 # Definitions
 ## Filter
@@ -68,18 +68,19 @@ Return raw JSON only.
 The first character of your response should be { and the last must be }.
 """
 
-llm_filtering_user_prompt = """## User Query
+llm_filtering_user_prompt = """
+# User query
 {raw_query}
 
-## Decomposed query requirements
+# Decomposed query requirements
 {query_requirements}
 
-## Dataset
+# Dataset
 Name: {dataset_name}
 Description: {dataset_description}
 FileID: {file_id}
 
-## Filter items
+# Filter items
 {filter_list}
 
 Each filter item uses the exact format `filter label|||filter item group ID|||filter item label`.
