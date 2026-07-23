@@ -85,7 +85,7 @@ async def run_workflow(user_query: str, publication_id: str):
     reranker_event = RerankerEventResponse(
         data=RerankerEventData(
             confidence=reranker_result.reranker_response.confidence,
-            datasets=reranker_datasets,
+            shortlisted_datasets=reranker_datasets,
             query_requirements=reranker_result.reranker_response.queryRequirements,
             token_usage=reranker_result.total_tokens_used,
             cost=calculate_token_cost(reranker_result.total_tokens_used),

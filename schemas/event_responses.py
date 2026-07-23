@@ -17,7 +17,7 @@ class RetrievedDatasetsEventData(StrictCamelModel):
 
 class RerankerEventData(StrictCamelModel):
     confidence: str
-    datasets: list[RerankerDatasetResponse] = Field(default_factory=list)
+    shortlisted_datasets: list[RerankerDatasetResponse] = Field(default_factory=list)
     query_requirements: QueryRequirements
     token_usage: TokenUsage = Field(default_factory=TokenUsage)
     cost: float
