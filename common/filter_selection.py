@@ -47,7 +47,7 @@ The decision for each filter item must be made independently.
 Do NOT let previous or subsequent filter items influence your current decision.
 Do NOT use external knowledge, domain knowledge, or any other information not contained in the query requirements and filter item.
 
-## Output Format
+## Output format
 Return a JSON object in this exact structure:
 {   
     "<exact file ID>": {
@@ -71,7 +71,7 @@ The first character of your response should be { and the last must be }.
 llm_filtering_user_prompt = """## User Query
 {raw_query}
 
-## Decomposed Query Requirements
+## Decomposed query requirements
 {query_requirements}
 
 ## Dataset
@@ -79,7 +79,7 @@ Name: {dataset_name}
 Description: {dataset_description}
 FileID: {file_id}
 
-## Filter Items
+## Filter items
 {filter_list}
 
 Each filter item uses the exact format `filter label|||filter item group ID|||filter item label`.

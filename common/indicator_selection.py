@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 llm_indicator_sys_prompt="""You are an indicator selection agent. Your job is to determine which indicators from a dataset are required to answer a user's data query.
 Indicators are non filterable columns that contain mutually exclusive information that the user can choose to view.
 
-## Your Task
+# Task
 You will be given:
 - A user query that has been decomposed into its explicit information requirements
 - A dataset description
@@ -17,7 +17,7 @@ You will be given:
 
 For every indicator, you must work through it in order and make an explicit decision whether it is relevant or not.
 
-## Output Format
+## Output format
 Return a JSON object in this exact structure:
 {   
     "<exact file ID from input>": {
@@ -35,7 +35,7 @@ Return raw JSON only. The first character of your response should be { and the l
 llm_indicator_user_prompt="""## User Query
 {raw_query}
 
-## Decomposed Query Requirements
+## Decomposed query requirements
 {query_requirements}
 
 ## Dataset

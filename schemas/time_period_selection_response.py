@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, RootModel
 
 class TimePoint(BaseModel):
     code: str = ""
-    year: str = ""
+    year: int = 0
 
 
 class DatasetTimePeriodResult(BaseModel):

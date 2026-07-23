@@ -160,8 +160,9 @@ async def run_workflow(user_query: str, publication_id: str):
             reranker_result.reranker_response.queryRequirements.filters,
         ),
         run_time_period_selection_agent(
-            # TODO why doesn't this use the time period from the query requirements?
-            reranked_datasets_by_id, user_query, reranker_result.reranker_response.queryRequirements.filters
+            reranked_datasets_by_id,
+            user_query,
+            reranker_result.reranker_response.queryRequirements.timePeriod
         ),
     )
     total_tokens_used.input += (
