@@ -21,21 +21,21 @@ async def retrieve_relevant_datasets(
 
     relevant_datasets_responses = [
         RelevantDatasetResponse(
-            dataSetFileId=dataset["dataSetFileId"],
-            fileId=dataset["fileId"],
-            publicationId=dataset["publicationId"],
-            publicationSlug=dataset["publicationSlug"],
-            publicationTitle=dataset["publicationTitle"],
-            releaseSlug=dataset["releaseSlug"],
-            releaseVersionId=dataset["releaseVersionId"],
-            subjectId=dataset["subjectId"],
+            data_set_file_id=dataset["dataSetFileId"],
+            file_id=dataset["fileId"],
+            publication_id=dataset["publicationId"],
+            publication_slug=dataset["publicationSlug"],
+            publication_title=dataset["publicationTitle"],
+            release_slug=dataset["releaseSlug"],
+            release_version_id=dataset["releaseVersionId"],
+            subject_id=dataset["subjectId"],
             title=dataset["title"],
             description=dataset["content"],
             filters=dataset["filters"],
             indicators=dataset["indicators"],
-            timePeriodRange=dataset["timePeriodRange"],
-            rawRelevanceScore=scores[dataset["fileId"]],
-            relevanceScore=rrf_to_percentage(scores[dataset["fileId"]]),
+            time_period_range=dataset["timePeriodRange"],
+            raw_relevance_score=scores[dataset["fileId"]],
+            relevance_score=rrf_to_percentage(scores[dataset["fileId"]]),
         )
         for dataset in relevant_datasets
     ]

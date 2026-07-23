@@ -1,19 +1,18 @@
-from pydantic import BaseModel, ConfigDict
+from schemas.base_models import StrictCamelModel
 
 
-class RerankerDatasetResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+class RerankerDatasetResponse(StrictCamelModel):
 
-    dataSetFileId: str
-    fileId: str
-    publicationId: str
-    publicationSlug: str
-    publicationTitle: str
-    releaseSlug: str
-    releaseVersionId: str
-    subjectId: str
+    data_set_file_id: str
+    file_id: str
+    publication_id: str
+    publication_slug: str
+    publication_title: str
+    release_slug: str
+    release_version_id: str
+    subject_id: str
     title: str
     description: str
-    relevanceReason: str
-    relevantFilters: list[str]
-    relevanceScore: float
+    relevance_reason: str
+    relevant_filters: list[str]
+    relevance_score: float

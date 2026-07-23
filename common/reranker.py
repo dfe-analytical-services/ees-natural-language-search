@@ -99,11 +99,11 @@ async def run_reranking_agent(
 
     reranking_datasets = [
         {
-            "fileId": dataset.fileId,
+            "fileId": dataset.file_id,
             "title": dataset.title,
             "content": dataset.description,
             "filters": dataset.filters,
-            "timePeriodRange": dataset.timePeriodRange.model_dump(by_alias=True)
+            "timePeriodRange": dataset.time_period_range.model_dump(by_alias=True)
         }
         for dataset in relevant_datasets
     ]
@@ -140,9 +140,9 @@ async def run_reranking_agent(
     }
 
     grouped_indicators = {
-        dataset.fileId: dataset.indicators
+        dataset.file_id: dataset.indicators
         for dataset in relevant_datasets
-        if dataset.fileId in reranked_dataset_file_ids
+        if dataset.file_id in reranked_dataset_file_ids
     }
 
     return RerankingAgentResult(

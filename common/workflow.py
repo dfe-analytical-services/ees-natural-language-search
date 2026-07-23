@@ -51,7 +51,7 @@ async def run_workflow(user_query: str, publication_id: str):
     )
 
     relevant_datasets_by_id = {
-        dataset.fileId: dataset
+        dataset.file_id: dataset
         for dataset in relevant_dataset_responses
     }
 
@@ -66,19 +66,19 @@ async def run_workflow(user_query: str, publication_id: str):
         # Use a combination of the relevant dataset data and the shortlisted reranker response data to create a reranker dataset response
         reranker_datasets.append(
             RerankerDatasetResponse(
-                dataSetFileId=relevant_dataset.dataSetFileId,
-                fileId=relevant_dataset.fileId,
-                publicationId=relevant_dataset.publicationId,
-                publicationSlug=relevant_dataset.publicationSlug,
-                publicationTitle=relevant_dataset.publicationTitle,
-                releaseSlug=relevant_dataset.releaseSlug,
-                releaseVersionId=relevant_dataset.releaseVersionId,
-                subjectId=relevant_dataset.subjectId,
+                data_set_file_id=relevant_dataset.data_set_file_id,
+                file_id=relevant_dataset.file_id,
+                publication_id=relevant_dataset.publication_id,
+                publication_slug=relevant_dataset.publication_slug,
+                publication_title=relevant_dataset.publication_title,
+                release_slug=relevant_dataset.release_slug,
+                release_version_id=relevant_dataset.release_version_id,
+                subject_id=relevant_dataset.subject_id,
                 title=relevant_dataset.title,
                 description=relevant_dataset.description,
-                relevanceReason=dataset.relevanceReason,
-                relevantFilters=dataset.relevantFilters,
-                relevanceScore=relevant_dataset.relevanceScore,
+                relevance_reason=dataset.relevanceReason,
+                relevant_filters=dataset.relevantFilters,
+                relevance_score=relevant_dataset.relevance_score,
             )
         )
 
@@ -92,7 +92,7 @@ async def run_workflow(user_query: str, publication_id: str):
         ),
     )
 
-    yield reranker_event.model_dump()
+    yield reranker_event.model_dump(by_alias=True)
 
     total_tokens_used = TokenUsage(
         input=reranker_result.total_tokens_used.input,
@@ -100,7 +100,7 @@ async def run_workflow(user_query: str, publication_id: str):
     )
 
     relevance_reasons_by_id = {
-        dataset.fileId: dataset.relevanceReason
+        dataset.file_id: dataset.relevance_reason
         for dataset in reranker_datasets
     }
 
@@ -112,17 +112,17 @@ async def run_workflow(user_query: str, publication_id: str):
     reranked_datasets_by_id: dict[str, DatasetWithSubjectMeta] = {}
     for reranker_dataset in reranker_datasets:
         subject_meta = ees_data_api_client.get_subject_meta(
-            subject_id=reranker_dataset.subjectId
+            subject_id=reranker_dataset.subject_id
         )
-        reranked_datasets_by_id[reranker_dataset.fileId] = DatasetWithSubjectMeta(
-            dataSetFileId=reranker_dataset.dataSetFileId,
-            fileId=reranker_dataset.fileId,
-            publicationId=reranker_dataset.publicationId,
-            publicationSlug=reranker_dataset.publicationSlug,
-            publicationTitle=reranker_dataset.publicationTitle,
-            releaseSlug=reranker_dataset.releaseSlug,
-            releaseVersionId=reranker_dataset.releaseVersionId,
-            subjectId=reranker_dataset.subjectId,
+        reranked_datasets_by_id[reranker_dataset.file_id] = DatasetWithSubjectMeta(
+            dataset_file_id=reranker_dataset.data_set_file_id,
+            file_id=reranker_dataset.file_id,
+            publication_id=reranker_dataset.publication_id,
+            publication_slug=reranker_dataset.publication_slug,
+            publication_title=reranker_dataset.publication_title,
+            release_slug=reranker_dataset.release_slug,
+            release_version_id=reranker_dataset.release_version_id,
+            subject_id=reranker_dataset.subject_id,
             title=reranker_dataset.title,
             description=reranker_dataset.description,
             subject_meta=subject_meta,
@@ -194,7 +194,7 @@ async def run_workflow(user_query: str, publication_id: str):
         )
     )
 
-    yield pipeline_complete_event.model_dump()
+    yield pipeline_complete_event.model_dump(by_alias=True)
 
 
 def calculate_token_cost(tokens: TokenUsage) -> float:

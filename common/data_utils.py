@@ -105,15 +105,15 @@ def combine_final_dataset_responses(filter_responses: list,
 
         for file_id, dataset_time_period  in time_period_data.items():
             if file_id in combined:
-                combined[file_id]["timePeriod"] = dataset_time_period
+                combined[file_id]["time_period"] = dataset_time_period
 
         for file_id, geo_matches in geo_dict.items():
             if file_id in combined:
-                combined[file_id]["geographicLevels"] = geo_matches
+                combined[file_id]["geographic_levels"] = geo_matches
 
         for file_id, relevance_reason in relevance_reasons_by_id.items():
             if file_id in combined:
-                combined[file_id]["relevanceReason"] = relevance_reason
+                combined[file_id]["relevance_reason"] = relevance_reason
 
         combined_responses.append(combined)
 
@@ -123,14 +123,14 @@ def combine_final_dataset_responses(filter_responses: list,
             dataset = datasets_by_id[file_id]
             final_response.append(
                 FinalDatasetResponse(
-                    dataSetFileId=dataset.dataSetFileId,
-                    fileId=file_id,
-                    publicationId=dataset.publicationId,
-                    publicationSlug=dataset.publicationSlug,
-                    publicationTitle=dataset.publicationTitle,
-                    releaseSlug=dataset.releaseSlug,
-                    releaseVersionId=dataset.releaseVersionId,
-                    subjectId=dataset.subjectId,
+                    data_set_file_id=dataset.dataset_file_id,
+                    file_id=dataset.file_id,
+                    publication_id=dataset.publication_id,
+                    publication_slug=dataset.publication_slug,
+                    publication_title=dataset.publication_title,
+                    release_slug=dataset.release_slug,
+                    release_version_id=dataset.release_version_id,
+                    subject_id=dataset.subject_id,
                     title=dataset.title,
                     description=dataset.description,
                     **value,

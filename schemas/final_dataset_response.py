@@ -2,35 +2,39 @@
 Final dataset response Pydantic models
 """
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+from schemas.base_models import StrictCamelModel
 
 from schemas.time_period_selection_response import DatasetTimePeriodResult
 
 
-class SelectionItem(BaseModel):
+class SelectionItem(StrictCamelModel):
+
     id: str
     label: str
 
 
-class GeographicLevelItem(BaseModel):
+class GeographicLevelItem(StrictCamelModel):
+
     id: str
     label: str
     value: str
 
 
-class FinalDatasetResponse(BaseModel):
-    dataSetFileId: str
-    fileId: str
-    publicationId: str
-    publicationSlug: str
-    publicationTitle: str
-    releaseSlug: str
-    releaseVersionId: str
-    subjectId: str
+class FinalDatasetResponse(StrictCamelModel):
+
+    data_set_file_id: str
+    file_id: str
+    publication_id: str
+    publication_slug: str
+    publication_title: str
+    release_slug: str
+    release_version_id: str
+    subject_id: str
     title: str
     description: str
     filters: list[SelectionItem] = Field(default_factory=list)
     indicators: list[SelectionItem] = Field(default_factory=list)
-    timePeriod: DatasetTimePeriodResult | None = None
-    geographicLevels: dict[str, list[GeographicLevelItem]] | None = None
-    relevanceReason: str | None = None
+    time_period: DatasetTimePeriodResult | None = None
+    geographic_levels: dict[str, list[GeographicLevelItem]] | None = None
+    relevance_reason: str | None = None
