@@ -5,7 +5,7 @@ parameters:
 
 jobs:
   - job: PythonBuild
-    displayName: 'Python build, test and publish'
+    displayName: 'Python build and test'
     steps:
       - checkout: self
 

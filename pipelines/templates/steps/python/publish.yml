@@ -13,7 +13,7 @@ steps:
     condition: |
       and(
         succeeded(),
-        eq(variables.isDeployableBranch, true)
+        eq(variables.shouldPublishArtifact, true)
       )
 
   - task: PublishPipelineArtifact@1
@@ -22,3 +22,8 @@ steps:
       artifactName: '${{ parameters.artifactName }}'
       targetPath: '$(Build.ArtifactStagingDirectory)'
       publishLocation: 'pipeline'
+    condition: |
+      and(
+        succeeded(),
+        eq(variables.shouldPublishArtifact, true)
+      )

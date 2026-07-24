@@ -17,6 +17,17 @@ pr:
 pool:
   vmImage: ubuntu-latest
 
+parameters:
+  - name: forceDeployToEnvironment
+    displayName: Set to either dev, test, preprod to force a deploy to that environment from the chosen branch.
+    type: string
+    values:
+    - none
+    - dev
+    - test
+    - preprod
+    default: 'none'
+
 variables:
   - group: Common
   - name: artifactName
@@ -30,8 +41,12 @@ variables:
     value: 's101p02-ees-fa-nlsearch'
   - name: azureFunctionAppNameProd
     value: 's101p01-ees-fa-nlsearch'
-  - name: isDeployableBranch
-    value: ${{and(eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'PullRequest'))}}
+  - name: isReleaseBuild
+    value: $[and(eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'PullRequest'))]
+  - name: isForceDeployment
+    value: ${{ ne(parameters.forceDeployToEnvironment, 'none') }}
+  - name: shouldPublishArtifact
+    value: $[or(eq(variables.isReleaseBuild, true), eq(variables.isForceDeployment, true))]
 
 stages:
   - template: pipelines/templates/stages/ci.yml
@@ -42,10 +57,13 @@ stages:
     parameters:
       artifactName: $(artifactName)
       condition: |
-            and(
-              succeeded(),
-              eq(variables.isDeployableBranch, true)
-            )
+        and(
+          succeeded(),
+          or(
+            eq(variables.isReleaseBuild, true),
+            eq('${{ parameters.forceDeployToEnvironment }}', 'dev')
+          )
+        )
       dependsOn:
         - 'CI'
       environmentName: Dev
@@ -56,8 +74,16 @@ stages:
   - template: pipelines/templates/stages/deploy.yml
     parameters:
       artifactName: $(artifactName)
+      condition: |
+        and(
+          succeeded(),
+          or(
+            eq(variables.isReleaseBuild, true),
+            eq('${{ parameters.forceDeployToEnvironment }}', 'test')
+          )
+        )
       dependsOn:
-        - 'Deploy_Dev'
+        - 'CI'
       environmentName: Test
       functionAppName: $(azureFunctionAppNameTest)
       serviceConnection: $(serviceConnectionTest)
@@ -66,8 +92,16 @@ stages:
   - template: pipelines/templates/stages/deploy.yml
     parameters:
       artifactName: $(artifactName)
+      condition: |
+        and(
+          succeeded(),
+          or(
+            eq(variables.isReleaseBuild, true),
+            eq('${{ parameters.forceDeployToEnvironment }}', 'preprod')
+          )
+        )
       dependsOn:
-        - 'Deploy_Test'
+        - 'CI'
       environmentName: Pre-Prod
       functionAppName: $(azureFunctionAppNamePreProd)
       serviceConnection: $(serviceConnectionPreProd)
@@ -76,6 +110,11 @@ stages:
   - template: pipelines/templates/stages/deploy.yml
     parameters:
       artifactName: $(artifactName)
+      condition: |
+        and(
+          succeeded(),
+          eq(dependencies.Deploy_PreProd.result, 'Succeeded')
+        )
       dependsOn:
         - 'Deploy_PreProd'
       environmentName: Prod
