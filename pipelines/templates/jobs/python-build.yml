@@ -2,13 +2,10 @@ parameters:
   - name: artifactName
     type: string
     default: 'drop'
-  - name: publishBuild
-    type: boolean
-    default: false
 
 jobs:
   - job: PythonBuild
-    displayName: 'Python build'
+    displayName: 'Python build, test and publish'
     steps:
       - checkout: self
 
@@ -16,7 +13,6 @@ jobs:
 
       - template: ../steps/python/test.yml
 
-      - ${{ if eq(parameters.publishBuild, true) }}:
-        - template: ../steps/python/publish.yml
-          parameters:
-            artifactName: ${{ parameters.artifactName }}
+      - template: ../steps/python/publish.yml
+        parameters:
+          artifactName: ${{ parameters.artifactName }}
