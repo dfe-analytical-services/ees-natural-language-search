@@ -3,17 +3,22 @@ parameters:
 
 steps:
   - task: ArchiveFiles@2
+    displayName: 'Create deployment artifact'
     inputs:
       rootFolderOrFile: '$(Build.SourcesDirectory)'
       includeRootFolder: false
       archiveType: 'zip'
       archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)-$(Build.SourceBranchName)-$(Build.BuildNumber).zip'
       replaceExistingArchive: true
-    displayName: 'Create deployment artifact'
+    condition: |
+      and(
+        succeeded(),
+        eq(variables.isDeployableBranch, true)
+      )
 
   - task: PublishPipelineArtifact@1
+    displayName: 'Publish pipeline artifact'
     inputs:
       artifactName: '${{ parameters.artifactName }}'
       targetPath: '$(Build.ArtifactStagingDirectory)'
       publishLocation: 'pipeline'
-    displayName: 'Publish pipeline artifact'
