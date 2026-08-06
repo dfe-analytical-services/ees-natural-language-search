@@ -1,24 +1,28 @@
 import asyncio
 import azure.functions as func
-from azurefunctions.extensions.http.fastapi import Request, StreamingResponse, JSONResponse
+from azurefunctions.extensions.http.fastapi import (
+    Request,
+    StreamingResponse,
+)
 
 from core.app import fastapi_app
 from routes.healthcheck import health_check
 
-app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
+app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 
 app.function_name(name="health_check")(
     app.route(
         route="health_check",
         methods=["GET"],
-        auth_level=func.AuthLevel.ANONYMOUS,
     )(health_check)
 )
 
 
 @app.function_name(name="ees_fa_nlsearch_proxy")
-@app.route(route="api/{*route}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+@app.route(
+    route="api/{*route}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+)
 async def fastapi_proxy(req: Request) -> StreamingResponse:
     queue: asyncio.Queue[bytes | None] = asyncio.Queue()
     response_started = asyncio.Event()
@@ -55,9 +59,7 @@ async def fastapi_proxy(req: Request) -> StreamingResponse:
             yield chunk
 
     # Launch FastAPI ASGI app
-    asyncio.create_task(
-        fastapi_app(req.scope, req._receive, asgi_send)
-    )
+    asyncio.create_task(fastapi_app(req.scope, req._receive, asgi_send))
 
     # Wait until FastAPI sends response headers
     await response_started.wait()
