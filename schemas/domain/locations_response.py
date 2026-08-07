@@ -3,7 +3,7 @@ Location response Pydantic models
 """
 
 from pydantic import RootModel
-from schemas.base_models import StrictCamelModel
+from schemas.shared.base_models import StrictCamelModel
 
 
 class LocationItem(StrictCamelModel):

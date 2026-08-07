@@ -1,12 +1,12 @@
 from collections import defaultdict
 from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
-from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
-from schemas.final_dataset_response import FinalDatasetResponse, FilterSelectionItem, IndicatorSelectionItem
-from schemas.filter_selection_response import FilterSelectionResponse
-from schemas.indicator_selection_response import IndicatorSelectionResponse
-from schemas.locations_response import LocationsResponse
-from schemas.time_period_selection_response import TimePeriodSelectionResponse
+from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
+from schemas.responses.final_dataset_response import FinalDatasetResponse, FilterSelectionItem, IndicatorSelectionItem
+from schemas.llm.filter_selection_response import FilterSelectionResponse
+from schemas.llm.indicator_selection_response import IndicatorSelectionResponse
+from schemas.domain.locations_response import LocationsResponse
+from schemas.llm.time_period_selection_response import TimePeriodSelectionResponse
 
 
 def retrieve_and_transform_filter_data(file_ids: list[str], shortlisted_filters: defaultdict=None):

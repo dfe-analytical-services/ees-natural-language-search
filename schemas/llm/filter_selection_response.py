@@ -1,5 +1,5 @@
 """
-Filter item selection response Pydantic models
+LLM Filter item selection response Pydantic models
 """
 
 from pydantic import BaseModel, Field, RootModel

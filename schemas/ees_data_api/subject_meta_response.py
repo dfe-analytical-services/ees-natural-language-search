@@ -1,12 +1,12 @@
 """
-Subject Meta response Pydantic models
+Data API Subject Meta response Pydantic models
 """
 
 from functools import cached_property
 from pydantic import Field
 from typing import Any
 
-from schemas.base_models import CamelModel
+from schemas.shared.base_models import CamelModel
 
 
 class FilterItem(CamelModel):

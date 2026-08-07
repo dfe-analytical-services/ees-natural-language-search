@@ -1,5 +1,5 @@
 """
-Indicator selection response Pydantic models
+LLM Indicator selection response Pydantic models
 """
 
 from pydantic import BaseModel, RootModel

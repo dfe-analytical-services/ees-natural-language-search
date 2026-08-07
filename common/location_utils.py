@@ -1,7 +1,7 @@
 from collections import defaultdict
 from rapidfuzz import process, fuzz
-from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
-from schemas.locations_response import LocationsResponse
+from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
+from schemas.domain.locations_response import LocationsResponse
 
 PROPERTY_TO_GEO_LEVEL = {
     'Country':'National',

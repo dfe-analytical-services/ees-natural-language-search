@@ -1,8 +1,10 @@
 from pydantic import BaseModel, ConfigDict
-from schemas.subject_meta_response import SubjectMetaResponse
+from schemas.ees_data_api.subject_meta_response import SubjectMetaResponse
 
 
 class DatasetWithSubjectMeta(BaseModel):
+    """Internal DTO which combines reranked dataset details with subject metadata fetched from the Data API."""
+
     model_config = ConfigDict(extra="forbid")
 
     file_id: str

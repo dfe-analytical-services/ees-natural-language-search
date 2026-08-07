@@ -3,11 +3,11 @@ from collections.abc import Mapping
 from datetime import datetime
 from common.llm_response_parser import parse_llm_response
 from clients.openai_client import generate_answer
-from schemas.llm_validation_error import LLMValidationError
-from schemas.relevant_dataset_response import RelevantDatasetResponse
-from schemas.reranking_agent_result import RerankingAgentResult
-from schemas.reranker_response import RerankerResponse
-from schemas.token_usage import TokenUsage
+from schemas.llm.validation_error import LLMValidationError
+from schemas.responses.relevant_dataset_response import RelevantDatasetResponse
+from schemas.domain.reranking_agent_result import RerankingAgentResult
+from schemas.llm.reranker_response import RerankerResponse
+from schemas.shared.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 

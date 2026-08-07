@@ -1,8 +1,8 @@
 import asyncio
 import logging
 from clients.openai_client import generate_answer
-from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
-from schemas.token_usage import TokenUsage
+from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
+from schemas.shared.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 

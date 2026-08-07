@@ -13,8 +13,8 @@ from common.data_utils import (
     retrieve_and_transform_filter_data,
     combine_final_dataset_responses,
 )
-from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
-from schemas.event_responses import (
+from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
+from schemas.responses.event_responses import (
     PipelineCompleteEventData,
     PipelineCompleteEventResponse,
     RetrievedDatasetsEventData,
@@ -23,8 +23,8 @@ from schemas.event_responses import (
     RetrievedDatasetsEventResponse,
     StartEventResponse,
 )
-from schemas.reranker_dataset_response import RerankerDatasetResponse
-from schemas.token_usage import TokenUsage
+from schemas.responses.reranker_dataset_response import RerankerDatasetResponse
+from schemas.shared.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 
