@@ -22,15 +22,21 @@ You will be given:
 - A user query.
 - The time period requirement extracted from the user query.
 - The dataset file ID.
-- The list of available time period values available in the dataset, in chronological order.
+- The list of time periods available in the dataset, in chronological order.
 
 # Task
 You must return a start and end time period that best fits the query requirement of the user.
 If the dataset does not cover the entire requested time period, choose the largest overlap.
-If the user asks for the last 10 years of data and the dataset covers one day of the last 10 years, that will be the largest overlap.
+E.g. if the user asks for the last 10 years of data and the dataset covers one day of the last 10 years, that will be the largest overlap.
+
+If the time period requirement is empty, you MUST return the full available range for the dataset, starting with the earliest available time period, and ending with the latest available time period.
+If the time period requirement is present, but no available time period in the dataset overlaps it in any way, you MUST return `null` instead of guessing.
+DO NOT return `null` just because the time period requirement is empty.
+DO NOT assume anything about the query requirements based on domain knowledge.
 
 ## Output format
-Return only a valid JSON object in this exact structure:
+Return only a single valid JSON object in the exact structure described below.
+If a time period can be determined according to the rules, return:
 {
     "<exact file ID>": {
         "start": {
@@ -42,6 +48,11 @@ Return only a valid JSON object in this exact structure:
             "year": <exact year>
         }
     }
+}
+
+Otherwise, return:
+{
+    "<exact file ID>": null
 }
 
 Use the exact input values for the file ID, code and year.
@@ -63,15 +74,13 @@ FileID: {file_id}
 
 # Available time periods - in chronological order
 {time_period_list}
-
-DO NOT assume anything about the query requirements based on domain knowledge.
 """
 
 
 async def run_time_period_selection_agent(
     datasets_by_id: dict[str, DatasetWithSubjectMeta],
     user_query: str,
-    time_period_requirement: str,
+    time_period_requirement: str | None,
 ):
 
     logger.info("Time period selection model running...")

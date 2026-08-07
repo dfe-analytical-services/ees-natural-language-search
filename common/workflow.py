@@ -145,7 +145,7 @@ async def run_workflow(user_query: str, publication_id: str):
     )
 
     logger.info(
-        "Running filter selection, indicator selection, and time period selection models"
+        "Running filter selection, indicator selection, and time period selection agents concurrently"
     )
     (
         (filter_responses, filter_tokens_used),
@@ -153,21 +153,21 @@ async def run_workflow(user_query: str, publication_id: str):
         (time_period_responses, time_period_tokens_used),
     ) = await asyncio.gather(
         run_filter_selection_agent(
-            transformed_data,
-            reranked_datasets_by_id,
-            user_query,
-            reranker_result.reranker_response.queryRequirements.filters,
+            transformed=transformed_data,
+            datasets_by_id=reranked_datasets_by_id,
+            user_query=user_query,
+            query_requirements=reranker_result.reranker_response.queryRequirements.filters,
         ),
         run_indicator_selection_agent(
-            reranker_result.grouped_indicators,
-            reranked_datasets_by_id,
-            user_query,
-            reranker_result.reranker_response.queryRequirements.filters,
+            grouped_indicators=reranker_result.grouped_indicators,
+            datasets_by_id=reranked_datasets_by_id,
+            user_query=user_query,
+            query_requirements=reranker_result.reranker_response.queryRequirements.filters,
         ),
         run_time_period_selection_agent(
-            reranked_datasets_by_id,
-            user_query,
-            reranker_result.reranker_response.queryRequirements.timePeriod,
+            datasets_by_id=reranked_datasets_by_id,
+            user_query=user_query,
+            time_period_requirement=reranker_result.reranker_response.queryRequirements.timePeriod,
         ),
     )
     total_tokens_used.input += (
