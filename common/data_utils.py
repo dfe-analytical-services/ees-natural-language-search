@@ -2,7 +2,12 @@ from collections import defaultdict
 from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
-from schemas.responses.final_dataset_response import FinalDatasetResponse, FilterSelectionItem, IndicatorSelectionItem
+from schemas.responses.final_dataset_response import (
+    DatasetTimePeriodRangeResult,
+    FilterSelectionItem,
+    FinalDatasetResponse,
+    IndicatorSelectionItem,
+)
 from schemas.llm.filter_selection_response import FilterSelectionResponse
 from schemas.llm.indicator_selection_response import IndicatorSelectionResponse
 from schemas.domain.locations_response import LocationsResponse
@@ -110,7 +115,11 @@ def combine_final_dataset_responses(filter_responses: list,
 
         for file_id, dataset_time_period  in time_period_data.items():
             if file_id in combined:
-                combined[file_id]["time_period"] = dataset_time_period
+                # Convert from the LLM response shape to the event response shape
+                # The two are currently the same but we're allowing them to diverge in future if needed
+                combined[file_id]["time_period"] = DatasetTimePeriodRangeResult.model_validate(
+                    dataset_time_period.model_dump()
+                )
 
         for file_id, relevance_reason in relevance_reasons_by_id.items():
             if file_id in combined:
