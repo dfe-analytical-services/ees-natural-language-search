@@ -2,7 +2,7 @@ from collections import defaultdict
 from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
 from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
-from schemas.final_dataset_response import FinalDatasetResponse
+from schemas.final_dataset_response import FinalDatasetResponse, FilterSelectionItem, IndicatorSelectionItem
 from schemas.filter_selection_response import FilterSelectionResponse
 from schemas.indicator_selection_response import IndicatorSelectionResponse
 from schemas.locations_response import LocationsResponse
@@ -74,13 +74,13 @@ def combine_final_dataset_responses(filter_responses: list,
 
         for file_id, dataset_filters in filter_data.items():
             filters = [
-                {
-                    "id": datasets_by_id[file_id].subject_meta.get_filter_item(
+                FilterSelectionItem(
+                    id=datasets_by_id[file_id].subject_meta.get_filter_item(
                         filter_item_group_id=filter_item_group_id,
                         filter_item_label=filter_item_label,
                     ).id,
-                    "label": filter_item_label,
-                }
+                    label=filter_item_label,
+                )
                 for filter_item_descriptor, decision in dataset_filters.filter_items.items()
                 if decision.relevant is True
                 for _, filter_item_group_id, filter_item_label in [filter_item_descriptor.split("|||")]
@@ -92,10 +92,10 @@ def combine_final_dataset_responses(filter_responses: list,
 
         for file_id, dataset_indicators in indicator_data.items():
             indicators = [
-                {
-                    "id": datasets_by_id[file_id].subject_meta.get_indicator(indicator_label).id,
-                    "label": indicator_label,
-                }
+                IndicatorSelectionItem(
+                    id=datasets_by_id[file_id].subject_meta.get_indicator(indicator_label).id,
+                    label=indicator_label,
+                )
                 for indicator_label, decision in dataset_indicators.items()
                 if decision.relevant is True
             ]
