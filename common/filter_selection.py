@@ -28,8 +28,9 @@ A filter item group is a collection of related filter items within the same filt
 
 # Inputs
 You will be given:
-- A user query decomposed into explicit information requirements.
-- A dataset file ID, name and description.
+- A user query.
+- The data requirements that have been extracted from the user query.
+- The dataset name, description and its file ID.
 - A list of filter items.
 
 Each filter item is represented by three fields:
@@ -43,6 +44,8 @@ Only the filter label and filter item label should be used to determine semantic
 # Task
 You must evaluate every filter item one at a time, in the order provided.
 
+Each filter item uses the exact format `filter label|||filter item group ID|||filter item label`.
+
 For each filter item:
 1. Compare the filter label and the filter item label to the user's explicit query requirements.
 2. Decide whether the filter item is semantically relevant to at least one query requirement.
@@ -50,9 +53,10 @@ For each filter item:
 A filter item is semantically relevant if, based only on its filter label and filter item label, it matches or directly satisfies at least one explicit query requirement. Otherwise it is not relevant.
 You may use the dataset name and description only to interpret the meaning of the dataset and its filters, not as evidence that any filter item is relevant or to infer additional query requirements.
 
+Try to suggest as many filter items as possible that are semantically similar.
 The decision for each filter item must be made independently.
 Do NOT let previous or subsequent filter items influence your current decision.
-Do NOT use external knowledge, domain knowledge, or any other information not contained in the query requirements and filter item.
+DO NOT assume anything about the query requirements, dataset, or the filter items based on domain knowledge.
 
 ## Output format
 Return only a valid JSON object in this exact structure:
@@ -88,11 +92,6 @@ FileID: {file_id}
 
 # Filter items
 {filter_list}
-
-Each filter item uses the exact format `filter label|||filter item group ID|||filter item label`.
-Now work through each filter item and return your suggestions in the specified JSON format.
-Try to suggest as many filter items as possible that are semantically similar.
-DO NOT assume anything about the query requirements based on domain knowledge.
 """
 
 

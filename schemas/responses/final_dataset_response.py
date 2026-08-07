@@ -12,16 +12,16 @@ class TimePeriod(StrictCamelModel):
     """A time period, e.g. Academic year 2025/26 (code: AY, year: 2025).
     Duplicated from schemas.llm.time_period_selection_response.TimePeriod so the response shape can diverge from the LLM response shape in future."""
 
-    code: str = ""
-    year: int = 0
+    code: str
+    year: int
 
 
 class DatasetTimePeriodRangeResult(StrictCamelModel):
     """The selected time period range for a dataset.
     Duplicated from schemas.llm.time_period_selection_response.DatasetTimePeriodRangeResult so the response shape can diverge from the LLM response shape in future."""
 
-    start: TimePeriod = Field(default_factory=TimePeriod)
-    end: TimePeriod = Field(default_factory=TimePeriod)
+    start: TimePeriod
+    end: TimePeriod
 
 
 class FilterSelectionItem(StrictCamelModel):

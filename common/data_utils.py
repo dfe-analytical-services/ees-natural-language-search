@@ -117,8 +117,12 @@ def combine_final_dataset_responses(filter_responses: list,
             if file_id in combined:
                 # Convert from the LLM response shape to the event response shape
                 # The two are currently the same but we're allowing them to diverge in future if needed
-                combined[file_id]["time_period"] = DatasetTimePeriodRangeResult.model_validate(
-                    dataset_time_period.model_dump()
+                combined[file_id]["time_period"] = (
+                    DatasetTimePeriodRangeResult.model_validate(
+                        dataset_time_period.model_dump()
+                    )
+                    if dataset_time_period is not None
+                    else None
                 )
 
         for file_id, relevance_reason in relevance_reasons_by_id.items():
