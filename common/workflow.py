@@ -3,11 +3,11 @@ import logging
 import os
 
 from clients.ees_data_api_client import EesDataApiClient
+from common.location_utils import get_location_matches
 from common.reranker import run_reranking_agent
 from common.filter_selection import run_filter_selection_agent
 from common.retrieve_datasets import retrieve_relevant_datasets
 from common.time_period_selection import run_time_period_selection_agent
-from common.geography_levels_utils import get_geographical_matches
 from common.indicator_selection import run_indicator_selection_agent
 from common.data_utils import (
     retrieve_and_transform_filter_data,
@@ -128,8 +128,8 @@ async def run_workflow(user_query: str, publication_id: str):
             subject_meta=subject_meta,
         )
 
-    logger.info("Getting geography matches")
-    geo_dict = await get_geographical_matches(
+    logger.info("Getting location matches")
+    location_responses = await get_location_matches(
         reranked_datasets_by_id, reranker_result.reranker_response.queryRequirements.geography
     )
 
@@ -178,12 +178,12 @@ async def run_workflow(user_query: str, publication_id: str):
 
     logger.info("Combining final dataset responses")
     final_dataset_responses = combine_final_dataset_responses(
-        filter_responses,
-        indicator_responses,
-        time_period_responses,
-        reranked_datasets_by_id,
-        geo_dict,
-        relevance_reasons_by_id,
+        filter_responses=filter_responses,
+        indicator_responses=indicator_responses,
+        location_responses=location_responses,
+        time_period_responses=time_period_responses,
+        datasets_by_id=reranked_datasets_by_id,
+        relevance_reasons_by_id=relevance_reasons_by_id,
     )
 
     pipeline_complete_event = PipelineCompleteEventResponse(

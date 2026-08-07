@@ -5,6 +5,7 @@ Final dataset response Pydantic models
 from pydantic import Field
 from schemas.base_models import StrictCamelModel
 
+from schemas.locations_response import DatasetLocations
 from schemas.time_period_selection_response import DatasetTimePeriodResult
 
 
@@ -12,13 +13,6 @@ class SelectionItem(StrictCamelModel):
 
     id: str
     label: str
-
-
-class GeographicLevelItem(StrictCamelModel):
-
-    id: str
-    label: str
-    value: str
 
 
 class FinalDatasetResponse(StrictCamelModel):
@@ -36,5 +30,5 @@ class FinalDatasetResponse(StrictCamelModel):
     filters: list[SelectionItem] = Field(default_factory=list)
     indicators: list[SelectionItem] = Field(default_factory=list)
     time_period: DatasetTimePeriodResult | None = None
-    geographic_levels: dict[str, list[GeographicLevelItem]] | None = None
+    geographic_levels: DatasetLocations | None = None
     relevance_reason: str | None = None

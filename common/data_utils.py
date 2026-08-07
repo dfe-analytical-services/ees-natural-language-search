@@ -5,6 +5,7 @@ from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.final_dataset_response import FinalDatasetResponse
 from schemas.filter_selection_response import FilterSelectionResponse
 from schemas.indicator_selection_response import IndicatorSelectionResponse
+from schemas.locations_response import LocationsResponse
 from schemas.time_period_selection_response import TimePeriodSelectionResponse
 
 
@@ -55,9 +56,9 @@ def retrieve_and_transform_filter_data(file_ids: list[str], shortlisted_filters:
 
 def combine_final_dataset_responses(filter_responses: list,
                       indicator_responses: list,
+                      location_responses: LocationsResponse,
                       time_period_responses: list,
                       datasets_by_id: dict[str, DatasetWithSubjectMeta],
-                      geo_dict: defaultdict,
                       relevance_reasons_by_id: dict[str, str]) -> list[FinalDatasetResponse]:
     combined_responses: list[dict] = []
 
@@ -103,13 +104,13 @@ def combine_final_dataset_responses(filter_responses: list,
                 combined.setdefault(file_id, {"filters": [], "indicators": []})
                 combined[file_id]["indicators"] = indicators
 
+        for file_id, dataset_locations in location_responses.root.items():
+            if file_id in combined:
+                combined[file_id]["geographic_levels"] = dataset_locations
+
         for file_id, dataset_time_period  in time_period_data.items():
             if file_id in combined:
                 combined[file_id]["time_period"] = dataset_time_period
-
-        for file_id, geo_matches in geo_dict.items():
-            if file_id in combined:
-                combined[file_id]["geographic_levels"] = geo_matches
 
         for file_id, relevance_reason in relevance_reasons_by_id.items():
             if file_id in combined:
