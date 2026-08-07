@@ -5,7 +5,7 @@ from openai import AsyncAzureOpenAI
 logger = logging.getLogger(__name__)
 
 
-async def generate_answer(user_query: str, system_prompt: str = "You are a helpful assistant") -> str:
+async def generate_answer(user_query: str, system_prompt: str = "You are a helpful assistant designed to output JSON.") -> str:
     chat_client = AsyncAzureOpenAI(
         azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
         api_key=os.environ["AZURE_OPENAI_API_KEY"],
@@ -24,7 +24,8 @@ async def generate_answer(user_query: str, system_prompt: str = "You are a helpf
         top_p=1,
         frequency_penalty=0,
         presence_penalty=0,
-        seed=42
+        response_format={ "type": "json_object" },
+        seed=42,
     )
 
     if logger.isEnabledFor(logging.DEBUG):
