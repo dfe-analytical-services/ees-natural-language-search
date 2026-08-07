@@ -17,6 +17,7 @@ from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.responses.event_responses import (
     PipelineCompleteEventData,
     PipelineCompleteEventResponse,
+    QueryRequirements,
     RetrievedDatasetsEventData,
     RerankerEventResponse,
     RerankerEventData,
@@ -86,7 +87,11 @@ async def run_workflow(user_query: str, publication_id: str):
         data=RerankerEventData(
             confidence=reranker_result.reranker_response.confidence,
             datasets=reranker_datasets,
-            query_requirements=reranker_result.reranker_response.queryRequirements,
+            # Convert from the LLM response shape to the event response shape
+            # The two are currently the same but we're allowing them to diverge in future if needed
+            query_requirements=QueryRequirements.model_validate(
+                reranker_result.reranker_response.queryRequirements.model_dump()
+            ),
             token_usage=reranker_result.total_tokens_used,
             cost=calculate_token_cost(reranker_result.total_tokens_used),
         ),
