@@ -1,5 +1,5 @@
 """
-Reranker response Pydantic models
+LLM Reranker response Pydantic models
 """
 
 from pydantic import BaseModel, Field

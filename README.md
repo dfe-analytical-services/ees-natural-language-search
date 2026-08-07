@@ -32,7 +32,7 @@ ees-natural-language-search/
 │   ├── filter_selection.py          # LLM agent: pick relevant filter values per dataset
 │   ├── indicator_selection.py       # LLM agent: pick relevant indicators per dataset
 │   ├── data_utils.py                # Filter retrieval, response merge, score conversion
-│   └── geography_levels_utils.py    # Fuzzy location matching + geographic-level grouping
+│   └── location_utils.py            # Fuzzy location matching + geographic level grouping
 │
 └── routes/
     ├── natural_language_search_function.py  # POST /api/natural_language_search_function (SSE)
@@ -63,7 +63,7 @@ ees-natural-language-search/
    ├── 3. Build reranked dataset map with subject metadata       (workflow.py + EES Data API subject meta)
    │        Build reranked_datasets_by_id from reranker datasets + subject meta
    │
-   ├── 4. get_geographical_matches                               (geography_levels_utils.py)
+   ├── 4. get_location_matches                                   (location_utils.py)
    │        Fuzzy-match mentioned locations, group by allowed geographic levels per dataset
    │
    ├── 5. retrieve_and_transform_filter_data                     (data_utils.py -> Azure Search filter index)
@@ -115,7 +115,7 @@ One LLM call per reranked dataset, all gathered concurrently. Each returns a lis
 - `combine_final_dataset_responses(...)` keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and flattens to a list of `{fileId, ...}`.
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 
-### `geography_levels_utils.py`
+### `location_utils.py`
 - `hybrid_scorer` only accepts a perfect `token_set_ratio` (100) when >= 2 tokens overlap and the candidate isn't much shorter than they query; otherwise falls back to `WRatio`
 
 ### `openai_client.py`

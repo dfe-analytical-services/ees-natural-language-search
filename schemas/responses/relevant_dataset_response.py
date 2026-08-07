@@ -3,7 +3,7 @@ Relevant dataset response Pydantic models
 """
 
 from pydantic import Field
-from schemas.base_models import StrictCamelModel
+from schemas.shared.base_models import StrictCamelModel
 
 
 class TimePeriodRange(StrictCamelModel):

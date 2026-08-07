@@ -1,4 +1,4 @@
-from schemas.base_models import StrictCamelModel
+from schemas.shared.base_models import StrictCamelModel
 
 
 class RerankerDatasetResponse(StrictCamelModel):

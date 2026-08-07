@@ -3,12 +3,20 @@ Event response Pydantic models
 """
 
 from pydantic import Field
-from schemas.base_models import StrictCamelModel
-from schemas.final_dataset_response import FinalDatasetResponse
-from schemas.relevant_dataset_response import RelevantDatasetResponse
-from schemas.reranker_dataset_response import RerankerDatasetResponse
-from schemas.reranker_response import QueryRequirements
-from schemas.token_usage import TokenUsage
+from schemas.shared.base_models import StrictCamelModel
+from schemas.responses.final_dataset_response import FinalDatasetResponse
+from schemas.responses.relevant_dataset_response import RelevantDatasetResponse
+from schemas.responses.reranker_dataset_response import RerankerDatasetResponse
+from schemas.shared.token_usage import TokenUsage
+
+
+class QueryRequirements(StrictCamelModel):
+    """The reranker's inferred query requirements.
+    Duplicated from schemas.llm.reranker_response.QueryRequirements so the response shape can diverge from the LLM response shape in future."""
+
+    filters: list[str] = Field(default_factory=list)
+    geography: list[str] = Field(default_factory=list)
+    time_period: str | None = None
 
 
 class RetrievedDatasetsEventData(StrictCamelModel):

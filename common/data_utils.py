@@ -1,11 +1,12 @@
 from collections import defaultdict
 from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
-from schemas.dataset_with_subject_meta import DatasetWithSubjectMeta
-from schemas.final_dataset_response import FinalDatasetResponse
-from schemas.filter_selection_response import FilterSelectionResponse
-from schemas.indicator_selection_response import IndicatorSelectionResponse
-from schemas.time_period_selection_response import TimePeriodSelectionResponse
+from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
+from schemas.responses.final_dataset_response import FinalDatasetResponse, FilterSelectionItem, IndicatorSelectionItem
+from schemas.llm.filter_selection_response import FilterSelectionResponse
+from schemas.llm.indicator_selection_response import IndicatorSelectionResponse
+from schemas.domain.locations_response import LocationsResponse
+from schemas.llm.time_period_selection_response import TimePeriodSelectionResponse
 
 
 def retrieve_and_transform_filter_data(file_ids: list[str], shortlisted_filters: defaultdict=None):
@@ -55,9 +56,9 @@ def retrieve_and_transform_filter_data(file_ids: list[str], shortlisted_filters:
 
 def combine_final_dataset_responses(filter_responses: list,
                       indicator_responses: list,
+                      location_responses: LocationsResponse,
                       time_period_responses: list,
                       datasets_by_id: dict[str, DatasetWithSubjectMeta],
-                      geo_dict: defaultdict,
                       relevance_reasons_by_id: dict[str, str]) -> list[FinalDatasetResponse]:
     combined_responses: list[dict] = []
 
@@ -73,13 +74,13 @@ def combine_final_dataset_responses(filter_responses: list,
 
         for file_id, dataset_filters in filter_data.items():
             filters = [
-                {
-                    "id": datasets_by_id[file_id].subject_meta.get_filter_item(
+                FilterSelectionItem(
+                    id=datasets_by_id[file_id].subject_meta.get_filter_item(
                         filter_item_group_id=filter_item_group_id,
                         filter_item_label=filter_item_label,
                     ).id,
-                    "label": filter_item_label,
-                }
+                    label=filter_item_label,
+                )
                 for filter_item_descriptor, decision in dataset_filters.filter_items.items()
                 if decision.relevant is True
                 for _, filter_item_group_id, filter_item_label in [filter_item_descriptor.split("|||")]
@@ -91,10 +92,10 @@ def combine_final_dataset_responses(filter_responses: list,
 
         for file_id, dataset_indicators in indicator_data.items():
             indicators = [
-                {
-                    "id": datasets_by_id[file_id].subject_meta.get_indicator(indicator_label).id,
-                    "label": indicator_label,
-                }
+                IndicatorSelectionItem(
+                    id=datasets_by_id[file_id].subject_meta.get_indicator(indicator_label).id,
+                    label=indicator_label,
+                )
                 for indicator_label, decision in dataset_indicators.items()
                 if decision.relevant is True
             ]
@@ -103,13 +104,13 @@ def combine_final_dataset_responses(filter_responses: list,
                 combined.setdefault(file_id, {"filters": [], "indicators": []})
                 combined[file_id]["indicators"] = indicators
 
+        for file_id, dataset_locations in location_responses.root.items():
+            if file_id in combined:
+                combined[file_id]["geographic_levels"] = dataset_locations
+
         for file_id, dataset_time_period  in time_period_data.items():
             if file_id in combined:
                 combined[file_id]["time_period"] = dataset_time_period
-
-        for file_id, geo_matches in geo_dict.items():
-            if file_id in combined:
-                combined[file_id]["geographic_levels"] = geo_matches
 
         for file_id, relevance_reason in relevance_reasons_by_id.items():
             if file_id in combined:
