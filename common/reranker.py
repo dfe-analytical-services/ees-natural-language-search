@@ -133,7 +133,7 @@ async def run_reranking_agent(
 
     total_tokens_used = TokenUsage(input=used_input_tokens, output=used_output_tokens)
 
-    reranker_parsed = parse_llm_response(reranker_response, RerankerResponse, context='ranker')
+    reranker_parsed = parse_llm_response(reranker_response, RerankerResponse, context="reranker")
     if reranker_parsed is None:
         raise LLMValidationError("The reranking step returned a malformed response, the query could not be processed.")
 

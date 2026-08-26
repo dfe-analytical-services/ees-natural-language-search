@@ -72,8 +72,9 @@ ees-natural-language-search/
    ├── 6. filter + indicator + time period agents in parallel    (asyncio.gather -> Azure OpenAI)
    │        Per-dataset relevance decisions for each filter value/indicator
    │
-   └── 7. combine_final_dataset_responses                        (data_utils.py)
-            Merge filters + indicators + geography + a relevance reason per dataset
+   └── 7. parse_selection_responses + build_final_dataset_response (data_utils.py)
+            Parse the agent responses keyed by file id, then merge filters, indicators, time period, locations,
+            and a relevance reason, per dataset.
             yields {stage:"pipeline complete", data:{datasets:[...], token_usage:<int>}}
 ```
 
@@ -112,7 +113,8 @@ One LLM call per reranked dataset, all gathered concurrently. Each returns a lis
 
 ### `data_utils.py`
 - `retrieve_and_transform_filter_data(...)` pulls full filter values from the filter index and flattens them per dataset.
-- `combine_final_dataset_responses(...)` keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and flattens to a list of `{fileId, ...}`.
+- `parse_selection_responses(...)` parses the filter/indicator/time period agent responses and merges them into dicts keyed by file id.
+- `build_final_dataset_response(...)` takes the parsed filter/indicator/time period results, keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and returns a `FinalDatasetResponse`.
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 
 ### `location_utils.py`

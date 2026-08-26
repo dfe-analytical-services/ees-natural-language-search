@@ -30,7 +30,7 @@ def _strip_code_fences(raw: str) -> str:
     return text.strip()
 
 
-def parse_llm_response(raw, model: Type[T], context: str = "LLM response") -> Optional[T]:
+def parse_llm_response(raw, model: Type[T], context: str) -> Optional[T]:
     """Validate a raw LLM string against pydantic model.
     Returns the validated model instance, or None if the response is missing, not valid JSON or does not match the expected structure.
     """
