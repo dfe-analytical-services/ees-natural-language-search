@@ -1,4 +1,6 @@
 from collections import defaultdict
+from typing import TypeVar
+from pydantic import RootModel
 from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
@@ -8,10 +10,12 @@ from schemas.responses.final_dataset_response import (
     FinalDatasetResponse,
     IndicatorSelectionItem,
 )
-from schemas.llm.filter_selection_response import FilterSelectionResponse
-from schemas.llm.indicator_selection_response import IndicatorSelectionResponse
-from schemas.domain.locations_response import LocationsResponse
+from schemas.llm.filter_selection_response import FilterItemDatasetResult, FilterSelectionResponse
+from schemas.llm.indicator_selection_response import IndicatorDecision, IndicatorSelectionResponse
+from schemas.domain.locations_response import DatasetLocations
 from schemas.llm.time_period_selection_response import TimePeriodSelectionResponse
+
+T = TypeVar("T")
 
 
 def retrieve_and_transform_filter_data(file_ids: list[str], shortlisted_filters: defaultdict=None):
@@ -59,99 +63,83 @@ def retrieve_and_transform_filter_data(file_ids: list[str], shortlisted_filters:
     return transformed
 
 
-def combine_final_dataset_responses(filter_responses: list,
-                      indicator_responses: list,
-                      location_responses: LocationsResponse,
-                      time_period_responses: list,
-                      datasets_by_id: dict[str, DatasetWithSubjectMeta],
-                      relevance_reasons_by_id: dict[str, str]) -> list[FinalDatasetResponse]:
-    combined_responses: list[dict] = []
+def _merge_selection_responses(
+    responses: list[str],
+    response_model: type[RootModel[dict[str, T]]],
+    context: str,
+) -> dict[str, T]:
+    merged: dict[str, T] = {}
+    for raw in responses:
+        parsed = parse_llm_response(raw, response_model, context=context)
+        if parsed:
+            merged.update(parsed.root)
+    return merged
 
-    for filter_raw, indicator_raw, time_period_raw in zip(filter_responses, indicator_responses, time_period_responses):
 
-        filter_selection_parsed = parse_llm_response(filter_raw, FilterSelectionResponse, context="filter selection")
-        indicator_selection_parsed = parse_llm_response(indicator_raw, IndicatorSelectionResponse, context="indicator selection")
-        time_period_selection_parsed = parse_llm_response(time_period_raw, TimePeriodSelectionResponse, context="time period selection")
-        filter_data = filter_selection_parsed.root if filter_selection_parsed else {}
-        indicator_data = indicator_selection_parsed.root if indicator_selection_parsed else {}
-        time_period_data = time_period_selection_parsed.root if time_period_selection_parsed else {}
-        combined = {}
+def parse_selection_responses(
+    filter_responses: list[str],
+    indicator_responses: list[str],
+    time_period_responses: list[str],
+) -> tuple[dict[str, FilterItemDatasetResult], dict[str, dict[str, IndicatorDecision]], dict[str, DatasetTimePeriodRangeResult | None]]:
+    filter_results_by_id = _merge_selection_responses(filter_responses, FilterSelectionResponse, context="filter selection")
+    indicator_results_by_id = _merge_selection_responses(indicator_responses, IndicatorSelectionResponse, context="indicator selection")
+    time_period_results_by_id = _merge_selection_responses(time_period_responses, TimePeriodSelectionResponse, context="time period selection")
+    return filter_results_by_id, indicator_results_by_id, time_period_results_by_id
 
-        for file_id, dataset_filters in filter_data.items():
-            filters = [
-                FilterSelectionItem(
-                    id=datasets_by_id[file_id].subject_meta.get_filter_item(
-                        filter_item_group_id=filter_item_group_id,
-                        filter_item_label=filter_item_label,
-                    ).id,
-                    label=filter_item_label,
-                )
-                for filter_item_descriptor, decision in dataset_filters.filter_items.items()
-                if decision.relevant is True
-                for _, filter_item_group_id, filter_item_label in [filter_item_descriptor.split("|||")]
-            ]
 
-            if filters:
-                combined.setdefault(file_id, {"filters": [], "indicators": []})
-                combined[file_id]["filters"] = filters
+def build_final_dataset_response(
+    dataset: DatasetWithSubjectMeta,
+    filter_results: FilterItemDatasetResult | None,
+    indicator_results: dict[str, IndicatorDecision] | None,
+    time_period_result: DatasetTimePeriodRangeResult | None,
+    location_results: DatasetLocations | None,
+    relevance_reason: str | None,
+) -> FinalDatasetResponse:
+    filters = [
+        FilterSelectionItem(
+            id=dataset.subject_meta.get_filter_item(
+                filter_item_group_id=filter_item_group_id,
+                filter_item_label=filter_item_label,
+            ).id,
+            label=filter_item_label,
+        )
+        for filter_item_descriptor, decision in (filter_results.filter_items if filter_results else {}).items()
+        if decision.relevant is True
+        for _, filter_item_group_id, filter_item_label in [filter_item_descriptor.split("|||")]
+    ]
 
-        for file_id, dataset_indicators in indicator_data.items():
-            indicators = [
-                IndicatorSelectionItem(
-                    id=datasets_by_id[file_id].subject_meta.get_indicator(indicator_label).id,
-                    label=indicator_label,
-                )
-                for indicator_label, decision in dataset_indicators.items()
-                if decision.relevant is True
-            ]
+    indicators = [
+        IndicatorSelectionItem(
+            id=dataset.subject_meta.get_indicator(indicator_label).id,
+            label=indicator_label,
+        )
+        for indicator_label, decision in (indicator_results or {}).items()
+        if decision.relevant is True
+    ]
 
-            if indicators:
-                combined.setdefault(file_id, {"filters": [], "indicators": []})
-                combined[file_id]["indicators"] = indicators
-
-        for file_id, dataset_locations in location_responses.root.items():
-            if file_id in combined:
-                combined[file_id]["geographic_levels"] = dataset_locations
-
-        for file_id, dataset_time_period  in time_period_data.items():
-            if file_id in combined:
-                # Convert from the LLM response shape to the event response shape
-                # The two are currently the same but we're allowing them to diverge in future if needed
-                combined[file_id]["time_period"] = (
-                    DatasetTimePeriodRangeResult.model_validate(
-                        dataset_time_period.model_dump()
-                    )
-                    if dataset_time_period is not None
-                    else None
-                )
-
-        for file_id, relevance_reason in relevance_reasons_by_id.items():
-            if file_id in combined:
-                combined[file_id]["relevance_reason"] = relevance_reason
-
-        combined_responses.append(combined)
-
-    final_response: list[FinalDatasetResponse] = []
-    for item in combined_responses:
-        for file_id, value in item.items():
-            dataset = datasets_by_id[file_id]
-            final_response.append(
-                FinalDatasetResponse(
-                    data_set_file_id=dataset.dataset_file_id,
-                    file_id=dataset.file_id,
-                    publication_id=dataset.publication_id,
-                    publication_slug=dataset.publication_slug,
-                    publication_title=dataset.publication_title,
-                    release_slug=dataset.release_slug,
-                    release_version_id=dataset.release_version_id,
-                    subject_id=dataset.subject_id,
-                    title=dataset.title,
-                    description=dataset.description,
-                    **value,
-                )
-            )
-
-    return final_response
+    return FinalDatasetResponse(
+        data_set_file_id=dataset.dataset_file_id,
+        file_id=dataset.file_id,
+        publication_id=dataset.publication_id,
+        publication_slug=dataset.publication_slug,
+        publication_title=dataset.publication_title,
+        release_slug=dataset.release_slug,
+        release_version_id=dataset.release_version_id,
+        subject_id=dataset.subject_id,
+        title=dataset.title,
+        description=dataset.description,
+        filters=filters,
+        indicators=indicators,
+        # Convert from the LLM response shape to the event response shape
+        # The two are currently the same but we're allowing them to diverge in future if needed
+        time_period=(
+            DatasetTimePeriodRangeResult.model_validate(time_period_result.model_dump())
+            if time_period_result is not None
+            else None
+        ),
+        geographic_levels=location_results,
+        relevance_reason=relevance_reason,
+    )
 
 
 def rrf_to_percentage(rrf_score: float):

@@ -10,8 +10,9 @@ from common.retrieve_datasets import retrieve_relevant_datasets
 from common.time_period_selection import run_time_period_selection_agent
 from common.indicator_selection import run_indicator_selection_agent
 from common.data_utils import (
+    build_final_dataset_response,
+    parse_selection_responses,
     retrieve_and_transform_filter_data,
-    combine_final_dataset_responses,
 )
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.responses.event_responses import (
@@ -104,7 +105,7 @@ async def run_workflow(user_query: str, publication_id: str):
         output=reranker_result.total_tokens_used.output,
     )
 
-    relevance_reasons_by_id = {
+    relevance_reasons_by_file_id = {
         dataset.file_id: dataset.relevance_reason
         for dataset in reranker_datasets
     }
@@ -114,12 +115,12 @@ async def run_workflow(user_query: str, publication_id: str):
 
     # Add subject meta to the reranked datasets for use in getting the geographical matches,
     # and in the filter selection, indicator selection, and time period selection agents
-    reranked_datasets_by_id: dict[str, DatasetWithSubjectMeta] = {}
+    reranked_datasets_by_file_id: dict[str, DatasetWithSubjectMeta] = {}
     for reranker_dataset in reranker_datasets:
         subject_meta = ees_data_api_client.get_subject_meta(
             subject_id=reranker_dataset.subject_id
         )
-        reranked_datasets_by_id[reranker_dataset.file_id] = DatasetWithSubjectMeta(
+        reranked_datasets_by_file_id[reranker_dataset.file_id] = DatasetWithSubjectMeta(
             dataset_file_id=reranker_dataset.data_set_file_id,
             file_id=reranker_dataset.file_id,
             publication_id=reranker_dataset.publication_id,
@@ -135,13 +136,13 @@ async def run_workflow(user_query: str, publication_id: str):
 
     logger.info("Getting location matches")
     location_responses = await get_location_matches(
-        reranked_datasets_by_id, reranker_result.reranker_response.queryRequirements.geography
+        reranked_datasets_by_file_id, reranker_result.reranker_response.queryRequirements.geography
     )
 
     # Can pass grouped filters into this in order to only pass the retrieved filters to the filter selection agent
     logger.info("Transforming dataset information for LLM ingestion")
     transformed_data = retrieve_and_transform_filter_data(
-        file_ids=list(reranked_datasets_by_id.keys()), shortlisted_filters=reranker_result.grouped_filters
+        file_ids=list(reranked_datasets_by_file_id.keys()), shortlisted_filters=reranker_result.grouped_filters
     )
 
     logger.info(
@@ -154,18 +155,18 @@ async def run_workflow(user_query: str, publication_id: str):
     ) = await asyncio.gather(
         run_filter_selection_agent(
             transformed=transformed_data,
-            datasets_by_id=reranked_datasets_by_id,
+            datasets_by_id=reranked_datasets_by_file_id,
             user_query=user_query,
             query_requirements=reranker_result.reranker_response.queryRequirements.filters,
         ),
         run_indicator_selection_agent(
             grouped_indicators=reranker_result.grouped_indicators,
-            datasets_by_id=reranked_datasets_by_id,
+            datasets_by_id=reranked_datasets_by_file_id,
             user_query=user_query,
             query_requirements=reranker_result.reranker_response.queryRequirements.filters,
         ),
         run_time_period_selection_agent(
-            datasets_by_id=reranked_datasets_by_id,
+            datasets_by_id=reranked_datasets_by_file_id,
             user_query=user_query,
             time_period_requirement=reranker_result.reranker_response.queryRequirements.timePeriod,
         ),
@@ -182,14 +183,22 @@ async def run_workflow(user_query: str, publication_id: str):
     )
 
     logger.info("Combining final dataset responses")
-    final_dataset_responses = combine_final_dataset_responses(
-        filter_responses=filter_responses,
-        indicator_responses=indicator_responses,
-        location_responses=location_responses,
-        time_period_responses=time_period_responses,
-        datasets_by_id=reranked_datasets_by_id,
-        relevance_reasons_by_id=relevance_reasons_by_id,
+
+    filter_results_by_file_id, indicator_results_by_file_id, time_period_results_by_file_id = parse_selection_responses(
+        filter_responses, indicator_responses, time_period_responses
     )
+
+    final_dataset_responses = [
+        build_final_dataset_response(
+            dataset=dataset,
+            filter_results=filter_results_by_file_id.get(file_id),
+            indicator_results=indicator_results_by_file_id.get(file_id),
+            time_period_result=time_period_results_by_file_id.get(file_id),
+            location_results=location_responses.root.get(file_id),
+            relevance_reason=relevance_reasons_by_file_id.get(file_id),
+        )
+        for file_id, dataset in reranked_datasets_by_file_id.items()
+    ]
 
     pipeline_complete_event = PipelineCompleteEventResponse(
         data=PipelineCompleteEventData(
