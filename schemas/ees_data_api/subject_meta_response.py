@@ -73,6 +73,17 @@ class SubjectMetaResponse(CamelModel):
         }
 
 
+    @cached_property
+    def _filter_item_by_id_lookup(self) -> dict[str, FilterItem]:
+        """Keyed by filter item id."""
+        return {
+            filter_item.id: filter_item
+            for filter_ in self.filters.values()
+            for filter_item_group in filter_.filter_item_groups.values()
+            for filter_item in filter_item_group.filter_items
+        }
+
+
     def get_filter_item(
         self,
         filter_item_group_id: str,
@@ -85,6 +96,13 @@ class SubjectMetaResponse(CamelModel):
             raise KeyError(
                 f"Filter item for group ID '{filter_item_group_id}' and label '{filter_item_label}' not found"
             )
+        return filter_item
+
+
+    def get_filter_item_by_id(self, filter_item_id: str) -> FilterItem:
+        filter_item = self._filter_item_by_id_lookup.get(filter_item_id)
+        if filter_item is None:
+            raise KeyError(f"Filter item with id '{filter_item_id}' not found")
         return filter_item
 
 

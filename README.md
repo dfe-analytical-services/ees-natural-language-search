@@ -85,7 +85,7 @@ ees-natural-language-search/
 |`starting pipeline` | *(none)* |
 |`retrieved datasets` | `{datasets:[...]}` |
 |`reranker complete` | `{confidence, datasets:[...], query_requirements, token_usage, cost}` |
-|`pipeline complete` | `{datasets:[{fileId, filters:[{id, label}], indicators:[{id, label}], timePeriod, geographicLevels, relevanceReason}], token_usage, cost}` |
+|`pipeline complete` | `{datasets:[{fileId, filters:[{id, label}], indicators:[{id, label}], timePeriod, geographicLevels, relevanceReason, autoSelectedFilters:{<filterLabel>:{filterItemLabel, filterItemId}}, unfilteredFilters:[<filterLabel>]}], token_usage, cost}` |
 | `error` *(from route, on exception)* | `{error: <message>}` |
 
 ---
@@ -114,7 +114,7 @@ One LLM call per reranked dataset, all gathered concurrently. Each returns a lis
 ### `data_utils.py`
 - `retrieve_and_transform_filter_data(...)` pulls full filter values from the filter index and flattens them per dataset.
 - `parse_selection_responses(...)` parses the filter/indicator/time period agent responses and merges them into dicts keyed by file id.
-- `build_final_dataset_response(...)` takes the parsed filter/indicator/time period results, keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and returns a `FinalDatasetResponse`.
+- `build_final_dataset_response(...)` takes the parsed filter/indicator/time period results, keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and returns a `FinalDatasetResponse`. Every filter always ends up with a selection. A filter without any relevant filter items uses the filter item with its `autoSelectFilterItemId` as a fallback if set. If there's no `autoSelectFilterItemId` every filter item of that filter is selected.
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 
 ### `location_utils.py`

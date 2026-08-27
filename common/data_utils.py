@@ -5,6 +5,7 @@ from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.responses.final_dataset_response import (
+    AutoSelectedFilterItem,
     DatasetTimePeriodRangeResult,
     FilterSelectionItem,
     FinalDatasetResponse,
@@ -14,6 +15,7 @@ from schemas.llm.filter_selection_response import FilterItemDatasetResult, Filte
 from schemas.llm.indicator_selection_response import IndicatorDecision, IndicatorSelectionResponse
 from schemas.domain.locations_response import DatasetLocations
 from schemas.llm.time_period_selection_response import TimePeriodSelectionResponse
+from schemas.ees_data_api.subject_meta_response import FilterItem
 
 T = TypeVar("T")
 
@@ -95,22 +97,59 @@ def build_final_dataset_response(
     location_results: DatasetLocations | None,
     relevance_reason: str | None,
 ) -> FinalDatasetResponse:
-    filters = [
-        FilterSelectionItem(
-            id=dataset.subject_meta.get_filter_item(
+    subject_meta = dataset.subject_meta
+
+    model_selected_filter_items: list[tuple[str, FilterItem]] = [
+        (
+            filter_item_group_id,
+            subject_meta.get_filter_item(
                 filter_item_group_id=filter_item_group_id,
                 filter_item_label=filter_item_label,
-            ).id,
-            label=filter_item_label,
+            ),
         )
         for filter_item_descriptor, decision in (filter_results.filter_items if filter_results else {}).items()
         if decision.relevant is True
         for _filter_label, filter_item_group_id, filter_item_label in [filter_item_descriptor.split("|||")]
     ]
 
+    # Every filter needs at least one selected filter item for the table query to work correctly.
+    # If the model didn't select any relevant filter items for a filter, fallback to its auto_select_filter_item_id if set.
+    # In the case of no auto_select_filter_item_id, select every filter item instead.
+    # Selecting all filter items has the same effect as not applying the filter (since nothing is excluded).
+    # Maintain a record of these auto-selected filter items, and unfiltered filters separately,
+    # so they can be returned in the final dataset response. This allows the consumer to differentiate
+    # between model selections and fallback selections.
+    selected_filter_item_group_ids = {filter_item_group_id for filter_item_group_id, _ in model_selected_filter_items}
+    selected_filter_items: list[FilterItem] = [filter_item for _, filter_item in model_selected_filter_items]
+    auto_selected_filters_items: dict[str, AutoSelectedFilterItem] = {}
+    unfiltered_filters: list[str] = []
+
+    # Iterate over all filters in the subject meta
+    for filter_ in subject_meta.filters.values():
+        filter_item_group_ids = {filter_item_group.id for filter_item_group in filter_.filter_item_groups.values()}
+
+        # Intersect the set of all filter item group IDs for the filter with the set of selected filter item group IDs,
+        # to check if the filter has any filter item groups containing a filter item with a relevant decision made by the model
+        if filter_item_group_ids & selected_filter_item_group_ids:
+            continue  # filter has a filter item group containing a filter item with a relevant decision
+
+        if filter_.auto_select_filter_item_id:
+            auto_select_filter_item = subject_meta.get_filter_item_by_id(filter_.auto_select_filter_item_id)
+            selected_filter_items.append(auto_select_filter_item)
+            auto_selected_filters_items[filter_.label] = AutoSelectedFilterItem(
+                filter_item_label=auto_select_filter_item.label, filter_item_id=auto_select_filter_item.id,
+            )
+        else:
+            for filter_item_group in filter_.filter_item_groups.values():
+                for filter_item in filter_item_group.filter_items:
+                    selected_filter_items.append(filter_item)
+            unfiltered_filters.append(filter_.label)
+
+    filters = [FilterSelectionItem(id=filter_item.id, label=filter_item.label) for filter_item in selected_filter_items]
+
     indicators = [
         IndicatorSelectionItem(
-            id=dataset.subject_meta.get_indicator(indicator_label).id,
+            id=subject_meta.get_indicator(indicator_label).id,
             label=indicator_label,
         )
         for indicator_label, decision in (indicator_results or {}).items()
@@ -139,6 +178,8 @@ def build_final_dataset_response(
         ),
         geographic_levels=location_results,
         relevance_reason=relevance_reason,
+        auto_selected_filter_items=auto_selected_filters_items,
+        unfiltered_filters=unfiltered_filters,
     )
 
 
