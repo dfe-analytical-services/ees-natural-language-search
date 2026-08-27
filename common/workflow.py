@@ -14,6 +14,7 @@ from common.data_utils import (
     parse_selection_responses,
     retrieve_and_transform_filter_data,
 )
+from common.logging_utils import log_dataset_selection_summary
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.responses.event_responses import (
     PipelineCompleteEventData,
@@ -182,23 +183,36 @@ async def run_workflow(user_query: str, publication_id: str):
         + time_period_tokens_used.output
     )
 
-    logger.info("Combining final dataset responses")
-
     filter_results_by_file_id, indicator_results_by_file_id, time_period_results_by_file_id = parse_selection_responses(
         filter_responses, indicator_responses, time_period_responses
     )
 
-    final_dataset_responses = [
-        build_final_dataset_response(
+    logger.info("Combining final dataset responses")
+    final_dataset_responses = []
+    for file_id, dataset in reranked_datasets_by_file_id.items():
+        filter_results = filter_results_by_file_id.get(file_id)
+        indicator_results = indicator_results_by_file_id.get(file_id)
+        time_period_result = time_period_results_by_file_id.get(file_id)
+        location_results = location_responses.root.get(file_id)
+
+        log_dataset_selection_summary(
             dataset=dataset,
-            filter_results=filter_results_by_file_id.get(file_id),
-            indicator_results=indicator_results_by_file_id.get(file_id),
-            time_period_result=time_period_results_by_file_id.get(file_id),
-            location_results=location_responses.root.get(file_id),
-            relevance_reason=relevance_reasons_by_file_id.get(file_id),
+            filter_results=filter_results,
+            indicator_results=indicator_results,
+            time_period_result=time_period_result,
+            location_results=location_results,
         )
-        for file_id, dataset in reranked_datasets_by_file_id.items()
-    ]
+
+        final_dataset_responses.append(
+            build_final_dataset_response(
+                dataset=dataset,
+                filter_results=filter_results,
+                indicator_results=indicator_results,
+                time_period_result=time_period_result,
+                location_results=location_results,
+                relevance_reason=relevance_reasons_by_file_id.get(file_id),
+            )
+        )
 
     pipeline_complete_event = PipelineCompleteEventResponse(
         data=PipelineCompleteEventData(

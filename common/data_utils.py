@@ -105,7 +105,7 @@ def build_final_dataset_response(
         )
         for filter_item_descriptor, decision in (filter_results.filter_items if filter_results else {}).items()
         if decision.relevant is True
-        for _, filter_item_group_id, filter_item_label in [filter_item_descriptor.split("|||")]
+        for _filter_label, filter_item_group_id, filter_item_label in [filter_item_descriptor.split("|||")]
     ]
 
     indicators = [
