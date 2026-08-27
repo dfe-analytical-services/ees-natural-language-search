@@ -38,6 +38,14 @@ class IndicatorSelectionItem(StrictCamelModel):
     label: str
 
 
+class AutoSelectedFilterItem(StrictCamelModel):
+    """A filter item that was selected via a filter's auto_select_filter_item_id fallback,
+    because the model did not select anything relevant for that filter."""
+
+    filter_item_label: str
+    filter_item_id: str
+
+
 class FinalDatasetResponse(StrictCamelModel):
 
     data_set_file_id: str
@@ -55,3 +63,11 @@ class FinalDatasetResponse(StrictCamelModel):
     time_period: DatasetTimePeriodRangeResult | None = None
     geographic_levels: DatasetLocations | None = None
     relevance_reason: str | None = None
+    auto_selected_filter_items: dict[str, AutoSelectedFilterItem] = Field(
+        default_factory=dict,
+        description="Keyed by filter label. The value is a filter item that has been auto-selected based on the filter's auto_select_filter_item_id, because there are no relevant selections made for the filter."
+    )
+    unfiltered_filters: list[str] = Field(
+        default_factory=list,
+        description="Labels of filters where every filter item is selected because there are no relevant selections made for the filter, and no auto_select_filter_item_id fallback exists either.",
+    )
