@@ -14,7 +14,10 @@ from schemas.responses.final_dataset_response import (
 from schemas.llm.filter_selection_response import FilterItemDatasetResult, FilterSelectionResponse
 from schemas.llm.indicator_selection_response import IndicatorDecision, IndicatorSelectionResponse
 from schemas.domain.locations_response import DatasetLocations
-from schemas.llm.time_period_selection_response import TimePeriodSelectionResponse
+from schemas.llm.time_period_selection_response import (
+    DatasetTimePeriodRangeResult as LlmDatasetTimePeriodRangeResult,
+    TimePeriodSelectionResponse,
+)
 from schemas.ees_data_api.subject_meta_response import FilterItem
 
 T = TypeVar("T")
@@ -82,7 +85,7 @@ def parse_selection_responses(
     filter_responses: list[str],
     indicator_responses: list[str],
     time_period_responses: list[str],
-) -> tuple[dict[str, FilterItemDatasetResult], dict[str, dict[str, IndicatorDecision]], dict[str, DatasetTimePeriodRangeResult | None]]:
+) -> tuple[dict[str, FilterItemDatasetResult], dict[str, dict[str, IndicatorDecision]], dict[str, LlmDatasetTimePeriodRangeResult | None]]:
     filter_results_by_id = _merge_selection_responses(filter_responses, FilterSelectionResponse, context="filter selection")
     indicator_results_by_id = _merge_selection_responses(indicator_responses, IndicatorSelectionResponse, context="indicator selection")
     time_period_results_by_id = _merge_selection_responses(time_period_responses, TimePeriodSelectionResponse, context="time period selection")
@@ -93,7 +96,7 @@ def build_final_dataset_response(
     dataset: DatasetWithSubjectMeta,
     filter_results: FilterItemDatasetResult | None,
     indicator_results: dict[str, IndicatorDecision] | None,
-    time_period_result: DatasetTimePeriodRangeResult | None,
+    time_period_result: LlmDatasetTimePeriodRangeResult | None,
     location_results: DatasetLocations | None,
     relevance_reason: str | None,
 ) -> FinalDatasetResponse:
