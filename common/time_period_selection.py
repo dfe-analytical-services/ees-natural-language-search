@@ -29,9 +29,7 @@ You must return a start and end time period that best fits the query requirement
 If the dataset does not cover the entire requested time period, choose the largest overlap.
 E.g. if the user asks for the last 10 years of data and the dataset covers one day of the last 10 years, that will be the largest overlap.
 
-If the time period requirement is empty, you MUST return the full available range for the dataset, starting with the earliest available time period, and ending with the latest available time period.
-If the time period requirement is present, but no available time period in the dataset overlaps it in any way, you MUST return `null` instead of guessing.
-DO NOT return `null` just because the time period requirement is empty.
+If no available time period in the dataset overlaps the requirement in any way, you MUST return `null` instead of guessing.
 DO NOT assume anything about the query requirements based on domain knowledge.
 
 ## Output format

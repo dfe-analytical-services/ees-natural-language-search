@@ -124,3 +124,10 @@ class SubjectMetaResponse(CamelModel):
         if indicator is None:
             raise KeyError(f"Indicator for label '{indicator_label}' not found")
         return indicator
+
+    def get_latest_time_period(self) -> TimePeriod | None:
+        if not self.time_period.options:
+            return None
+
+        # Options are returned in the Data API's subject meta response in chronological order, so the last one is the latest.
+        return self.time_period.options[-1]

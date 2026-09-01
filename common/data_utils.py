@@ -10,11 +10,15 @@ from schemas.responses.final_dataset_response import (
     FilterSelectionItem,
     FinalDatasetResponse,
     IndicatorSelectionItem,
+    TimePeriod,
 )
 from schemas.llm.filter_selection_response import FilterItemDatasetResult, FilterSelectionResponse
 from schemas.llm.indicator_selection_response import IndicatorDecision, IndicatorSelectionResponse
 from schemas.domain.locations_response import DatasetLocations
-from schemas.llm.time_period_selection_response import TimePeriodSelectionResponse
+from schemas.llm.time_period_selection_response import (
+    DatasetTimePeriodRangeResult as LlmDatasetTimePeriodRangeResult,
+    TimePeriodSelectionResponse,
+)
 from schemas.ees_data_api.subject_meta_response import FilterItem
 
 T = TypeVar("T")
@@ -82,7 +86,7 @@ def parse_selection_responses(
     filter_responses: list[str],
     indicator_responses: list[str],
     time_period_responses: list[str],
-) -> tuple[dict[str, FilterItemDatasetResult], dict[str, dict[str, IndicatorDecision]], dict[str, DatasetTimePeriodRangeResult | None]]:
+) -> tuple[dict[str, FilterItemDatasetResult], dict[str, dict[str, IndicatorDecision]], dict[str, LlmDatasetTimePeriodRangeResult | None]]:
     filter_results_by_id = _merge_selection_responses(filter_responses, FilterSelectionResponse, context="filter selection")
     indicator_results_by_id = _merge_selection_responses(indicator_responses, IndicatorSelectionResponse, context="indicator selection")
     time_period_results_by_id = _merge_selection_responses(time_period_responses, TimePeriodSelectionResponse, context="time period selection")
@@ -93,7 +97,8 @@ def build_final_dataset_response(
     dataset: DatasetWithSubjectMeta,
     filter_results: FilterItemDatasetResult | None,
     indicator_results: dict[str, IndicatorDecision] | None,
-    time_period_result: DatasetTimePeriodRangeResult | None,
+    time_period_result: LlmDatasetTimePeriodRangeResult | None,
+    time_period_requirement: str | None,
     location_results: DatasetLocations | None,
     relevance_reason: str | None,
 ) -> FinalDatasetResponse:
@@ -156,6 +161,28 @@ def build_final_dataset_response(
         if decision.relevant is True
     ]
 
+    if time_period_result is not None:
+        # Convert from the LLM response shape to the event response shape
+        # The two are currently the same but we're allowing them to diverge in future if needed
+        time_period = DatasetTimePeriodRangeResult.model_validate(time_period_result.model_dump())
+    elif time_period_requirement is None:
+        # No time period requirement was extracted from the query, so the time period selection agent
+        # was skipped. Fallback to the dataset's latest available time period.
+        latest_time_period = subject_meta.get_latest_time_period()
+        time_period = (
+            DatasetTimePeriodRangeResult(
+                start=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
+                end=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
+            )
+            if latest_time_period
+            else None
+        )
+    else:
+        # A time period requirement was present, but the model couldn't find a time period matching the
+        # requirement for this dataset. Return None to distinguish this from the no requirement case.
+        # Falling back to the dataset's latest available time period would be misleading.
+        time_period = None
+
     return FinalDatasetResponse(
         data_set_file_id=dataset.dataset_file_id,
         file_id=dataset.file_id,
@@ -169,13 +196,7 @@ def build_final_dataset_response(
         description=dataset.description,
         filters=filters,
         indicators=indicators,
-        # Convert from the LLM response shape to the event response shape
-        # The two are currently the same but we're allowing them to diverge in future if needed
-        time_period=(
-            DatasetTimePeriodRangeResult.model_validate(time_period_result.model_dump())
-            if time_period_result is not None
-            else None
-        ),
+        time_period=time_period,
         geographic_levels=location_results,
         relevance_reason=relevance_reason,
         auto_selected_filter_items=auto_selected_filters_items,
