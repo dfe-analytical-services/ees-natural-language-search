@@ -34,15 +34,24 @@ Set the following values:
 - `db_server_name` - Server name of the SQL Server database containing the `content` and `statistics` databases
 - `api_key` - A 'Find and Use an API' subscription key for the DfE Azure OpenAI API subscription
 
+### Optional filtering
+
+By default, the notebook processes every publication/release version returned by the database. To restrict output to a subset, set the values of the optional `[filtering]` section of `config.ini`:
+
+- `publication_ids` - CSV list of Publication IDs to include
+- `release_version_ids` - CSV list of Release Version IDs to include
+
+Leave these blank (or remove the `[filtering]` section entirely) to process everything.
+
 ## Run and outputs
 
-Before running, remove any existing output files from `dataset_metadata/shortlisted/dataset_level` and `dataset_metadata/shortlisted/filter_level`.
+Before running, remove any existing output files from `output/dataset_level` and `output/filter_level`.
 
 Open and run `upload_data_files.ipynb`.
 
 Look out for a Microsoft Entra ID interactive sign-in popup and complete authentication to allow the notebook to connect to the databases and continue.
 
-The notebook writes output under `dataset_metadata/shortlisted`:
+The notebook writes output files under `output`:
 
 - `dataset_level` -> upload files to `nl-search-dataset-documents`
 - `filter_level` -> upload files to `nl-search-filter-documents`

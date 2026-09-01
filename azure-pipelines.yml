@@ -5,6 +5,7 @@ trigger:
   paths:
     exclude:
     - README.md
+    - tools/data-sync
 pr:
   branches:
     include:
@@ -13,6 +14,7 @@ pr:
   paths:
     exclude:
     - README.md
+    - tools/data-sync
 
 pool:
   vmImage: ubuntu-latest
