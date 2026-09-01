@@ -97,6 +97,7 @@ def build_final_dataset_response(
     filter_results: FilterItemDatasetResult | None,
     indicator_results: dict[str, IndicatorDecision] | None,
     time_period_result: LlmDatasetTimePeriodRangeResult | None,
+    time_period_requirement: str | None,
     location_results: DatasetLocations | None,
     relevance_reason: str | None,
 ) -> FinalDatasetResponse:
@@ -159,6 +160,25 @@ def build_final_dataset_response(
         if decision.relevant is True
     ]
 
+    if time_period_result is not None:
+        # Convert from the LLM response shape to the event response shape
+        # The two are currently the same but we're allowing them to diverge in future if needed
+        time_period = DatasetTimePeriodRangeResult.model_validate(time_period_result.model_dump())
+    elif time_period_requirement is None:
+        # No time period requirement was extracted from the query, so the time period selection agent
+        # was skipped. Fallback to the dataset's latest available time period.
+        latest_time_period = subject_meta.get_latest_time_period()
+        time_period = (
+            DatasetTimePeriodRangeResult(start=latest_time_period, end=latest_time_period)
+            if latest_time_period
+            else None
+        )
+    else:
+        # A time period requirement was present, but the model couldn't find a time period matching the
+        # requirement for this dataset. Return None to distinguish this from the no requirement case.
+        # Falling back to the dataset's latest available time period would be misleading.
+        time_period = None
+
     return FinalDatasetResponse(
         data_set_file_id=dataset.dataset_file_id,
         file_id=dataset.file_id,
@@ -172,13 +192,7 @@ def build_final_dataset_response(
         description=dataset.description,
         filters=filters,
         indicators=indicators,
-        # Convert from the LLM response shape to the event response shape
-        # The two are currently the same but we're allowing them to diverge in future if needed
-        time_period=(
-            DatasetTimePeriodRangeResult.model_validate(time_period_result.model_dump())
-            if time_period_result is not None
-            else None
-        ),
+        time_period=time_period,
         geographic_levels=location_results,
         relevance_reason=relevance_reason,
         auto_selected_filter_items=auto_selected_filters_items,
