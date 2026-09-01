@@ -10,6 +10,7 @@ from schemas.responses.final_dataset_response import (
     FilterSelectionItem,
     FinalDatasetResponse,
     IndicatorSelectionItem,
+    TimePeriod,
 )
 from schemas.llm.filter_selection_response import FilterItemDatasetResult, FilterSelectionResponse
 from schemas.llm.indicator_selection_response import IndicatorDecision, IndicatorSelectionResponse
@@ -169,7 +170,10 @@ def build_final_dataset_response(
         # was skipped. Fallback to the dataset's latest available time period.
         latest_time_period = subject_meta.get_latest_time_period()
         time_period = (
-            DatasetTimePeriodRangeResult(start=latest_time_period, end=latest_time_period)
+            DatasetTimePeriodRangeResult(
+                start=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
+                end=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
+            )
             if latest_time_period
             else None
         )
