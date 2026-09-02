@@ -16,9 +16,9 @@ class TimePeriod(StrictCamelModel):
     year: int
 
 
-class DatasetTimePeriodRangeResult(StrictCamelModel):
+class TimePeriodRange(StrictCamelModel):
     """The selected time period range for a dataset.
-    Duplicated from schemas.llm.time_period_selection_response.DatasetTimePeriodRangeResult so the response shape can diverge from the LLM response shape in future."""
+    Duplicated from schemas.llm.time_period_selection_response.TimePeriodRange so the response shape can diverge from the LLM response shape in future."""
 
     start: TimePeriod
     end: TimePeriod
@@ -60,7 +60,7 @@ class FinalDatasetResponse(StrictCamelModel):
     description: str
     filters: list[FilterSelectionItem] = Field(default_factory=list)
     indicators: list[IndicatorSelectionItem] = Field(default_factory=list)
-    time_period: DatasetTimePeriodRangeResult | None = None
+    time_period: TimePeriodRange | None = None
     geographic_levels: DatasetLocations | None = None
     relevance_reason: str | None = None
     auto_selected_filter_items: dict[str, AutoSelectedFilterItem] = Field(

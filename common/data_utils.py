@@ -1,27 +1,27 @@
 from collections import defaultdict
 from typing import TypeVar
-from pydantic import RootModel
+from pydantic import BaseModel
 from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
-    DatasetTimePeriodRangeResult,
     FilterSelectionItem,
     FinalDatasetResponse,
     IndicatorSelectionItem,
     TimePeriod,
+    TimePeriodRange,
 )
-from schemas.llm.filter_selection_response import FilterItemDatasetResult, FilterSelectionResponse
-from schemas.llm.indicator_selection_response import IndicatorDecision, IndicatorSelectionResponse
+from schemas.llm.filter_selection_response import FilterItemDatasetResult
+from schemas.llm.indicator_selection_response import IndicatorDatasetResult, IndicatorDecision
 from schemas.domain.locations_response import DatasetLocations
 from schemas.llm.time_period_selection_response import (
-    DatasetTimePeriodRangeResult as LlmDatasetTimePeriodRangeResult,
-    TimePeriodSelectionResponse,
+    TimePeriodDatasetResult,
+    TimePeriodRange as LlmTimePeriodRange,
 )
 from schemas.ees_data_api.subject_meta_response import FilterItem
 
-T = TypeVar("T")
+T = TypeVar("T", bound=BaseModel)
 
 
 def retrieve_and_transform_filter_data(file_ids: list[str], shortlisted_filters: defaultdict=None):
@@ -69,27 +69,33 @@ def retrieve_and_transform_filter_data(file_ids: list[str], shortlisted_filters:
     return transformed
 
 
-def _merge_selection_responses(
-    responses: list[str],
-    response_model: type[RootModel[dict[str, T]]],
+def _parse_responses_by_file_id(
+    responses: list[tuple[str, str]],
+    response_model: type[T],
     context: str,
 ) -> dict[str, T]:
-    merged: dict[str, T] = {}
-    for raw in responses:
+    results: dict[str, T] = {}
+    for file_id, raw in responses:
         parsed = parse_llm_response(raw, response_model, context=context)
-        if parsed:
-            merged.update(parsed.root)
-    return merged
+        if parsed is not None:
+            results[file_id] = parsed
+    return results
 
 
 def parse_selection_responses(
-    filter_responses: list[str],
-    indicator_responses: list[str],
-    time_period_responses: list[str],
-) -> tuple[dict[str, FilterItemDatasetResult], dict[str, dict[str, IndicatorDecision]], dict[str, LlmDatasetTimePeriodRangeResult | None]]:
-    filter_results_by_id = _merge_selection_responses(filter_responses, FilterSelectionResponse, context="filter selection")
-    indicator_results_by_id = _merge_selection_responses(indicator_responses, IndicatorSelectionResponse, context="indicator selection")
-    time_period_results_by_id = _merge_selection_responses(time_period_responses, TimePeriodSelectionResponse, context="time period selection")
+    filter_responses: list[tuple[str, str]],
+    indicator_responses: list[tuple[str, str]],
+    time_period_responses: list[tuple[str, str]],
+) -> tuple[dict[str, FilterItemDatasetResult], dict[str, dict[str, IndicatorDecision]], dict[str, LlmTimePeriodRange | None]]:
+    filter_results_by_id = _parse_responses_by_file_id(filter_responses, FilterItemDatasetResult, context="filter selection")
+    indicator_results_by_id = {
+        file_id: result.root
+        for file_id, result in _parse_responses_by_file_id(indicator_responses, IndicatorDatasetResult, context="indicator selection").items()
+    }
+    time_period_results_by_id = {
+        file_id: result.time_period
+        for file_id, result in _parse_responses_by_file_id(time_period_responses, TimePeriodDatasetResult, context="time period selection").items()
+    }
     return filter_results_by_id, indicator_results_by_id, time_period_results_by_id
 
 
@@ -97,7 +103,7 @@ def build_final_dataset_response(
     dataset: DatasetWithSubjectMeta,
     filter_results: FilterItemDatasetResult | None,
     indicator_results: dict[str, IndicatorDecision] | None,
-    time_period_result: LlmDatasetTimePeriodRangeResult | None,
+    time_period_result: LlmTimePeriodRange | None,
     time_period_requirement: str | None,
     location_results: DatasetLocations | None,
     relevance_reason: str | None,
@@ -164,13 +170,13 @@ def build_final_dataset_response(
     if time_period_result is not None:
         # Convert from the LLM response shape to the event response shape
         # The two are currently the same but we're allowing them to diverge in future if needed
-        time_period = DatasetTimePeriodRangeResult.model_validate(time_period_result.model_dump())
+        time_period = TimePeriodRange.model_validate(time_period_result.model_dump())
     elif time_period_requirement is None:
         # No time period requirement was extracted from the query, so the time period selection agent
         # was skipped. Fallback to the dataset's latest available time period.
         latest_time_period = subject_meta.get_latest_time_period()
         time_period = (
-            DatasetTimePeriodRangeResult(
+            TimePeriodRange(
                 start=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
                 end=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
             )
