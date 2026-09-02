@@ -30,10 +30,10 @@ A filter item group is a collection of related filter items within the same filt
 You will be given:
 - A user query.
 - The data requirements that have been extracted from the user query.
-- The dataset name, description and its file ID.
+- The dataset name and description.
 - A list of filter items, each in the exact format `filter label|||filter item group ID|||filter item label`.
 
-The file ID and filter item group IDs are identifiers and must not be interpreted semantically.
+The filter item group IDs are identifiers and must not be interpreted semantically.
 
 # Task
 You must evaluate every filter item one at a time, in the order provided.
@@ -52,16 +52,14 @@ DO NOT assume anything about the query requirements, dataset, or the filter item
 ## Output format
 Return only a valid JSON object in this exact structure:
 {
-    "<exact file ID>": {
-        "filterItems": {
-            "<exact filter label>|||<exact filter item group ID>|||<exact filter item label>": {
-                "relevant": true|false,
-                "reasoning": "<only if relevant, explain the decision using only the query requirement and the filter item's text. If not relevant, omit this field>"
-            }
-        },
-        "irrelevantFilters": {
-            "<exact filter label>": "<explain why none of its filter items are relevant>"
+    "filterItems": {
+        "<exact filter label>|||<exact filter item group ID>|||<exact filter item label>": {
+            "relevant": true|false,
+            "reasoning": "<only if relevant, explain the decision using only the query requirement and the filter item's text. If not relevant, omit this field>"
         }
+    },
+    "irrelevantFilters": {
+        "<exact filter label>": "<explain why none of its filter items are relevant>"
     }
 }
 
@@ -69,7 +67,7 @@ Include a filter label in "irrelevantFilters" only when every filter item you ev
 
 Write every "reasoning" and "irrelevantFilters" explanation as one concise sentence, the way a person would casually explain their thinking.
 
-Use exact input text for all keys (file ID, filter label, filter item group ID, filter item label).
+Use exact input text for all keys (filter label, filter item group ID, filter item label).
 """
 
 llm_filtering_user_prompt = """
@@ -86,7 +84,6 @@ llm_filtering_user_prompt = """
 # Dataset
 Name: {dataset_name}
 Description: {dataset_description}
-FileID: {file_id}
 
 # Filter items
 {filter_list}
@@ -101,6 +98,7 @@ async def run_filter_selection_agent(
 ):
 
     logger.info("Filter selection model running...")
+    file_ids: list[str] = []
     tasks: list[asyncio.Task] = []
 
     for file_id, filters in transformed.items():
@@ -110,7 +108,6 @@ async def run_filter_selection_agent(
             dataset_name=datasets_by_id[file_id].title,
             dataset_description=datasets_by_id[file_id].description,
             filter_list=filters,
-            file_id=file_id,
         )
 
         task = asyncio.create_task(
@@ -119,11 +116,16 @@ async def run_filter_selection_agent(
                 system_prompt=llm_filtering_sys_prompt,
             )
         )
+        file_ids.append(file_id)
         tasks.append(task)
 
     model_responses = await asyncio.gather(*tasks)
 
-    contents = [response.choices[0].message.content for response in model_responses]
+    # Pair each response with the file ID of the dataset it was requested for
+    contents = [
+        (file_id, response.choices[0].message.content)
+        for file_id, response in zip(file_ids, model_responses)
+    ]
 
     tokens_used = TokenUsage(
         input=sum(response.usage.prompt_tokens for response in model_responses),

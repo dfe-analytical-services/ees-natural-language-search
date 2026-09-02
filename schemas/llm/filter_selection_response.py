@@ -2,7 +2,7 @@
 LLM Filter item selection response Pydantic models
 """
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, Field
 
 
 class FilterItemDecision(BaseModel):
@@ -23,7 +23,3 @@ class FilterItemDatasetResult(BaseModel):
         default_factory=dict,
         description="Keyed by exact filter label. The value is an explanation of why none of the filter's filter items are relevant",
     )
-
-
-class FilterSelectionResponse(RootModel[dict[str, FilterItemDatasetResult]]):
-    """Filter item selection results, keyed by dataset file ID."""

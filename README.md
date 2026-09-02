@@ -73,7 +73,7 @@ ees-natural-language-search/
    │        Per-dataset relevance decisions for each filter value/indicator
    │
    └── 7. parse_selection_responses + build_final_dataset_response (data_utils.py)
-            Parse the agent responses keyed by file id, then merge filters, indicators, time period, locations,
+            Parse each agent response against the file id it was requested for, then merge filters, indicators, time period, locations,
             and a relevance reason, per dataset.
             yields {stage:"pipeline complete", data:{datasets:[...], token_usage:<int>}}
 ```
@@ -107,13 +107,14 @@ Sends the query plus trimmed dataset metadata `(fileId, title, content, filters,
 `queryRequirements{filters[], geography[], timePeriod}`, `shortlistedDatasets[{fileId, title, relevanceReason, relevantFilters[]}]`, `confidence`.
 
 ### `filter_selection.py` / `indicator_selection.py` / `time_period_selection.py` - selection agents
-One LLM call per reranked dataset, all gathered concurrently. Each returns a list of raw JSON strings plus a token total.
-- Filter output: `{"<fileId>": { "filterItems": { "<filter label>|||<filter item group ID>|||<filter item label>": {relevant(Yes/No), reasoning} } } }`
-- Indicator output: `{"<fileId>" { "<indicators>": {relevant(Yes/No), reasoning} } }`
+One LLM call per reranked dataset, all gathered concurrently. Each returns a list of `(fileId, raw JSON string)` pairs plus a token total.
+- Filter output: `{ "filterItems": { "<filter label>|||<filter item group ID>|||<filter item label>": {relevant(Yes/No), reasoning} }, "irrelevantFilters": { "<filter label>": reason } }`
+- Indicator output: `{ "<indicator>": {relevant(Yes/No), reasoning} }`
+- Time period output: `{ "timePeriod": {start: {code, year}, end: {code, year}} }`, or `{ "timePeriod": null }` when nothing overlaps the requirement
 
 ### `data_utils.py`
 - `retrieve_and_transform_filter_data(...)` pulls full filter values from the filter index and flattens them per dataset.
-- `parse_selection_responses(...)` parses the filter/indicator/time period agent responses and merges them into dicts keyed by file id.
+- `parse_selection_responses(...)` parses the filter/indicator/time period agent responses into dicts keyed by file id, taking each file id from the request that produced the response. A response that fails to parse is logged and dropped, leaving that dataset without results for that agent.
 - `build_final_dataset_response(...)` takes the parsed filter/indicator/time period results, keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and returns a `FinalDatasetResponse`. Every filter always ends up with a selection. A filter without any relevant filter items uses the filter item with its `autoSelectFilterItemId` as a fallback if set. If there's no `autoSelectFilterItemId` every filter item of that filter is selected.
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 

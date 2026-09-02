@@ -24,10 +24,8 @@ Indicators are non filterable columns that contain mutually exclusive informatio
 You will be given:
 - A user query.
 - The data requirements that have been extracted from the user query.
-- The dataset name, description and its file ID.
+- The dataset name and description.
 - A list of indicators available in the dataset.
-
-The file ID is an identifier and must not be interpreted semantically.
 
 # Task
 You must evaluate every indicator one at a time, in the order provided.
@@ -43,17 +41,15 @@ DO NOT assume anything about the query requirements, dataset, or the indicators 
 ## Output format
 Return only a valid JSON object in this exact structure:
 {
-    "<exact file ID>": {
-        "<exact indicator name>": {
-            "relevant": true|false,
-            "reasoning": "<explain why the relevance is true or false>"
-        }
+    "<exact indicator name>": {
+        "relevant": true|false,
+        "reasoning": "<explain why the relevance is true or false>"
     }
 }
 
 Write every "reasoning" explanation as one concise sentence, the way a person would casually explain their thinking.
 
-Use exact input text for all keys (file ID, indicator name).
+Use exact input text for all keys (indicator name).
 """
 
 llm_indicator_user_prompt="""
@@ -70,7 +66,6 @@ llm_indicator_user_prompt="""
 # Dataset
 Name: {dataset_name}
 Description: {dataset_description}
-FileID: {file_id}
 
 # Indicators
 {indicator_list}
@@ -83,6 +78,7 @@ async def run_indicator_selection_agent(
     query_requirements: list[str]):
     
     logger.info("Indicator selection model running...")
+    file_ids: list[str] = []
     tasks: list[asyncio.Task] = []
 
     for file_id, indicators in grouped_indicators.items():
@@ -92,7 +88,6 @@ async def run_indicator_selection_agent(
             dataset_name=datasets_by_id[file_id].title,
             dataset_description=datasets_by_id[file_id].description,
             indicator_list=indicators,
-            file_id=file_id
         )
 
         task = asyncio.create_task(
@@ -101,13 +96,15 @@ async def run_indicator_selection_agent(
                 system_prompt=llm_indicator_sys_prompt,
             )
         )
+        file_ids.append(file_id)
         tasks.append(task)
 
     model_responses = await asyncio.gather(*tasks)
 
+    # Pair each response with the file ID of the dataset it was requested for
     contents = [
-        response.choices[0].message.content
-        for response in model_responses
+        (file_id, response.choices[0].message.content)
+        for file_id, response in zip(file_ids, model_responses)
     ]
 
     tokens_used = TokenUsage(

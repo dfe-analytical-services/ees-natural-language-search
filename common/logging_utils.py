@@ -9,7 +9,7 @@ from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.domain.locations_response import DatasetLocations
 from schemas.llm.filter_selection_response import FilterItemDatasetResult
 from schemas.llm.indicator_selection_response import IndicatorDecision
-from schemas.llm.time_period_selection_response import DatasetTimePeriodRangeResult
+from schemas.llm.time_period_selection_response import TimePeriodRange
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def log_dataset_selection_summary(
     dataset: DatasetWithSubjectMeta,
     filter_results: FilterItemDatasetResult | None,
     indicator_results: dict[str, IndicatorDecision] | None,
-    time_period_result: DatasetTimePeriodRangeResult | None,
+    time_period_result: TimePeriodRange | None,
     location_results: DatasetLocations | None,
 ) -> None:
     """Logs a summary of the filter, indicator, time period, and location selections made for a dataset."""

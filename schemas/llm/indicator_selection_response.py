@@ -10,5 +10,5 @@ class IndicatorDecision(BaseModel):
     reasoning: str = ""
 
 
-class IndicatorSelectionResponse(RootModel[dict[str, dict[str, IndicatorDecision]]]):
-    """Indicator selection results, keyed by dataset file ID, then indicator label."""
+class IndicatorDatasetResult(RootModel[dict[str, IndicatorDecision]]):
+    """Indicator decisions for a single dataset, keyed by indicator label."""
