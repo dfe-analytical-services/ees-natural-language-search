@@ -2,9 +2,11 @@
 Data API Subject Meta response Pydantic models
 """
 
+from __future__ import annotations
+
+from enum import StrEnum
 from functools import cached_property
 from pydantic import Field
-from typing import Any
 
 from schemas.shared.base_models import CamelModel
 
@@ -42,6 +44,50 @@ class IndicatorGroup(CamelModel):
     label: str
 
 
+class GeographicLevel(StrEnum):
+    ENGLISH_DEVOLVED_AREA = "englishDevolvedArea"
+    LOCAL_AUTHORITY = "localAuthority"
+    LOCAL_AUTHORITY_DISTRICT = "localAuthorityDistrict"
+    LOCAL_ENTERPRISE_PARTNERSHIP = "localEnterprisePartnership"
+    LOCAL_SKILLS_IMPROVEMENT_PLAN_AREA = "localSkillsImprovementPlanArea"
+    POLICE_FORCE_AREA = "policeForceArea"
+    INSTITUTION = "institution"
+    MAYORAL_COMBINED_AUTHORITY = "mayoralCombinedAuthority"
+    MULTI_ACADEMY_TRUST = "multiAcademyTrust"
+    COUNTRY = "country"
+    OPPORTUNITY_AREA = "opportunityArea"
+    PARLIAMENTARY_CONSTITUENCY = "parliamentaryConstituency"
+    PROVIDER = "provider"
+    REGION = "region"
+    RSC_REGION = "rscRegion"
+    SCHOOL = "school"
+    SPONSOR = "sponsor"
+    WARD = "ward"
+    PLANNING_AREA = "planningArea"
+
+
+class LocationOption(CamelModel):
+    """A location within a geographic level's set of options.
+
+    Leaf options have an `id`. Options that group other locations instead have a
+    `level` (the geographic level of their children) and their own nested
+    `options`.
+    """
+
+    id: str | None = None
+    label: str
+    value: str
+    level: GeographicLevel | None = None
+    options: list[LocationOption] | None = None
+
+
+class LocationLevel(CamelModel):
+    """The locations available for a geographic level."""
+
+    label: str = Field(alias="legend", default="")
+    options: list[LocationOption] = Field(default_factory=list)
+
+
 class TimePeriod(CamelModel):
     code: str
     label: str
@@ -55,7 +101,7 @@ class TimePeriods(CamelModel):
 class SubjectMetaResponse(CamelModel):
     filters: dict[str, Filter]
     indicators: dict[str, IndicatorGroup]
-    locations: dict[str, Any]
+    locations: dict[GeographicLevel, LocationLevel]
     time_period: TimePeriods
 
 
