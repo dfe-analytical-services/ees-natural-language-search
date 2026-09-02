@@ -1,28 +1,12 @@
 from collections import defaultdict
 from rapidfuzz import process, fuzz
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
-from schemas.domain.locations_response import LocationsResponse
-
-PROPERTY_TO_GEO_LEVEL = {
-    'Country':'National',
-    'Institution':'Institution',
-    'LocalAuthority':'Local authority',
-    'LocalAuthorityDistrict':'Local authority district',
-    'LocalEnterprisePartnership':'Local enterprise partnership',
-    'MayoralCombinedAuthority':'Mayoral combined authority',
-    'MultiAcademyTrust':'MAT',
-    'OpportunityArea':'Opportunity area',
-    'ParliamentaryConstituency':'Parliamentary constituency',
-    'Region':'Regional',
-    'Sponsor':'Sponsor',
-    'Ward':'Ward',
-    'PlanningArea':'Planning area',
-    'EnglishDevolvedArea':'English devolved area',
-    'Provider':'Provider',
-    'School':'School',
-    'LocalSkillsImprovementPlanArea':'Local skills improvement plan area',
-    'PoliceForceArea':'Police force area'
-}
+from schemas.domain.locations_response import LocationItem, LocationsResponse
+from schemas.ees_data_api.subject_meta_response import (
+    GeographicLevel,
+    LocationLevel,
+    LocationOption
+)
 
 
 def hybrid_scorer(a: str, b: str, **kwargs) -> float:
@@ -45,25 +29,29 @@ def hybrid_scorer(a: str, b: str, **kwargs) -> float:
     return fuzz.WRatio(a, b)
 
 
-def flatten_by_legend(data):
-    flattened = defaultdict(list)
+def flatten_by_legend(
+    locations: dict[GeographicLevel, LocationLevel]
+) -> dict[str, list[LocationItem]]:
+    """Flatten each geographic level's set of locations into a single list,
+    keyed by the level's label, e.g. "National", "Regional", "Local authority" etc.
+    """
+    flattened: dict[str, list[LocationItem]] = defaultdict(list)
 
-    # TODO add Pydantic model for Locations to SubjectMetaResponse
-    def walk(items, legend):
-        for item in items:
-            if all(k in item for k in ("id", "label", "value")):
-                flattened[legend].append({
-                    "id": item["id"],
-                    "label": item["label"],
-                    "value": item["value"]
-                })
+    def walk(options: list[LocationOption], label: str) -> None:
+        for option in options:
+            if option.id is not None:
+                flattened[label].append(
+                    LocationItem(
+                        id=option.id,
+                        label=option.label,
+                        value=option.value
+                    )
+                )
 
-            if "options" in item:
-                walk(item["options"], legend)
+            walk(option.options or [], label)
 
-    for section in data.values():
-        legend = section["legend"]
-        walk(section.get("options", []), legend)
+    for location_level in locations.values():
+        walk(location_level.options, location_level.label)
 
     return dict(flattened)
 
@@ -73,7 +61,7 @@ async def get_location_matches(
     geography_requirements: list,
     threshold: int = 90,
 ) -> LocationsResponse:
-    valid_geo_per_file: dict[str, dict] = {}
+    valid_geo_per_file: dict[str, dict[str, list[LocationItem]]] = {}
     for file_id, dataset in datasets_by_id.items():
         subject_meta = dataset.subject_meta
         valid_geographies = flatten_by_legend(subject_meta.locations)
@@ -85,7 +73,7 @@ async def get_location_matches(
                     query,
                     options,
                     scorer=hybrid_scorer,
-                    processor=lambda x: x.get('label') if isinstance(x, dict) else x,
+                    processor=lambda x: x.label if isinstance(x, LocationItem) else x,
                     limit=10
                 )
                 results = [x for x,score,_ in matches if score>=threshold]
