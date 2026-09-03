@@ -3,3 +3,4 @@ local.settings.json
 
 # Python
 __pycache__/
+.pytest_cache/

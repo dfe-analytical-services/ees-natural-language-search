@@ -1,0 +1,962 @@
+{
+  "localAuthority": {
+    "legend": "Local authority",
+    "options": [
+      {
+        "level": "region",
+        "options": [
+          {
+            "id": "19581ea0-61e1-42c7-29c9-08dac1bc27cf",
+            "label": "County Durham",
+            "value": "E06000047"
+          },
+          {
+            "id": "31f7e60e-3933-41f2-b36b-0a8a3053d641",
+            "label": "Darlington",
+            "value": "E06000005"
+          },
+          {
+            "id": "58b64d46-3483-442c-8c66-3b323f5b1718",
+            "label": "Gateshead (E08000037)",
+            "value": "E08000037"
+          },
+          {
+            "id": "e338f85d-8c29-49f6-ab48-77d818eeb136",
+            "label": "Gateshead (E08000020)",
+            "value": "E08000020"
+          },
+          {
+            "id": "5287bffa-dc87-42e1-a579-0d27b6db5fd2",
+            "label": "Hartlepool",
+            "value": "E06000001"
+          },
+          {
+            "id": "47715d8a-6723-48c6-8b7c-1a8705f9b8de",
+            "label": "Middlesbrough",
+            "value": "E06000002"
+          },
+          {
+            "id": "7decfe81-30c3-4896-a664-54831689052e",
+            "label": "Newcastle upon Tyne",
+            "value": "E08000021"
+          },
+          {
+            "id": "e0dd2816-cd98-497f-bc63-167e2083b86c",
+            "label": "North Tyneside",
+            "value": "E08000022"
+          },
+          {
+            "id": "6dcfcdb6-1351-4f2c-93b1-0fd346df2f08",
+            "label": "Northumberland (E06000057)",
+            "value": "E06000057"
+          },
+          {
+            "id": "c0312eda-647a-4916-887b-3406abf8775c",
+            "label": "Northumberland (E06000048)",
+            "value": "E06000048"
+          },
+          {
+            "id": "39478033-4956-478e-be55-5f3a00663171",
+            "label": "Redcar and Cleveland",
+            "value": "E06000003"
+          },
+          {
+            "id": "27d13db5-5bb2-413d-8a51-0758f41306ac",
+            "label": "South Tyneside",
+            "value": "E08000023"
+          },
+          {
+            "id": "b61e0686-ee37-4cde-8935-242a047bc81f",
+            "label": "Stockton-on-Tees",
+            "value": "E06000004"
+          },
+          {
+            "id": "7e98ae3c-91c2-4d64-b7a4-633e27fe0d80",
+            "label": "Sunderland",
+            "value": "E08000024"
+          }
+        ],
+        "label": "North East",
+        "value": "E12000001"
+      },
+      {
+        "level": "region",
+        "options": [
+          {
+            "id": "a95b28d9-4986-4a35-9377-77d49be90014",
+            "label": "Blackburn with Darwen",
+            "value": "E06000008"
+          },
+          {
+            "id": "1fca8a95-469c-4406-87ae-42b55b48ddf8",
+            "label": "Blackpool",
+            "value": "E06000009"
+          },
+          {
+            "id": "c1edd525-a606-4cf2-846c-85ea00b7ef60",
+            "label": "Bolton",
+            "value": "E08000001"
+          },
+          {
+            "id": "ff72e20c-2bc1-4d87-8aba-a2b9e4f2df23",
+            "label": "Bury",
+            "value": "E08000002"
+          },
+          {
+            "id": "b5c3364e-5634-4f60-8a14-2974aea7c75b",
+            "label": "Cheshire East",
+            "value": "E06000049"
+          },
+          {
+            "id": "6c9166ba-7d2a-45a6-8282-6acfaf1a6046",
+            "label": "Cheshire West and Chester",
+            "value": "E06000050"
+          },
+          {
+            "id": "f842333e-fcbe-4f18-f46b-08dbad2d71ec",
+            "label": "Cumberland",
+            "value": "E06000063"
+          },
+          {
+            "id": "b28749dc-defc-4944-a61b-5c02a57e549e",
+            "label": "Cumbria",
+            "value": "E10000006"
+          },
+          {
+            "id": "97a692f7-f783-436e-8fe1-8b5accf15aa3",
+            "label": "Halton",
+            "value": "E06000006"
+          },
+          {
+            "id": "9e90a776-1036-4bf9-8ac9-27e68ce9ad3f",
+            "label": "Knowsley",
+            "value": "E08000011"
+          },
+          {
+            "id": "f0dd5a51-7a21-4b5b-b6ae-99f55ae0f880",
+            "label": "Lancashire",
+            "value": "E10000017"
+          },
+          {
+            "id": "08dae3d4-d5f2-4b6a-bd2b-c9024f0b78ba",
+            "label": "Liverpool",
+            "value": "E08000012"
+          },
+          {
+            "id": "df84f852-8fd3-4bc9-b245-61d58670fda8",
+            "label": "Manchester",
+            "value": "E08000003"
+          },
+          {
+            "id": "585cc08e-f2c8-4fbf-8879-94081b9a708d",
+            "label": "Oldham",
+            "value": "E08000004"
+          },
+          {
+            "id": "7b9365e7-7b98-429f-89d2-05bde89d4f62",
+            "label": "Rochdale",
+            "value": "E08000005"
+          },
+          {
+            "id": "3a4a8e1b-63fa-4580-bb0a-24c4e72f148a",
+            "label": "Salford",
+            "value": "E08000006"
+          },
+          {
+            "id": "5bd5cc91-0081-4f3e-8e31-187d16c53f87",
+            "label": "Sefton",
+            "value": "E08000014"
+          },
+          {
+            "id": "2a21faf7-4522-45c9-9fef-5f440be828d4",
+            "label": "St. Helens",
+            "value": "E08000013"
+          },
+          {
+            "id": "92c9d339-fb65-4a74-be22-9cb99c1922c3",
+            "label": "Stockport",
+            "value": "E08000007"
+          },
+          {
+            "id": "660d5c34-bf24-4881-ab99-094a5a38f9a6",
+            "label": "Tameside",
+            "value": "E08000008"
+          },
+          {
+            "id": "d4c1c37d-5105-4d13-af9a-83c7db4bbbc3",
+            "label": "Trafford",
+            "value": "E08000009"
+          },
+          {
+            "id": "f2040275-2441-48fe-8829-2c7e638131ca",
+            "label": "Warrington",
+            "value": "E06000007"
+          },
+          {
+            "id": "8b3fd97b-9e51-4b35-f469-08dbad2d71ec",
+            "label": "Westmorland and Furness",
+            "value": "E06000064"
+          },
+          {
+            "id": "5c66fdc6-d111-4018-afc8-afc87460f3c2",
+            "label": "Wigan",
+            "value": "E08000010"
+          },
+          {
+            "id": "5a11c765-ea54-4762-b643-37cdddda4d6c",
+            "label": "Wirral",
+            "value": "E08000015"
+          }
+        ],
+        "label": "North West",
+        "value": "E12000002"
+      },
+      {
+        "level": "region",
+        "options": [
+          {
+            "id": "6dd6ea74-33b5-4111-4916-08d93bbc8641",
+            "label": "Barnsley (E08000016)",
+            "value": "E08000016"
+          },
+          {
+            "id": "91d45e7d-acb9-419f-2990-08dedb639b1f",
+            "label": "Barnsley (E08000038)",
+            "value": "E08000038"
+          },
+          {
+            "id": "a35de4a5-29f8-4b40-491a-08d93bbc8641",
+            "label": "Bradford",
+            "value": "E08000032"
+          },
+          {
+            "id": "da1389c2-1125-442a-491b-08d93bbc8641",
+            "label": "Calderdale",
+            "value": "E08000033"
+          },
+          {
+            "id": "e5f7a95b-a375-483b-4917-08d93bbc8641",
+            "label": "Doncaster",
+            "value": "E08000017"
+          },
+          {
+            "id": "de20737b-21ee-4354-491f-08d93bbc8641",
+            "label": "East Riding of Yorkshire",
+            "value": "E06000011"
+          },
+          {
+            "id": "0c98a40e-4cf9-4366-29c8-08dac1bc27cf",
+            "label": "Kingston upon Hull, City of",
+            "value": "E06000010"
+          },
+          {
+            "id": "ab04bca6-2700-4cda-491c-08d93bbc8641",
+            "label": "Kirklees",
+            "value": "E08000034"
+          },
+          {
+            "id": "959fe859-38f3-4b02-491d-08d93bbc8641",
+            "label": "Leeds",
+            "value": "E08000035"
+          },
+          {
+            "id": "77c576be-3726-4c2c-4920-08d93bbc8641",
+            "label": "North East Lincolnshire",
+            "value": "E06000012"
+          },
+          {
+            "id": "f1f08ece-9f3b-491d-4921-08d93bbc8641",
+            "label": "North Lincolnshire",
+            "value": "E06000013"
+          },
+          {
+            "id": "c5db1f8e-4dac-4757-4922-08d93bbc8641",
+            "label": "North Yorkshire (E10000023)",
+            "value": "E10000023"
+          },
+          {
+            "id": "f276f394-f10a-448b-f468-08dbad2d71ec",
+            "label": "North Yorkshire (E06000065)",
+            "value": "E06000065"
+          },
+          {
+            "id": "011a2d2c-7bab-4988-4918-08d93bbc8641",
+            "label": "Rotherham",
+            "value": "E08000018"
+          },
+          {
+            "id": "bbe3cafc-2c62-42d6-4919-08d93bbc8641",
+            "label": "Sheffield (E08000019)",
+            "value": "E08000019"
+          },
+          {
+            "id": "62f007f2-5ef5-4bcd-2991-08dedb639b1f",
+            "label": "Sheffield (E08000039)",
+            "value": "E08000039"
+          },
+          {
+            "id": "b5c4b041-ef57-4eab-491e-08d93bbc8641",
+            "label": "Wakefield",
+            "value": "E08000036"
+          },
+          {
+            "id": "fdbe7be0-6ab2-4a84-4923-08d93bbc8641",
+            "label": "York",
+            "value": "E06000014"
+          }
+        ],
+        "label": "Yorkshire and The Humber",
+        "value": "E12000003"
+      },
+      {
+        "level": "region",
+        "options": [
+          {
+            "id": "94ea685f-755c-41de-8420-0a851575d6d9",
+            "label": "Derby",
+            "value": "E06000015"
+          },
+          {
+            "id": "b1f27487-dbcf-4a6c-9693-2b20974299f9",
+            "label": "Derbyshire",
+            "value": "E10000007"
+          },
+          {
+            "id": "0e771eb0-3ea3-43e6-be44-5839d59ed6ca",
+            "label": "Leicester",
+            "value": "E06000016"
+          },
+          {
+            "id": "d3fe1892-18dd-4072-b35f-831e6ffc774a",
+            "label": "Leicestershire",
+            "value": "E10000018"
+          },
+          {
+            "id": "69b50643-3af1-4abd-830b-19bb48b1d7ea",
+            "label": "Lincolnshire",
+            "value": "E10000019"
+          },
+          {
+            "id": "e277b233-6191-41f7-29cb-08dac1bc27cf",
+            "label": "North Northamptonshire",
+            "value": "E06000061"
+          },
+          {
+            "id": "f9e9b399-4c6e-4b31-b01c-47a3676b0e70",
+            "label": "Northamptonshire",
+            "value": "E10000021"
+          },
+          {
+            "id": "a1e995f0-ac21-46fa-ae0f-0169a041c6e5",
+            "label": "Nottingham",
+            "value": "E06000018"
+          },
+          {
+            "id": "e0c0550d-20fd-4068-9f54-165e6664c83c",
+            "label": "Nottinghamshire",
+            "value": "E10000024"
+          },
+          {
+            "id": "d1a42061-8ef6-4fe6-b82f-6817e3a6cc78",
+            "label": "Rutland",
+            "value": "E06000017"
+          },
+          {
+            "id": "c86165ee-f13a-4bbe-29cc-08dac1bc27cf",
+            "label": "West Northamptonshire",
+            "value": "E06000062"
+          }
+        ],
+        "label": "East Midlands",
+        "value": "E12000004"
+      },
+      {
+        "level": "region",
+        "options": [
+          {
+            "id": "68be4be3-4075-4b20-930d-7c2f70c21392",
+            "label": "Birmingham",
+            "value": "E08000025"
+          },
+          {
+            "id": "58b6a8aa-c086-460e-acc7-737e17d99f63",
+            "label": "Coventry",
+            "value": "E08000026"
+          },
+          {
+            "id": "0c317ece-4704-4637-a9f2-4760d27204ec",
+            "label": "Dudley",
+            "value": "E08000027"
+          },
+          {
+            "id": "9f67a632-797f-4f9e-29ca-08dac1bc27cf",
+            "label": "Herefordshire, County of",
+            "value": "E06000019"
+          },
+          {
+            "id": "91e61d40-2d0d-4771-b867-052236e322ed",
+            "label": "Sandwell",
+            "value": "E08000028"
+          },
+          {
+            "id": "90037b70-e55d-4cf4-9ca0-6105d6749b62",
+            "label": "Shropshire",
+            "value": "E06000051"
+          },
+          {
+            "id": "e88ef949-c351-4e40-9de5-066b9a1683da",
+            "label": "Solihull",
+            "value": "E08000029"
+          },
+          {
+            "id": "b4d25fca-aec2-46a5-923d-ae3b34f99e46",
+            "label": "Staffordshire",
+            "value": "E10000028"
+          },
+          {
+            "id": "95ef36a1-8088-4947-be50-a34496175fa1",
+            "label": "Stoke-on-Trent",
+            "value": "E06000021"
+          },
+          {
+            "id": "b5666706-a604-4e62-9049-6624d66f5944",
+            "label": "Telford and Wrekin",
+            "value": "E06000020"
+          },
+          {
+            "id": "0084dc5c-d0af-4b79-90a8-c116745f9861",
+            "label": "Walsall",
+            "value": "E08000030"
+          },
+          {
+            "id": "aa768529-c503-4695-b016-67a093178f5e",
+            "label": "Warwickshire",
+            "value": "E10000031"
+          },
+          {
+            "id": "5eff9a56-e6e4-404f-b2ed-2221b3af2e16",
+            "label": "Wolverhampton",
+            "value": "E08000031"
+          },
+          {
+            "id": "e64ad147-b5bb-454c-8746-4a2bf851ab57",
+            "label": "Worcestershire",
+            "value": "E10000034"
+          }
+        ],
+        "label": "West Midlands",
+        "value": "E12000005"
+      },
+      {
+        "level": "region",
+        "options": [
+          {
+            "id": "d9ab077a-5142-484d-9444-23629d653c20",
+            "label": "Bedford",
+            "value": "E06000055"
+          },
+          {
+            "id": "fef53667-b5df-46ca-bd1a-0c1cac7af6ce",
+            "label": "Cambridgeshire",
+            "value": "E10000003"
+          },
+          {
+            "id": "db8ae1f1-1e61-4956-aebb-21091c28cd2a",
+            "label": "Central Bedfordshire",
+            "value": "E06000056"
+          },
+          {
+            "id": "7eb4e955-d453-429d-ab6d-566a640ebf7c",
+            "label": "Essex",
+            "value": "E10000012"
+          },
+          {
+            "id": "8ff6bdcb-31ca-4267-b248-0fecca262ff7",
+            "label": "Hertfordshire",
+            "value": "E10000015"
+          },
+          {
+            "id": "580aa520-51fc-4ec0-a2d4-41acac1f748f",
+            "label": "Luton",
+            "value": "E06000032"
+          },
+          {
+            "id": "9d306482-2fb1-47d2-a321-5fe49131fb3f",
+            "label": "Norfolk",
+            "value": "E10000020"
+          },
+          {
+            "id": "cd23a729-540e-484b-98dc-2ccbfe05c412",
+            "label": "Peterborough",
+            "value": "E06000031"
+          },
+          {
+            "id": "0ceb765a-bf1a-4983-bd19-3e475cddeb6b",
+            "label": "Southend-on-Sea",
+            "value": "E06000033"
+          },
+          {
+            "id": "d1be790e-1adb-40fa-8b65-37b88e4c9f05",
+            "label": "Suffolk",
+            "value": "E10000029"
+          },
+          {
+            "id": "da163683-3a9d-431e-accb-6d9ece2ea321",
+            "label": "Thurrock",
+            "value": "E06000034"
+          }
+        ],
+        "label": "East of England",
+        "value": "E12000006"
+      },
+      {
+        "level": "region",
+        "options": [
+          {
+            "id": "82cc041e-d143-4026-8dd4-2389bc623beb",
+            "label": "Bracknell Forest",
+            "value": "E06000036"
+          },
+          {
+            "id": "331c57d6-4e7f-4ae9-bfa6-8a5f03274df1",
+            "label": "Brighton and Hove",
+            "value": "E06000043"
+          },
+          {
+            "id": "e83e238f-691f-4b2e-8774-08db18a29a58",
+            "label": "Buckinghamshire",
+            "value": "E06000060"
+          },
+          {
+            "id": "d62c7e0b-0b70-41fd-8886-49ec3d232917",
+            "label": "East Sussex",
+            "value": "E10000011"
+          },
+          {
+            "id": "8c877b61-140a-4c3b-b9e6-8de378a408dd",
+            "label": "Hampshire",
+            "value": "E10000014"
+          },
+          {
+            "id": "5b89e394-fc9a-4d68-99dd-34f6bb0d2205",
+            "label": "Isle of Wight",
+            "value": "E06000046"
+          },
+          {
+            "id": "491dca55-0be0-470b-86a5-877fd36771f3",
+            "label": "Kent",
+            "value": "E10000016"
+          },
+          {
+            "id": "ffe2a1c7-6d02-48a5-a8f7-71ca09b13b27",
+            "label": "Medway",
+            "value": "E06000035"
+          },
+          {
+            "id": "46c753f4-513d-44b2-ae01-56fb5b24181f",
+            "label": "Milton Keynes",
+            "value": "E06000042"
+          },
+          {
+            "id": "1871905f-bc9b-4f92-85ba-ace1e8556c66",
+            "label": "Oxfordshire",
+            "value": "E10000025"
+          },
+          {
+            "id": "b3ec194c-62bb-4ad6-8648-148bdf6e7d4f",
+            "label": "Portsmouth",
+            "value": "E06000044"
+          },
+          {
+            "id": "fa5941b8-370e-41d3-9639-105f8531be1d",
+            "label": "Reading",
+            "value": "E06000038"
+          },
+          {
+            "id": "dbf730ed-3a4f-498d-a242-1521636ad1d2",
+            "label": "Slough",
+            "value": "E06000039"
+          },
+          {
+            "id": "2b4e8173-4ec8-4cda-bc54-5c02e9eda520",
+            "label": "Southampton",
+            "value": "E06000045"
+          },
+          {
+            "id": "80d256d4-f1f2-491a-a909-f223493f5b12",
+            "label": "Surrey",
+            "value": "E10000030"
+          },
+          {
+            "id": "b3d7ac55-7e4e-4620-9eeb-0756664c9b57",
+            "label": "West Berkshire",
+            "value": "E06000037"
+          },
+          {
+            "id": "2b3a8a78-c1ae-4161-9a57-247ab719d80f",
+            "label": "West Sussex",
+            "value": "E10000032"
+          },
+          {
+            "id": "e4a4b80e-5712-48d2-bed5-48b5e0e66cd8",
+            "label": "Windsor and Maidenhead",
+            "value": "E06000040"
+          },
+          {
+            "id": "239b8239-76a7-48ff-9e55-023661e2d82f",
+            "label": "Wokingham",
+            "value": "E06000041"
+          }
+        ],
+        "label": "South East",
+        "value": "E12000008"
+      },
+      {
+        "level": "region",
+        "options": [
+          {
+            "id": "5c401ef0-533e-43c0-b845-e5dd93dc297b",
+            "label": "Bath and North East Somerset",
+            "value": "E06000022"
+          },
+          {
+            "id": "46a569cc-525c-40ec-bea3-2df9d60721d2",
+            "label": "Bournemouth",
+            "value": "E06000028"
+          },
+          {
+            "id": "1d4ee65d-8c55-48b0-8063-08d8f9b67995",
+            "label": "Bournemouth, Christchurch and Poole",
+            "value": "E06000058"
+          },
+          {
+            "id": "a577786a-94cf-4bc6-8065-08d8f9b67995",
+            "label": "Bristol, City of",
+            "value": "E06000023"
+          },
+          {
+            "id": "d6efed56-8a8a-49b7-99cb-36fada4e1fc7",
+            "label": "Cornwall",
+            "value": "E06000052"
+          },
+          {
+            "id": "8d048500-6c3c-4bbb-aa6e-7cb3f6de77a7",
+            "label": "Devon",
+            "value": "E10000008"
+          },
+          {
+            "id": "6a5c87bf-f13c-45a2-806a-08d8f9b67995",
+            "label": "Dorset (E06000059)",
+            "value": "E06000059"
+          },
+          {
+            "id": "05eaeac1-22a2-45c3-8daf-29053ee03fe3",
+            "label": "Dorset (E10000009)",
+            "value": "E10000009"
+          },
+          {
+            "id": "067e04c2-5206-4305-b90e-096ac09d0582",
+            "label": "Gloucestershire",
+            "value": "E10000013"
+          },
+          {
+            "id": "fdf2256b-d499-4cfc-a014-08d9b05a430f",
+            "label": "Isles of Scilly",
+            "value": "E06000053"
+          },
+          {
+            "id": "65891dc5-ae5c-4d87-8f60-2cb0593a4d6d",
+            "label": "North Somerset",
+            "value": "E06000024"
+          },
+          {
+            "id": "8cd93fef-293a-4283-829a-68c2a3e6d25d",
+            "label": "Plymouth",
+            "value": "E06000026"
+          },
+          {
+            "id": "23656fe7-d5cb-4f53-978f-332d9398cfdc",
+            "label": "Poole",
+            "value": "E06000029"
+          },
+          {
+            "id": "a5bc768e-3303-4457-f46a-08dbad2d71ec",
+            "label": "Somerset (E06000066)",
+            "value": "E06000066"
+          },
+          {
+            "id": "ba2d69c0-167b-45d6-9671-17ad81508679",
+            "label": "Somerset (E10000027)",
+            "value": "E10000027"
+          },
+          {
+            "id": "1783f559-f212-4192-bfc0-45f53cfd2a6b",
+            "label": "South Gloucestershire",
+            "value": "E06000025"
+          },
+          {
+            "id": "70a7b89a-66f2-4333-942b-2458d5e04b67",
+            "label": "Swindon",
+            "value": "E06000030"
+          },
+          {
+            "id": "2e1d9442-0622-4b29-802e-4984621e8d9c",
+            "label": "Torbay",
+            "value": "E06000027"
+          },
+          {
+            "id": "f8a18c20-af25-4635-8901-5b4e211ef035",
+            "label": "Wiltshire",
+            "value": "E06000054"
+          }
+        ],
+        "label": "South West",
+        "value": "E12000009"
+      },
+      {
+        "level": "region",
+        "options": [
+          {
+            "id": "8ed55a0e-0b5d-4d75-a171-2ac3af45478b",
+            "label": "Camden",
+            "value": "E09000007"
+          },
+          {
+            "id": "4e227604-b645-4e69-9c93-530bad16c702",
+            "label": "City of London",
+            "value": "E09000001"
+          },
+          {
+            "id": "4d0d1214-702d-46f2-9756-0456e264c64d",
+            "label": "Hackney",
+            "value": "E09000012"
+          },
+          {
+            "id": "3cac5674-a8b8-490e-9aef-358c6034772c",
+            "label": "Hammersmith and Fulham",
+            "value": "E09000013"
+          },
+          {
+            "id": "2e99f2ff-98b7-4645-b558-53f2b8617a99",
+            "label": "Haringey",
+            "value": "E09000014"
+          },
+          {
+            "id": "5822f4ed-50e4-4644-afbb-38975f178929",
+            "label": "Islington",
+            "value": "E09000019"
+          },
+          {
+            "id": "c776bc00-fb7b-49b7-913c-7512bfe24966",
+            "label": "Kensington and Chelsea",
+            "value": "E09000020"
+          },
+          {
+            "id": "161a3288-0067-4e1e-aeca-46c6944ae778",
+            "label": "Lambeth",
+            "value": "E09000022"
+          },
+          {
+            "id": "10cc06e4-7632-44a8-b2ce-4d60a609fa1c",
+            "label": "Lewisham",
+            "value": "E09000023"
+          },
+          {
+            "id": "e1f85d2e-322a-4da8-a255-0c6517147508",
+            "label": "Newham",
+            "value": "E09000025"
+          },
+          {
+            "id": "0807ef2a-f2f2-4b08-84b5-136100fa8605",
+            "label": "Southwark",
+            "value": "E09000028"
+          },
+          {
+            "id": "15836936-1166-4b33-b2d8-74887c7b7e2b",
+            "label": "Tower Hamlets",
+            "value": "E09000030"
+          },
+          {
+            "id": "7016b8c2-5cc5-4d32-8456-377d7d6f90d8",
+            "label": "Wandsworth",
+            "value": "E09000032"
+          },
+          {
+            "id": "3c9d4979-36a7-4d2d-8f9c-35c48124b606",
+            "label": "Westminster",
+            "value": "E09000033"
+          }
+        ],
+        "label": "Inner London",
+        "value": "E13000001"
+      },
+      {
+        "level": "region",
+        "options": [
+          {
+            "id": "b2a38854-c019-4216-a019-c471015781e3",
+            "label": "Barking and Dagenham",
+            "value": "E09000002"
+          },
+          {
+            "id": "188f6ea0-f778-4244-97f4-1ff6da1a0785",
+            "label": "Barnet",
+            "value": "E09000003"
+          },
+          {
+            "id": "0a49b719-6ebe-41ab-aa6e-4b2b345339c0",
+            "label": "Bexley",
+            "value": "E09000004"
+          },
+          {
+            "id": "b603b09e-f638-4d78-9a1f-5e99b52208da",
+            "label": "Brent",
+            "value": "E09000005"
+          },
+          {
+            "id": "a115eb5f-eed2-43bc-8536-00e3f5b58f25",
+            "label": "Bromley",
+            "value": "E09000006"
+          },
+          {
+            "id": "91ccebbf-bdba-460a-b00a-720a7fb2a792",
+            "label": "Croydon",
+            "value": "E09000008"
+          },
+          {
+            "id": "c607cc8b-f24a-400a-8144-017f955f80bc",
+            "label": "Ealing",
+            "value": "E09000009"
+          },
+          {
+            "id": "87dbc336-410b-47e0-9e21-2633dd3d9fd5",
+            "label": "Enfield",
+            "value": "E09000010"
+          },
+          {
+            "id": "2c79299b-5f0c-48ae-9cad-51edbcf11025",
+            "label": "Greenwich",
+            "value": "E09000011"
+          },
+          {
+            "id": "5f779548-1dc0-4890-8493-3bbbe03de3ba",
+            "label": "Harrow",
+            "value": "E09000015"
+          },
+          {
+            "id": "438ac74d-09e8-4f92-aeb5-44b484953576",
+            "label": "Havering",
+            "value": "E09000016"
+          },
+          {
+            "id": "e9981a73-fdaa-424c-b795-561001156e0d",
+            "label": "Hillingdon",
+            "value": "E09000017"
+          },
+          {
+            "id": "e65bcf95-6034-4bba-8bed-2473c87352f2",
+            "label": "Hounslow",
+            "value": "E09000018"
+          },
+          {
+            "id": "7f1cfd32-b900-40b9-8f64-7780503c6e12",
+            "label": "Kingston upon Thames",
+            "value": "E09000021"
+          },
+          {
+            "id": "425f37b2-0bf5-417b-a20b-22c23e669c1b",
+            "label": "Merton",
+            "value": "E09000024"
+          },
+          {
+            "id": "64af156a-5e59-42db-9bdc-10b75dc18a79",
+            "label": "Redbridge",
+            "value": "E09000026"
+          },
+          {
+            "id": "de4b7d50-de44-4f32-a9ae-8f41da48d3df",
+            "label": "Richmond upon Thames",
+            "value": "E09000027"
+          },
+          {
+            "id": "26872ee2-cb30-4938-a4aa-0a209921d784",
+            "label": "Sutton",
+            "value": "E09000029"
+          },
+          {
+            "id": "7bfc02d6-2789-4eb4-8939-0ecd4afa9ad3",
+            "label": "Waltham Forest",
+            "value": "E09000031"
+          }
+        ],
+        "label": "Outer London",
+        "value": "E13000002"
+      }
+    ]
+  },
+  "country": {
+    "legend": "National",
+    "options": [
+      {
+        "id": "376f9a26-dc39-4db3-bb19-0549e59d322a",
+        "label": "England",
+        "value": "E92000001"
+      }
+    ]
+  },
+  "region": {
+    "legend": "Regional",
+    "options": [
+      {
+        "id": "1618d177-f60b-4605-be5b-4064706bcb01",
+        "label": "North East",
+        "value": "E12000001"
+      },
+      {
+        "id": "2dc2a016-b6ab-44e4-b6a4-123d577e9b56",
+        "label": "North West",
+        "value": "E12000002"
+      },
+      {
+        "id": "28354a4a-8278-4dcc-4915-08d93bbc8641",
+        "label": "Yorkshire and The Humber",
+        "value": "E12000003"
+      },
+      {
+        "id": "b9190669-1bac-4ed6-8307-0b7623e7ecfa",
+        "label": "East Midlands",
+        "value": "E12000004"
+      },
+      {
+        "id": "04f4c5d3-8e32-4bde-9b62-13e416b6558f",
+        "label": "West Midlands",
+        "value": "E12000005"
+      },
+      {
+        "id": "84ba829d-5075-44e7-9219-10c9fd900c99",
+        "label": "East of England",
+        "value": "E12000006"
+      },
+      {
+        "id": "75c0b95d-6fbc-46aa-bc5b-3f4fd8ca1d38",
+        "label": "South East",
+        "value": "E12000008"
+      },
+      {
+        "id": "fc97dea4-a33a-46c1-81d0-3553ee945552",
+        "label": "South West",
+        "value": "E12000009"
+      },
+      {
+        "id": "6a3ce484-692f-4775-9be5-547e75dd4a27",
+        "label": "Inner London",
+        "value": "E13000001"
+      },
+      {
+        "id": "97799e98-a7f0-461f-903c-5f8f7d9ac2bf",
+        "label": "Outer London",
+        "value": "E13000002"
+      }
+    ]
+  }
+}
