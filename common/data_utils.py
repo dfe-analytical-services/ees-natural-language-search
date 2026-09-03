@@ -6,6 +6,8 @@ from common.search_client import filter_client
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
+    DatasetValidationIssue,
+    DatasetValidationIssueCode,
     FilterSelectionItem,
     FinalDatasetResponse,
     IndicatorSelectionItem,
@@ -19,7 +21,7 @@ from schemas.llm.time_period_selection_response import (
     TimePeriodDatasetResult,
     TimePeriodRange as LlmTimePeriodRange,
 )
-from schemas.ees_data_api.subject_meta_response import FilterItem
+from schemas.ees_data_api.subject_meta_response import FilterItem, SubjectMetaResponse
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -99,6 +101,91 @@ def parse_selection_responses(
     return filter_results_by_id, indicator_results_by_id, time_period_results_by_id
 
 
+def _resolve_indicators(
+    subject_meta: SubjectMetaResponse,
+    indicator_results: dict[str, IndicatorDecision] | None,
+) -> tuple[list[IndicatorSelectionItem], list[DatasetValidationIssue]]:
+    """Resolve the indicators result for the final dataset response, along with any validation issues."""
+    issues: list[DatasetValidationIssue] = []
+    indicators: list[IndicatorSelectionItem] = []
+
+    for indicator_label, decision in (indicator_results or {}).items():
+        if not decision.relevant:
+            continue
+        try:
+            indicator = subject_meta.get_indicator(indicator_label)
+        except KeyError:
+            issues.append(DatasetValidationIssue(
+                code=DatasetValidationIssueCode.INVALID_INDICATOR,
+                message=f"No indicator '{indicator_label}' was found for this dataset in the subject meta.",
+            ))
+            continue
+        indicators.append(IndicatorSelectionItem(id=indicator.id, label=indicator_label))
+
+    if not indicators:
+        issues.append(DatasetValidationIssue(
+            code=DatasetValidationIssueCode.NO_INDICATORS,
+            message="No relevant indicators were found for this dataset matching the query.",
+        ))
+
+    return indicators, issues
+
+
+def _resolve_time_period(
+    subject_meta: SubjectMetaResponse,
+    time_period_result: LlmTimePeriodRange | None,
+    time_period_requirement: str | None,
+) -> tuple[TimePeriodRange | None, list[DatasetValidationIssue]]:
+    """Resolve the time period result for the final dataset response, along with any validation issues."""
+    issues: list[DatasetValidationIssue] = []
+
+    if time_period_result is not None:
+        # The model returned a time period selection so validate it against the available time periods in the subject meta
+        available_time_periods = {(time_period.code, time_period.year) for time_period in subject_meta.time_period.options}
+        start_valid = (time_period_result.start.code, time_period_result.start.year) in available_time_periods
+        end_valid = (time_period_result.end.code, time_period_result.end.year) in available_time_periods
+        if not (start_valid and end_valid):
+            issues.append(DatasetValidationIssue(
+                code=DatasetValidationIssueCode.INVALID_TIME_PERIOD,
+                message=(
+                    f"No time period (start: {time_period_result.start.year} {time_period_result.start.code}, "
+                    f"end: {time_period_result.end.year} {time_period_result.end.code}) was found for this dataset in the subject meta."
+                ),
+            ))
+            return None, issues
+
+        # Convert from the model response shape to the event response shape
+        # The two are currently the same but we're allowing them to diverge in future if needed
+        return TimePeriodRange.model_validate(time_period_result.model_dump()), issues
+
+    if time_period_requirement is None:
+        # No time period requirement was extracted from the query, so the time period selection agent
+        # was skipped. Fallback to the dataset's latest available time period.
+        latest_time_period = subject_meta.get_latest_time_period()
+        if latest_time_period is None:
+            # Should never happen because every dataset is expected to have at least one available time period
+            # in its subject meta, but handle this gracefully anyway.
+            issues.append(DatasetValidationIssue(
+                code=DatasetValidationIssueCode.NO_AVAILABLE_TIME_PERIODS,
+                message="No available time periods were found for this dataset in the subject meta.",
+            ))
+            return None, issues
+
+        return TimePeriodRange(
+            start=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
+            end=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
+        ), issues
+
+    # A time period requirement was present, but the model couldn't find a relevant time period matching the requirement.
+    # Return None to distinguish this case from the 'no requirement' case.
+    # Falling back to the dataset's latest available time period would be misleading.
+    issues.append(DatasetValidationIssue(
+        code=DatasetValidationIssueCode.NO_TIME_PERIOD,
+        message="No relevant time period range was found for this dataset matching the query.",
+    ))
+    return None, issues
+
+
 def build_final_dataset_response(
     dataset: DatasetWithSubjectMeta,
     filter_results: FilterItemDatasetResult | None,
@@ -109,19 +196,32 @@ def build_final_dataset_response(
     relevance_reason: str | None,
 ) -> FinalDatasetResponse:
     subject_meta = dataset.subject_meta
+    issues: list[DatasetValidationIssue] = []
 
-    model_selected_filter_items: list[tuple[str, FilterItem]] = [
-        (
-            filter_item_group_id,
-            subject_meta.get_filter_item(
+    model_selected_filter_items: list[tuple[str, FilterItem]] = []
+    for filter_item_descriptor, decision in (filter_results.filter_items if filter_results else {}).items():
+        if not decision.relevant:
+            continue
+        try:
+            filter_label, filter_item_group_id, filter_item_label = filter_item_descriptor.split("|||")
+        except ValueError:
+            issues.append(DatasetValidationIssue(
+                code=DatasetValidationIssueCode.MALFORMED_FILTER_ITEM_DESCRIPTOR,
+                message=f"The filter item descriptor was malformed '{filter_item_descriptor}'.",
+            ))
+            continue
+        try:
+            filter_item = subject_meta.get_filter_item(
                 filter_item_group_id=filter_item_group_id,
                 filter_item_label=filter_item_label,
-            ),
-        )
-        for filter_item_descriptor, decision in (filter_results.filter_items if filter_results else {}).items()
-        if decision.relevant is True
-        for _filter_label, filter_item_group_id, filter_item_label in [filter_item_descriptor.split("|||")]
-    ]
+            )
+        except KeyError:
+            issues.append(DatasetValidationIssue(
+                code=DatasetValidationIssueCode.INVALID_FILTER_ITEM,
+                message=f"No filter item '{filter_item_label}' (filter label: '{filter_label}', filter item group id: '{filter_item_group_id}') was found for this dataset in the subject meta.",
+            ))
+            continue
+        model_selected_filter_items.append((filter_item_group_id, filter_item))
 
     # Every filter needs at least one selected filter item for the table query to work correctly.
     # If the model didn't select any relevant filter items for a filter, fallback to its auto_select_filter_item_id if set.
@@ -158,36 +258,20 @@ def build_final_dataset_response(
 
     filters = [FilterSelectionItem(id=filter_item.id, label=filter_item.label) for filter_item in selected_filter_items]
 
-    indicators = [
-        IndicatorSelectionItem(
-            id=subject_meta.get_indicator(indicator_label).id,
-            label=indicator_label,
-        )
-        for indicator_label, decision in (indicator_results or {}).items()
-        if decision.relevant is True
-    ]
+    indicators, indicator_issues = _resolve_indicators(subject_meta, indicator_results)
+    issues.extend(indicator_issues)
 
-    if time_period_result is not None:
-        # Convert from the LLM response shape to the event response shape
-        # The two are currently the same but we're allowing them to diverge in future if needed
-        time_period = TimePeriodRange.model_validate(time_period_result.model_dump())
-    elif time_period_requirement is None:
-        # No time period requirement was extracted from the query, so the time period selection agent
-        # was skipped. Fallback to the dataset's latest available time period.
-        latest_time_period = subject_meta.get_latest_time_period()
-        time_period = (
-            TimePeriodRange(
-                start=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
-                end=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
-            )
-            if latest_time_period
-            else None
-        )
-    else:
-        # A time period requirement was present, but the model couldn't find a time period matching the
-        # requirement for this dataset. Return None to distinguish this from the no requirement case.
-        # Falling back to the dataset's latest available time period would be misleading.
-        time_period = None
+    time_period, time_period_issues = _resolve_time_period(subject_meta, time_period_result, time_period_requirement)
+    issues.extend(time_period_issues)
+
+    # The result must have at least one location selection at any geographic level.
+    has_location = location_results is not None and any(len(locations) > 0 for locations in location_results.root.values())
+
+    if not has_location:
+        issues.append(DatasetValidationIssue(
+            code=DatasetValidationIssueCode.NO_LOCATION,
+            message="No relevant location was found for this dataset matching the query.",
+        ))
 
     return FinalDatasetResponse(
         data_set_file_id=dataset.dataset_file_id,
@@ -207,6 +291,7 @@ def build_final_dataset_response(
         relevance_reason=relevance_reason,
         auto_selected_filter_items=auto_selected_filters_items,
         unfiltered_filters=unfiltered_filters,
+        validation_issues=issues,
     )
 
 
