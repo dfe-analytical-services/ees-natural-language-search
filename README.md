@@ -15,29 +15,54 @@ It combines **Azure Cognitive Search** (hybrid BM25 + vector) with a multi-stage
 ees-natural-language-search/
 ├── function_app.py                  # Azure Functions entry point - mounts FastAPI via an ASGI proxy
 ├── host.json                        # Functions runtime config
-├── requirements.txt                 
+├── requirements.txt
+├── requirements-test.txt            # Test dependencies - also installs requirements.txt
+├── pytest.ini                       # Pytest config, so `pytest` runs with no arguments
 ├── local.settings.example.json      # Template for local env vars
 ├── azure-pipelines.yml              # CI/CD
 │
 ├── core/
 │   ├── app.py                       # Builds the FastAPI app, registers the main routes
-|   └── config.py                    # Loads local.settings.json into os.environ (local only)
-| 
-├── common/                          # All business logic
+│   ├── config.py                    # Loads local.settings.json into os.environ (local only)
+│   └── logging_config.py            # Contains the logging dictionary config applied at app startup
+│
+├── common/                          # Pipeline orchestration and business logic
 │   ├── workflow.py                  # Pipeline orchestrator
 │   ├── retrieve_datasets.py         # Thin wrapper over multi_index_search
 │   ├── search_client.py             # Azure Search clients + embeddings + hybrid search
-│   ├── openai_client.py             # generate_answer() - Azure OpenAI chat wrapper
 │   ├── reranker.py                  # LLM agent: rerank + extract query requirements
 │   ├── filter_selection.py          # LLM agent: pick relevant filter values per dataset
 │   ├── indicator_selection.py       # LLM agent: pick relevant indicators per dataset
+│   ├── time_period_selection.py     # LLM agent: pick the start/end time period per dataset
+│   ├── llm_response_parser.py       # Validates raw LLM JSON against a schema
 │   ├── data_utils.py                # Filter retrieval, response merge, score conversion
-│   └── location_utils.py            # Fuzzy location matching + geographic level grouping
+│   ├── location_utils.py            # Fuzzy location matching + geographic level grouping
+│   └── logging_utils.py             # Summarises agent selections for logging
 │
-└── routes/
-    ├── natural_language_search_function.py  # POST /api/natural_language_search_function (SSE)
-    ├── healthcheck.py                       # GET /health_check
-    └── vectorizer_middleware.py             # POST /api/vectorizer_middleware (embeddings for indexers)
+├── clients/                         # Client wrappers for the external services which the pipeline calls
+│   ├── openai_client.py             # Azure OpenAI client
+│   └── ees_data_api_client.py       # EES Data API client
+│
+├── schemas/                         # Pydantic models, grouped by the boundary they describe
+│   ├── shared/                      # CamelModel/StrictCamelModel bases, TokenUsage
+│   ├── ees_data_api/                # Data API responses (subject meta)
+│   ├── llm/                         # Expected shape of each agent's JSON output
+│   ├── domain/                      # Internal DTOs, e.g. `DatasetWithSubjectMeta`
+│   └── responses/                   # SSE event payloads returned to the client
+│
+├── routes/
+│   ├── natural_language_search_function.py  # POST /api/natural_language_search_function (SSE)
+│   ├── healthcheck.py                       # GET /health_check
+│   └── vectorizer_middleware.py             # POST /api/vectorizer_middleware (embeddings for indexers)
+│
+├── pipelines/templates/             # Azure Pipelines stage, job and step templates
+│
+├── tools/data-sync/                 # Manual notebook that builds documents for the Azure AI Search indexes - see its own README
+│
+└── tests/                           # Pytest suite - See section "Running the tests"
+    ├── conftest.py                  # Shared Pytest fixtures
+    ├── fixtures/                    # Sample EES Data API JSON payloads, loaded via the `load_json_fixture`
+    └── common/                      # Tests for common/
 ```
 
 ---
@@ -158,17 +183,15 @@ The response is returned as `text/event-stream`.
 
 **Prerequisites:** Python (CI pipeline targets **3.14**), [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local), and access to the Azure Search  / OpneAI / Storage resources.
 
-```powershell
+```bash
 pip install -r requirements.txt
 Copy-Item local.settings.example.json local.settings.json  # then fill in values
 func start                                                 # serves on http://localhost:7071
 ```
 
-Test:
+To run a query, replace `publicationId` with the ID of the publication you want to search.
 
-Replace `publicationId` with the ID of the publication you want to search.
-
-```powershell
+```bash
 curl -X POST https://localhost:7071/api/natural_language_search_function `
     -H "Content-Type: application/json" `
     -d '{"userQuery": "Show me the percentage of pupils reported as on holiday in the last 4 weeks", "publicationId": "00000000-0000-0000-0000-000000000000"}'
@@ -177,3 +200,24 @@ curl -X POST https://localhost:7071/api/natural_language_search_function `
 `core/config.py` loads `local.settings.json` into environment locally if you plan on running it with uvicorn
 
 ---
+
+## Running the tests
+
+Tests live in `tests/`, mirroring the package they cover (e.g. `tests/common/test_location_utils.py` covers
+`common/location_utils.py`).
+
+`pytest.ini` provides the test configuration, so `pytest` can be run without any additional arguments.
+
+Install the test dependencies (this also installs `requirements.txt`):
+
+```bash
+pip install -r requirements-test.txt
+```
+
+Then from the root of the project, run:
+
+```bash
+pytest
+```
+
+The tests run in the CI pipeline using the configuration in the step template `pipelines/templates/steps/python/test.yml`.
