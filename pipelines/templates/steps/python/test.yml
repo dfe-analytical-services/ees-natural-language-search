@@ -1,6 +1,22 @@
 steps:
-  # Placeholder for running tests
-  # This could also publish test results and collect code coverage
   - script: |
-      echo "Run tests placeholder. No tests have been implemented yet."
+      pip install -r requirements-test.txt
+    displayName: 'Install test dependencies'
+
+  - script: |
+      pytest
     displayName: 'Run tests'
+
+  - task: PublishTestResults@2
+    displayName: 'Publish test results'
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'test-results.xml'
+      failTaskOnFailedTests: true
+    condition: succeededOrFailed()
+
+  - task: PublishCodeCoverageResults@2
+    displayName: 'Publish code coverage'
+    inputs: 
+      summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage.xml'
+      failIfCoverageEmpty: true
