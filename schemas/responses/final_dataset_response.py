@@ -2,7 +2,9 @@
 Final dataset response Pydantic models
 """
 
-from pydantic import Field
+from enum import StrEnum
+
+from pydantic import Field, computed_field
 from schemas.shared.base_models import StrictCamelModel
 
 from schemas.domain.locations_response import DatasetLocations
@@ -46,6 +48,26 @@ class AutoSelectedFilterItem(StrictCamelModel):
     filter_item_id: str
 
 
+class DatasetValidationIssueCode(StrEnum):
+    """The set of reasons a dataset result can fail validation."""
+
+    INVALID_FILTER_ITEM = "invalid_filter_item"
+    INVALID_INDICATOR = "invalid_indicator"
+    INVALID_TIME_PERIOD = "invalid_time_period"
+    MALFORMED_FILTER_ITEM_DESCRIPTOR = "malformed_filter_item_descriptor"
+    NO_AVAILABLE_TIME_PERIODS = "no_available_time_periods"
+    NO_INDICATORS = "no_indicators"
+    NO_LOCATION = "no_location"
+    NO_TIME_PERIOD = "no_time_period"
+
+
+class DatasetValidationIssue(StrictCamelModel):
+    """A reason why a dataset result failed validation."""
+
+    code: DatasetValidationIssueCode
+    message: str
+
+
 class FinalDatasetResponse(StrictCamelModel):
 
     data_set_file_id: str
@@ -71,3 +93,9 @@ class FinalDatasetResponse(StrictCamelModel):
         default_factory=list,
         description="Labels of filters where every filter item is selected because there are no relevant selections made for the filter, and no auto_select_filter_item_id fallback exists either.",
     )
+    validation_issues: list[DatasetValidationIssue] = Field(default_factory=list)
+
+    @computed_field
+    @property
+    def is_valid_for_table_generation(self) -> bool:
+        return not self.validation_issues
