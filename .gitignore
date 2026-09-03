@@ -4,3 +4,8 @@ local.settings.json
 # Python
 __pycache__/
 .pytest_cache/
+
+# Unit test / coverage reports
+.coverage
+coverage.xml
+test-results.xml
