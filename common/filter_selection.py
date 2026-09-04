@@ -91,7 +91,7 @@ Description: {dataset_description}
 
 
 async def run_filter_selection_agent(
-    transformed,
+    transformed: dict[str, dict[str, list[str]]],
     datasets_by_id: dict[str, DatasetWithSubjectMeta],
     user_query: str,
     query_requirements: list[str],
