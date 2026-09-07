@@ -8,6 +8,11 @@ from pydantic import BaseModel, Field
 class FilterItemDecision(BaseModel):
     relevant: bool = False
     reasoning: str | None = None
+    filter_item_label: str | None = Field(
+        alias="filterItemLabel",
+        default=None,
+        description="Echoed back by the model only so that a mis-referenced filter item can be detected.",
+    )
 
 
 class FilterItemDatasetResult(BaseModel):
@@ -16,7 +21,7 @@ class FilterItemDatasetResult(BaseModel):
     filter_items: dict[str, FilterItemDecision] = Field(
         alias="filterItems",
         default_factory=dict,
-        description="Keyed by composite filter item descriptor: filter label, filter item group ID, and filter item label",
+        description="Keyed by the reference number of a filter item provided to the model.",
     )
     irrelevant_filters: dict[str, str] = Field(
         alias="irrelevantFilters",

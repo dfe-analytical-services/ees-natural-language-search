@@ -106,20 +106,6 @@ class SubjectMetaResponse(CamelModel):
 
 
     @cached_property
-    def _filter_item_lookup(self) -> dict[tuple[str, str], FilterItem]:
-        """Keyed by (filter item group id, filter item label).
-
-        Assumes filter item labels are unique within a filter item group.
-        """
-        return {
-            (filter_item_group.id, filter_item.label): filter_item
-            for filter_ in self.filters.values()
-            for filter_item_group in filter_.filter_item_groups.values()
-            for filter_item in filter_item_group.filter_items
-        }
-
-
-    @cached_property
     def _filter_item_by_id_lookup(self) -> dict[str, FilterItem]:
         """Keyed by filter item id."""
         return {
@@ -128,21 +114,6 @@ class SubjectMetaResponse(CamelModel):
             for filter_item_group in filter_.filter_item_groups.values()
             for filter_item in filter_item_group.filter_items
         }
-
-
-    def get_filter_item(
-        self,
-        filter_item_group_id: str,
-        filter_item_label: str
-    ) -> FilterItem:
-        filter_item = self._filter_item_lookup.get(
-            (filter_item_group_id, filter_item_label)
-        )
-        if filter_item is None:
-            raise KeyError(
-                f"Filter item for group ID '{filter_item_group_id}' and label '{filter_item_label}' not found"
-            )
-        return filter_item
 
 
     def get_filter_item_by_id(self, filter_item_id: str) -> FilterItem:

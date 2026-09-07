@@ -2,6 +2,7 @@ import asyncio
 import logging
 from clients.openai_client import generate_answer
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
+from schemas.domain.filter_item_candidates import DatasetFilterItemCandidates
 from schemas.shared.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
@@ -23,17 +24,14 @@ A filter is a filterable column in the dataset.
 ## Filter Item
 A filter item is a selectable value within a filter column found in the dataset.
 
-## Filter Item Groups
-A filter item group is a collection of related filter items within the same filter.
-
 # Inputs
 You will be given:
 - A user query.
 - The data requirements that have been extracted from the user query.
 - The dataset name and description.
-- A list of filter items, each in the exact format `filter label|||filter item group ID|||filter item label`.
+- A list of the dataset's filter items, grouped under a heading for each filter label. Each filter item is listed on its own line in the format `<reference number>. <filter item label>`.
 
-The filter item group IDs are identifiers and must not be interpreted semantically.
+A reference number identifies a filter item. It has no meaning of its own, and must never be interpreted semantically or used as evidence that a filter item is relevant.
 
 # Task
 You must evaluate every filter item one at a time, in the order provided.
@@ -53,8 +51,9 @@ DO NOT assume anything about the query requirements, dataset, or the filter item
 Return only a valid JSON object in this exact structure:
 {
     "filterItems": {
-        "<exact filter label>|||<exact filter item group ID>|||<exact filter item label>": {
+        "<reference number of the filter item>": {
             "relevant": true|false,
+            "filterItemLabel": "<only if relevant, the exact filter item label of the filter item this reference number identifies. If not relevant, omit this field>",
             "reasoning": "<only if relevant, explain the decision using only the query requirement and the filter item's text. If not relevant, omit this field>"
         }
     },
@@ -67,7 +66,9 @@ Include a filter label in "irrelevantFilters" only when every filter item you ev
 
 Write every "reasoning" and "irrelevantFilters" explanation as one concise sentence, the way a person would casually explain their thinking.
 
-Use exact input text for all keys (filter label, filter item group ID, filter item label).
+Every key in "filterItems" must be the reference number of a filter item from the input, written as a quoted JSON string, for example "12".
+Use each reference number at most once. Never invent a reference number, and never use anything other than a reference number as a key.
+Every key in "irrelevantFilters" must be a filter label copied exactly from a heading in the input.
 """
 
 llm_filtering_user_prompt = """
@@ -90,24 +91,57 @@ Description: {dataset_description}
 """
 
 
+def _format_filter_item_candidates(candidates: DatasetFilterItemCandidates) -> str:
+    """Formats the numbered filter item list that the model keys its decisions by,
+    for including in the user prompt.
+    For example:
+
+        ## School type
+        1. Total
+        2. State-funded primary
+
+        ## Pupil sex
+        3. Total
+        4. Female
+        5. Male
+    """
+    filter_labels_by_id: dict[str, str] = {}
+    lines_by_filter_id: dict[str, list[str]] = {}
+
+    for reference, candidate in sorted(candidates.root.items()):
+        filter_labels_by_id[candidate.filter_id] = candidate.filter_label
+        lines_by_filter_id.setdefault(candidate.filter_id, []).append(
+            f"{reference}. {candidate.filter_item.label}"
+        )
+
+    return "\n\n".join(
+        "\n".join([f"## {filter_labels_by_id[filter_id]}", *lines])
+        for filter_id, lines in lines_by_filter_id.items()
+    )
+
+
 async def run_filter_selection_agent(
-    transformed: dict[str, dict[str, list[str]]],
+    filter_item_candidates_by_file_id: dict[str, DatasetFilterItemCandidates],
     datasets_by_id: dict[str, DatasetWithSubjectMeta],
     user_query: str,
     query_requirements: list[str],
 ):
+    """Runs the filter selection agent once per dataset that has filter item candidates.
 
+    Datasets without any filter item candidates are already omitted from `filter_item_candidates_by_file_id`,
+    and no agent call is made for them.
+    """
     logger.info("Filter selection model running...")
     file_ids: list[str] = []
     tasks: list[asyncio.Task] = []
 
-    for file_id, filters in transformed.items():
+    for file_id, candidates in filter_item_candidates_by_file_id.items():
         prompt = llm_filtering_user_prompt.format(
             raw_query=user_query,
             query_requirements=query_requirements,
             dataset_name=datasets_by_id[file_id].title,
             dataset_description=datasets_by_id[file_id].description,
-            filter_list=filters,
+            filter_list=_format_filter_item_candidates(candidates),
         )
 
         task = asyncio.create_task(

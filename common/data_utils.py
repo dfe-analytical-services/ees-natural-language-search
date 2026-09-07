@@ -1,9 +1,15 @@
+import logging
 from collections import defaultdict
+from collections.abc import Mapping
 from typing import TypeVar
 from pydantic import BaseModel
 from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
+from schemas.domain.filter_item_candidates import (
+    DatasetFilterItemCandidates,
+    FilterItemCandidate,
+)
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
     DatasetValidationIssue,
@@ -25,50 +31,154 @@ from schemas.ees_data_api.subject_meta_response import FilterItem, SubjectMetaRe
 
 T = TypeVar("T", bound=BaseModel)
 
+logger = logging.getLogger(__name__)
 
-def retrieve_and_transform_filter_data(file_ids: list[str], shortlisted_filters: defaultdict=None):
-    ## Retrieve full dataset level information from Azure AI Search
+
+def build_filter_item_candidates(
+    datasets_by_file_id: dict[str, DatasetWithSubjectMeta],
+    shortlisted_relevant_filters_by_file_id: Mapping[str, list[str]] | None = None,
+) -> dict[str, DatasetFilterItemCandidates]:
+    """Builds the numbered filter items offered to the filter selection agent, per dataset.
+
+    The Azure AI Search filter index is used to find relevant filter item groups and the datasets
+    they belong to which are worth shortlisting by the reranker.
+
+    The candidate filter items for the filter selection agent are obtained from the subject meta,
+    which is the source of truth for their IDs.
+
+    Datasets left without any candidates are omitted, so no agent call is made for them.
+    """
+    filter_item_group_ids_by_file_id = _retrieve_shortlisted_relevant_filter_item_group_ids(
+        file_ids=list(datasets_by_file_id.keys()),
+        shortlisted_relevant_filters_by_file_id=shortlisted_relevant_filters_by_file_id,
+    )
+
+    candidates_by_file_id: dict[str, DatasetFilterItemCandidates] = {}
+    for file_id, filter_item_group_ids in filter_item_group_ids_by_file_id.items():
+        dataset = datasets_by_file_id.get(file_id)
+        if dataset is None:
+            continue
+
+        candidates = _build_filter_item_candidates(
+            file_id=file_id,
+            subject_meta=dataset.subject_meta,
+            filter_item_group_ids=filter_item_group_ids,
+        )
+
+        # Omit datasets that have no filter item candidates
+        if not candidates.root:
+            continue
+
+        logger.info(
+            "Built filter item candidates for dataset: file_id=%s, candidate_count=%s",
+            file_id,
+            len(candidates.root),
+        )
+        candidates_by_file_id[file_id] = candidates
+
+    return candidates_by_file_id
+
+
+def _retrieve_shortlisted_relevant_filter_item_group_ids(
+    file_ids: list[str],
+    shortlisted_relevant_filters_by_file_id: Mapping[str, list[str]] | None,
+) -> dict[str, list[str]]:
+    """Reverse engineers the ID's of relevant filter item groups that were retrieved from Azure AI Search based on their names.
+    """
+
+    # TODO this additional call to the search index doesn't seem ideal.
+    # This seems to be necessary because when the filter names are added to the search index,
+    # they can be a filter item group label, or a filter label depending on whether the group label is 'Default'.
+    # Those names are passed in `shortlisted_relevant_filters_by_file_id` to this function, and there's no easy way to distinguish between the two cases.
+    # We need to go back to the search index where the values came from, and get the 'filterGroupId' corresponding with 'filterName' for each name value.
+    # The filter group id's could have been retrieved earlier by changing the way `multi_index_search` builds `relevant_filters_by_file_id`.
+
+    # TODO there might be a bug if multiple filter item groups with the same name exist in a dataset (possible if there are multiple filters each with their own groups)
+
     filter_expr = "search.in(fileId, '{}', ',')".format(",".join(file_ids))
     results = filter_client.search(
         search_text="*",
         filter=filter_expr,
         # TODO rename fields in the search index to use consistent terminology:
-        # filterCategory is the field named used in the index for the filter label
         # filterName is the filter item group label. When the group label is 'Default', filterName contains the filter label instead.
+        # Unused fields:
+        # filterCategory is the field named used in the index for the filter label
         # filterValues is a list of the filter item labels
-        select=['fileId', 'filterGroupId', 'filterCategory','filterName', 'filterValues']
+        select=['fileId', 'filterGroupId', 'filterName']
     )
 
-    # Each document in the search results represents a filter item group.
-    # Transform the filter item group results into a list of dicts with each dict containing the file Id, filter item group Id, filter label, and a list of filter item labels.
-    # Multiple results can be returned for the same file ID when the file contains multiple filter item groups or filters. Each filter contains at least one filter item group.
-    results = [{'fileId': r['fileId'], 'filterItemGroupId':r['filterGroupId'], 'filterLabel':r['filterCategory'], 'filterItemGroupLabelOrFilterLabel':r['filterName'], 'filterItemLabels':r['filterValues']} for r in results]
-    
-    if shortlisted_filters:
-        results = [
-            d
-            for d in results
-            if d.get("fileId") in shortlisted_filters and d.get("filterItemGroupLabelOrFilterLabel") in shortlisted_filters.get(d.get("fileId"), [])
-        ]
-    # Flatten the list of filter labels and filter item labels for easier LLM consumption
-    results_by_file_id = defaultdict(list)
+    filter_item_group_ids_by_file_id: defaultdict[str, list[str]] = defaultdict(list)
     for result in results:
-        results_by_file_id[result["fileId"]].append(result)
+        file_id = result["fileId"]
+        if (
+            shortlisted_relevant_filters_by_file_id is not None
+            and result["filterName"] not in shortlisted_relevant_filters_by_file_id.get(file_id, [])
+        ):
+            continue
+        filter_item_group_ids_by_file_id[file_id].append(result["filterGroupId"])
 
-    results_by_file_id = dict(results_by_file_id)
+    return dict(filter_item_group_ids_by_file_id)
 
-    transformed = {
-        file_id: {
-            "filterItems": [
-                f"{result['filterLabel']}|||{result.get('filterItemGroupId')}|||{filter_item_label}"
-                for result in results
-                for filter_item_label in result["filterItemLabels"]
-            ]
+
+def _build_filter_item_candidates(
+    file_id: str,
+    subject_meta: SubjectMetaResponse,
+    filter_item_group_ids: list[str],
+) -> DatasetFilterItemCandidates:
+    """Numbers every filter item of every filter item group in `filter_item_group_ids`, found in the subject meta.
+    Raises a `KeyError` on the first filter item group missing from the subject meta.
+    """
+    # Datasets without any filters are expected to have no matches
+    if subject_meta.filters:
+        # Get all the filter item group IDs present in the subject meta
+        all_filter_item_group_ids = {
+            filter_item_group.id
+            for filter_ in subject_meta.filters.values()
+            for filter_item_group in filter_.filter_item_groups.values()
         }
-        for file_id, results in results_by_file_id.items()
-    }
 
-    return transformed
+        # Ensure that all the filter item group IDs exist in the subject meta
+        for filter_item_group_id in filter_item_group_ids:
+            if filter_item_group_id not in all_filter_item_group_ids:
+                message = (
+                    f"Filter item group '{filter_item_group_id}' from the search index was not found in the "
+                    f"dataset's subject meta: file_id={file_id}"
+                )
+                logger.error(message)
+                raise KeyError(message)
+
+    # Convert the list of filter item group IDs to a set for faster lookups
+    filter_item_group_ids_set = set(filter_item_group_ids)
+
+    candidates: dict[int, FilterItemCandidate] = {}
+    reference = 1
+
+   # Build the candidate list by iterating over the subject meta rather than the set of ID's,
+   # so that the order is stable for a given release version.
+    for filter_ in subject_meta.filters.values():
+        for filter_item_group in filter_.filter_item_groups.values():
+
+            # Skip filter item groups that are not in the set of ID's
+            if filter_item_group.id not in filter_item_group_ids_set:
+                continue
+
+            if not filter_item_group.filter_items:
+                logger.error(
+                    "Filter item group contains no filter items: file_id=%s, filter_item_group_id=%s",
+                    file_id,
+                    filter_item_group.id,
+                )
+                continue
+
+            for filter_item in filter_item_group.filter_items:
+                candidates[reference] = FilterItemCandidate(
+                    filter_id=filter_.id,
+                    filter_label=filter_.label,
+                    filter_item=filter_item,
+                )
+                reference += 1
+
+    return DatasetFilterItemCandidates(candidates)
 
 
 def _parse_responses_by_file_id(
@@ -188,6 +298,7 @@ def _resolve_time_period(
 
 def build_final_dataset_response(
     dataset: DatasetWithSubjectMeta,
+    filter_item_candidates: DatasetFilterItemCandidates,
     filter_results: FilterItemDatasetResult | None,
     indicator_results: dict[str, IndicatorDecision] | None,
     time_period_result: LlmTimePeriodRange | None,
@@ -198,30 +309,44 @@ def build_final_dataset_response(
     subject_meta = dataset.subject_meta
     issues: list[DatasetValidationIssue] = []
 
-    model_selected_filter_items: list[tuple[str, FilterItem]] = []
-    for filter_item_descriptor, decision in (filter_results.filter_items if filter_results else {}).items():
+    # Resolve the model's filter item selections against the filter item candidates it was provided
+    selected_filter_items: list[FilterItem] = []
+    selected_filter_ids: set[str] = set()
+
+    for raw_reference, decision in (filter_results.filter_items if filter_results else {}).items():
         if not decision.relevant:
             continue
-        try:
-            filter_label, filter_item_group_id, filter_item_label = filter_item_descriptor.split("|||")
-        except ValueError:
+
+        reference = DatasetFilterItemCandidates.parse_reference(raw_reference)
+        if reference is None:
             issues.append(DatasetValidationIssue(
-                code=DatasetValidationIssueCode.MALFORMED_FILTER_ITEM_DESCRIPTOR,
-                message=f"The filter item descriptor was malformed '{filter_item_descriptor}'.",
+                code=DatasetValidationIssueCode.MALFORMED_FILTER_ITEM_REFERENCE,
+                message=f"The filter item reference '{raw_reference}' was not a valid number.",
             ))
             continue
-        try:
-            filter_item = subject_meta.get_filter_item(
-                filter_item_group_id=filter_item_group_id,
-                filter_item_label=filter_item_label,
-            )
-        except KeyError:
+
+        candidate = filter_item_candidates.get(reference)
+        if candidate is None:
+            # There was no candidate for the given reference number, indicating an invalid selection by the model.
             issues.append(DatasetValidationIssue(
                 code=DatasetValidationIssueCode.INVALID_FILTER_ITEM,
-                message=f"No filter item '{filter_item_label}' (filter label: '{filter_label}', filter item group id: '{filter_item_group_id}') was found for this dataset in the subject meta.",
+                message=f"No filter item was found for the reference number '{reference}' for this dataset.",
             ))
             continue
-        model_selected_filter_items.append((filter_item_group_id, filter_item))
+
+        if decision.filter_item_label is not None and decision.filter_item_label != candidate.filter_item.label:
+            # Log a warning if the label echoed by the model does not match the candidate's label.
+            # This means that the model may have returned an incorrect reference number for the filter item.
+            logger.warning(
+                "The filter item label returned by the filter selection agent did not match the filter item it referenced: file_id=%s, reference=%s, returned_label='%s', candidate_label='%s'",
+                dataset.file_id,
+                reference,
+                decision.filter_item_label,
+                candidate.filter_item.label,
+            )
+
+        selected_filter_items.append(candidate.filter_item)
+        selected_filter_ids.add(candidate.filter_id)
 
     # Every filter needs at least one selected filter item for the table query to work correctly.
     # If the model didn't select any relevant filter items for a filter, fallback to its auto_select_filter_item_id if set.
@@ -230,19 +355,13 @@ def build_final_dataset_response(
     # Maintain a record of these auto-selected filter items, and unfiltered filters separately,
     # so they can be returned in the final dataset response. This allows the consumer to differentiate
     # between model selections and fallback selections.
-    selected_filter_item_group_ids = {filter_item_group_id for filter_item_group_id, _ in model_selected_filter_items}
-    selected_filter_items: list[FilterItem] = [filter_item for _, filter_item in model_selected_filter_items]
     auto_selected_filters_items: dict[str, AutoSelectedFilterItem] = {}
     unfiltered_filters: list[str] = []
 
     # Iterate over all filters in the subject meta
     for filter_ in subject_meta.filters.values():
-        filter_item_group_ids = {filter_item_group.id for filter_item_group in filter_.filter_item_groups.values()}
-
-        # Intersect the set of all filter item group IDs for the filter with the set of selected filter item group IDs,
-        # to check if the filter has any filter item groups containing a filter item with a relevant decision made by the model
-        if filter_item_group_ids & selected_filter_item_group_ids:
-            continue  # filter has a filter item group containing a filter item with a relevant decision
+        if filter_.id in selected_filter_ids:
+            continue  # the model made a relevant decision for at least one of the filter's filter items
 
         if filter_.auto_select_filter_item_id:
             auto_select_filter_item = subject_meta.get_filter_item_by_id(filter_.auto_select_filter_item_id)

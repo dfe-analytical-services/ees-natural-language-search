@@ -54,7 +54,7 @@ class DatasetValidationIssueCode(StrEnum):
     INVALID_FILTER_ITEM = "invalid_filter_item"
     INVALID_INDICATOR = "invalid_indicator"
     INVALID_TIME_PERIOD = "invalid_time_period"
-    MALFORMED_FILTER_ITEM_DESCRIPTOR = "malformed_filter_item_descriptor"
+    MALFORMED_FILTER_ITEM_REFERENCE = "malformed_filter_item_reference"
     NO_AVAILABLE_TIME_PERIODS = "no_available_time_periods"
     NO_INDICATORS = "no_indicators"
     NO_LOCATION = "no_location"

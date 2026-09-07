@@ -31,11 +31,11 @@ ees-natural-language-search/
 │   ├── retrieve_datasets.py         # Thin wrapper over multi_index_search
 │   ├── search_client.py             # Azure Search clients + embeddings + hybrid search
 │   ├── reranker.py                  # LLM agent: rerank + extract query requirements
-│   ├── filter_selection.py          # LLM agent: pick relevant filter values per dataset
+│   ├── filter_selection.py          # LLM agent: pick relevant filter items per dataset
 │   ├── indicator_selection.py       # LLM agent: pick relevant indicators per dataset
 │   ├── time_period_selection.py     # LLM agent: pick the start/end time period per dataset
 │   ├── llm_response_parser.py       # Validates raw LLM JSON against a schema
-│   ├── data_utils.py                # Filter retrieval, response merge, score conversion
+│   ├── data_utils.py                # Filter item candidate building, response merge, score conversion
 │   ├── location_utils.py            # Fuzzy location matching + geographic level grouping
 │   └── logging_utils.py             # Summarises agent selections for logging
 │
@@ -91,11 +91,12 @@ ees-natural-language-search/
    ├── 4. get_location_matches                                   (location_utils.py)
    │        Fuzzy-match mentioned locations, group by allowed geographic levels per dataset
    │
-   ├── 5. retrieve_and_transform_filter_data                     (data_utils.py -> Azure Search filter index)
-   │        Fetch full filter values for shortlisted datasets, flattened for the LLM
+   ├── 5. build_filter_item_candidates                           (data_utils.py -> Azure Search filter index)
+   │        Formats filter items for relevant shortlisted filter item groups, numbering every filter item.
+   │        The reference numbers are what the filter selection agent keys its output by.
    │
    ├── 6. filter + indicator + time period agents in parallel    (asyncio.gather -> Azure OpenAI)
-   │        Per-dataset relevance decisions for each filter value/indicator
+   │        Per-dataset relevance decisions for each filter item/indicator
    │
    └── 7. parse_selection_responses + build_final_dataset_response (data_utils.py)
             Parse each agent response against the file id it was requested for, then merge filters, indicators, time period, locations,
@@ -118,29 +119,29 @@ ees-natural-language-search/
 ## Components in depth
 
 ### `workflow.py` - orchestrator
-The most important file. Accumulates `token_usage` across all LLM calls and `yield`s after each stage. It builds a `reranked_datasets_by_id` map with dataset metadata plus subject meta and passes that through geography/filter/indicator/time period stages. If the reranker shortlists nothing, downstream stages simply produce empty results.
+The most important file. Accumulates `token_usage` across all LLM calls and `yield`s after each stage. It builds a `reranked_datasets_by_id` map with dataset metadata plus subject meta and passes that through geography/filter/indicator/time period stages. It also threads the per-dataset filter item candidates through the filter agent, the selection logging and the final response, so all three resolve the same reference numbers. If the reranker shortlists nothing, downstream stages simply produce empty results.
 
 ### `search_client.py` - Azure Search and embeddings
 - Module-level `filter_client` and `dataset_client` are created at import. Credential is `AzureKeyCredential` if `AZURE_SEARCH_KEY` is set, else `DefaultAzureCredential()`.
 - `get_embeddings(input_text, model_name, dimensions=1536)` -> `**returns (embeddings, total_tokens)**`. Lists are batched in groups of 15 with up to 2 attempts and exponential backoff on transient errors.
 - `hybrid_search(...)` runs BM25 + vector search against the filter index (`top=10`, vector `weight=0.5`), optionally filtered by `publicationTitle` and `latestData`.
-- `multi_index_search(...)` groups filter hits by `fileId`, keeps the `max @search.score` per dataset, then fetches each dataset doc via `dataset_client.get_document(...)`. Returns `(query, datasets, max_scores, grouped_filters)`.
+- `multi_index_search(...)` groups filter hits by `fileId`, keeps the `max @search.score` per dataset, then fetches each dataset doc via `dataset_client.get_document(...)`. Returns `(query, datasets, max_scores, relevant_filters_by_file_id)`.
 
 ### `reranker.py` - rerank + requirement extraction
 Sends the query plus trimmed dataset metadata `(fileId, title, content, filters, timePeriodRange)` to the LLM. Returns a typed `RerankingAgentResult` used downstream:
-`grouped_filters`, `grouped_indicators`, `reranker_response`, and `total_tokens_used`. The LLM output schema remains:
+`shortlisted_relevant_filters_by_file_id`, `shortlisted_indicators_by_file_id`, `reranker_response`, and `total_tokens_used`. The LLM output schema remains:
 `queryRequirements{filters[], geography[], timePeriod}`, `shortlistedDatasets[{fileId, title, relevanceReason, relevantFilters[]}]`, `confidence`.
 
 ### `filter_selection.py` / `indicator_selection.py` / `time_period_selection.py` - selection agents
 One LLM call per reranked dataset, all gathered concurrently. Each returns a list of `(fileId, raw JSON string)` pairs plus a token total.
-- Filter output: `{ "filterItems": { "<filter label>|||<filter item group ID>|||<filter item label>": {relevant(Yes/No), reasoning} }, "irrelevantFilters": { "<filter label>": reason } }`
+- Filter output: `{ "filterItems": { "<filter item reference number>": {relevant, filterItemLabel, reasoning} }, "irrelevantFilters": { "<filter label>": reason } }`. The reference number is an index into the numbered filter item list the agent was prompted with, per dataset. `filterItemLabel` is echoed back only so a mis-referenced filter item can be detected and logged.
 - Indicator output: `{ "<indicator>": {relevant(Yes/No), reasoning} }`
 - Time period output: `{ "timePeriod": {start: {code, year}, end: {code, year}} }`, or `{ "timePeriod": null }` when nothing overlaps the requirement
 
 ### `data_utils.py`
-- `retrieve_and_transform_filter_data(...)` pulls full filter values from the filter index and flattens them per dataset.
+- `build_filter_item_candidates(...)` uses the Azure Search filter index to lookup filter item group ID's, then numbers the filter items of those groups taken from subject meta. Each candidate holds the real filter item (id and label), and the filter that owns it, so a model selection needs no further lookup.
 - `parse_selection_responses(...)` parses the filter/indicator/time period agent responses into dicts keyed by file id, taking each file id from the request that produced the response. A response that fails to parse is logged and dropped, leaving that dataset without results for that agent.
-- `build_final_dataset_response(...)` takes the parsed filter/indicator/time period results, keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and returns a `FinalDatasetResponse`. Every filter always ends up with a selection. A filter without any relevant filter items uses the filter item with its `autoSelectFilterItemId` as a fallback if set. If there's no `autoSelectFilterItemId` every filter item of that filter is selected. Selections are validated against subject meta rather than trusted. Anything unresolvable is recorded in `validationIssues`, and `isValidForTableGeneration` is `true` only when the list of issues is empty. See `DatasetValidationIssueCode` for the full set of codes.
+- `build_final_dataset_response(...)` takes the parsed filter/indicator/time period results, keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and returns a `FinalDatasetResponse`. Every filter always ends up with a selection. A filter without any relevant filter items uses the filter item with its `autoSelectFilterItemId` as a fallback if set. If there's no `autoSelectFilterItemId` every filter item of that filter is selected. Indicator and time period selections are validated against subject meta rather than trusted. Anything unresolvable is recorded in `validationIssues`, and `isValidForTableGeneration` is `true` only when the list of issues is empty. See `DatasetValidationIssueCode` for the full set of codes. Filter selections are resolved through the reference numbers the agent was provided rather than looked up again in subject meta, so the reference number is the only part of a filter selection that can be invalid.
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 
 ### `location_utils.py`

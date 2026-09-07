@@ -10,12 +10,13 @@ from common.retrieve_datasets import retrieve_relevant_datasets
 from common.time_period_selection import run_time_period_selection_agent
 from common.indicator_selection import run_indicator_selection_agent
 from common.data_utils import (
+    build_filter_item_candidates,
     build_final_dataset_response,
     parse_selection_responses,
-    retrieve_and_transform_filter_data,
 )
 from common.logging_utils import log_dataset_selection_summary
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
+from schemas.domain.filter_item_candidates import DatasetFilterItemCandidates
 from schemas.responses.event_responses import (
     PipelineCompleteEventData,
     PipelineCompleteEventResponse,
@@ -35,8 +36,8 @@ logger = logging.getLogger(__name__)
 async def run_workflow(user_query: str, publication_id: str):
     yield StartEventResponse().model_dump()
 
-    logger.info("Retrieving relevant datasets")
-    relevant_dataset_responses, grouped_filters = (
+    logger.info("Searching to retrieve relevant filters and their datasets")
+    relevant_dataset_responses, relevant_filters_by_file_id = (
         await retrieve_relevant_datasets(
             user_query=user_query, publication_id=publication_id
         )
@@ -50,7 +51,9 @@ async def run_workflow(user_query: str, publication_id: str):
 
     logger.info("Running reranker")
     reranker_result = await run_reranking_agent(
-        user_query, relevant_dataset_responses, grouped_filters
+        user_query=user_query,
+        relevant_datasets=relevant_dataset_responses,
+        relevant_filters_by_file_id=relevant_filters_by_file_id
     )
 
     relevant_datasets_by_id = {
@@ -140,10 +143,8 @@ async def run_workflow(user_query: str, publication_id: str):
         reranked_datasets_by_file_id, reranker_result.reranker_response.queryRequirements.geography
     )
 
-    # Can pass grouped filters into this in order to only pass the retrieved filters to the filter selection agent
-    logger.info("Transforming dataset information for LLM ingestion")
-    transformed_data = retrieve_and_transform_filter_data(
-        file_ids=list(reranked_datasets_by_file_id.keys()), shortlisted_filters=reranker_result.grouped_filters
+    filter_item_candidates_by_file_id = build_filter_item_candidates(
+        datasets_by_file_id=reranked_datasets_by_file_id, shortlisted_relevant_filters_by_file_id=reranker_result.shortlisted_relevant_filters_by_file_id
     )
 
     time_period_requirement = reranker_result.reranker_response.queryRequirements.timePeriod
@@ -158,13 +159,13 @@ async def run_workflow(user_query: str, publication_id: str):
             (time_period_responses, time_period_tokens_used),
         ) = await asyncio.gather(
             run_filter_selection_agent(
-                transformed=transformed_data,
+                filter_item_candidates_by_file_id=filter_item_candidates_by_file_id,
                 datasets_by_id=reranked_datasets_by_file_id,
                 user_query=user_query,
                 query_requirements=reranker_result.reranker_response.queryRequirements.filters,
             ),
             run_indicator_selection_agent(
-                grouped_indicators=reranker_result.grouped_indicators,
+                relevant_indicators_by_file_id=reranker_result.shortlisted_indicators_by_file_id,
                 datasets_by_id=reranked_datasets_by_file_id,
                 user_query=user_query,
                 query_requirements=reranker_result.reranker_response.queryRequirements.filters,
@@ -185,13 +186,13 @@ async def run_workflow(user_query: str, publication_id: str):
             (indicator_responses, indicator_tokens_used),
         ) = await asyncio.gather(
             run_filter_selection_agent(
-                transformed=transformed_data,
+                filter_item_candidates_by_file_id=filter_item_candidates_by_file_id,
                 datasets_by_id=reranked_datasets_by_file_id,
                 user_query=user_query,
                 query_requirements=reranker_result.reranker_response.queryRequirements.filters,
             ),
             run_indicator_selection_agent(
-                grouped_indicators=reranker_result.grouped_indicators,
+                relevant_indicators_by_file_id=reranker_result.shortlisted_indicators_by_file_id,
                 datasets_by_id=reranked_datasets_by_file_id,
                 user_query=user_query,
                 query_requirements=reranker_result.reranker_response.queryRequirements.filters,
@@ -218,6 +219,7 @@ async def run_workflow(user_query: str, publication_id: str):
     logger.info("Combining final dataset responses")
     final_dataset_responses = []
     for file_id, dataset in reranked_datasets_by_file_id.items():
+        filter_item_candidates = filter_item_candidates_by_file_id.get(file_id, DatasetFilterItemCandidates({}))
         filter_results = filter_results_by_file_id.get(file_id)
         indicator_results = indicator_results_by_file_id.get(file_id)
         time_period_result = time_period_results_by_file_id.get(file_id)
@@ -225,6 +227,7 @@ async def run_workflow(user_query: str, publication_id: str):
 
         log_dataset_selection_summary(
             dataset=dataset,
+            filter_item_candidates=filter_item_candidates,
             filter_results=filter_results,
             indicator_results=indicator_results,
             time_period_result=time_period_result,
@@ -234,6 +237,7 @@ async def run_workflow(user_query: str, publication_id: str):
         final_dataset_responses.append(
             build_final_dataset_response(
                 dataset=dataset,
+                filter_item_candidates=filter_item_candidates,
                 filter_results=filter_results,
                 indicator_results=indicator_results,
                 time_period_result=time_period_result,
