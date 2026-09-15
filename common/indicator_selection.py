@@ -72,7 +72,7 @@ Description: {dataset_description}
 """
 
 async def run_indicator_selection_agent(
-    grouped_indicators,
+    relevant_indicators_by_file_id,
     datasets_by_id: dict[str, DatasetWithSubjectMeta],
     user_query: str,
     query_requirements: list[str]):
@@ -81,7 +81,10 @@ async def run_indicator_selection_agent(
     file_ids: list[str] = []
     tasks: list[asyncio.Task] = []
 
-    for file_id, indicators in grouped_indicators.items():
+    # TODO Remove `relevant_indicators_by_file_id` and use the indicators in the subject meta instead,
+    # since they haven't been filtered in any way at any step before this.
+
+    for file_id, indicators in relevant_indicators_by_file_id.items():
         prompt = llm_indicator_user_prompt.format(
             raw_query=user_query,
             query_requirements=query_requirements,

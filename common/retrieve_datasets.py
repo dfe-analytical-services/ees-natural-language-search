@@ -11,9 +11,9 @@ async def retrieve_relevant_datasets(
     user_query: str, publication_id: str
 ) -> tuple[list[RelevantDatasetResponse], Mapping[str, list[str]]]:
     """
-    Get relevant datasets from Azure AI Search
+    Get relevant filter item groups and their datasets from Azure AI Search
     """
-    _, relevant_datasets, scores, grouped_filters = await multi_index_search(
+    _, relevant_datasets, scores, relevant_filters_by_file_id = await multi_index_search(
         user_query=user_query, publication_id=publication_id
     )
 
@@ -40,4 +40,4 @@ async def retrieve_relevant_datasets(
         for dataset in relevant_datasets
     ]
 
-    return relevant_datasets_responses, grouped_filters
+    return relevant_datasets_responses, relevant_filters_by_file_id

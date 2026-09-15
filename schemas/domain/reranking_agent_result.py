@@ -13,7 +13,7 @@ class RerankingAgentResult(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    grouped_filters: dict[str, list[str]] = Field(default_factory=dict)
-    grouped_indicators: dict[str, list[str]] = Field(default_factory=dict)
+    shortlisted_relevant_filters_by_file_id: dict[str, list[str]] = Field(default_factory=dict)
+    shortlisted_indicators_by_file_id: dict[str, list[str]] = Field(default_factory=dict)
     reranker_response: RerankerResponse
     total_tokens_used: TokenUsage = Field(default_factory=TokenUsage)

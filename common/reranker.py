@@ -97,10 +97,19 @@ The date today is {today_date}.
 async def run_reranking_agent(
     user_query: str,
     relevant_datasets: list[RelevantDatasetResponse],
-    grouped_filters: Mapping[str, list[str]],
+    relevant_filters_by_file_id: Mapping[str, list[str]],
 ) -> RerankingAgentResult:
     """
-    Retrieves, reranks datasets using an LLM, and returns all required artifacts.
+    Shortlists datasets using an LLM to those which are capable of answering the user's query,
+    and breaks down the query into separate requirements.
+
+    `user_query` is the query as entered by the user.
+
+    `relevant_datasets` are the datasets found by the initial Search step.
+
+    `relevant_filters_by_file_id` are the filter item groups found to be relevant by the
+    initial Search step, keyed by dataset file ID. These are passed through rather than sent to the
+    LLM, and are narrowed down to only the shortlisted datasets in the returned result.
     """
 
     # TODO Add indicators to reranking_datasets and adjust prompt and RerankerResponse to include them?
@@ -116,8 +125,7 @@ async def run_reranking_agent(
         for dataset in relevant_datasets
     ]
 
-    logger.info("Reranking datasets")
-    # 2. Rerank retrieved datasets using the LLM
+    logger.info("Shortlisting datasets")
     response = await generate_answer(
         user_query=llm_reranker_user_prompt.format(
             user_query=user_query,
@@ -129,7 +137,7 @@ async def run_reranking_agent(
 
     reranker_response, used_input_tokens, used_output_tokens = response.choices[0].message.content, response.usage.prompt_tokens, response.usage.completion_tokens
 
-    logger.info("Reranked datasets")
+    logger.info("Shortlisted datasets")
 
     total_tokens_used = TokenUsage(input=used_input_tokens, output=used_output_tokens)
 
@@ -137,25 +145,34 @@ async def run_reranking_agent(
     if reranker_parsed is None:
         raise LLMValidationError("The reranking step returned a malformed response, the query could not be processed.")
 
-    reranked_dataset_file_ids = [
+    shortlisted_dataset_file_ids = [
         d.fileId for d in reranker_parsed.shortlistedDatasets
     ]
 
-    shortlisted_grouped_filters = {
-        file_id: grouped_filters[file_id]
-        for file_id in reranked_dataset_file_ids
-        if file_id in grouped_filters
+    # Narrow the relevant filter item groups down to only the datasets that were shortlisted
+    shortlisted_relevant_filters_by_file_id = {
+        file_id: relevant_filters_by_file_id[file_id]
+        for file_id in shortlisted_dataset_file_ids
+        if file_id in relevant_filters_by_file_id
     }
 
-    grouped_indicators = {
+    # `shortlisted_indicators` contain the indicators for only the datasets that were shortlisted by the reranker.
+    # The indicators come from the original relevant datasets found by the initial Search step.
+    # TODO because the indicators haven't been filtered in any way at any step, the indicator selection agent which
+    # uses this can use the subject meta of the shortlisted datasets instead, and remove this in future.
+    shortlisted_indicators_by_file_id = {
         dataset.file_id: dataset.indicators
         for dataset in relevant_datasets
-        if dataset.file_id in reranked_dataset_file_ids
+        if dataset.file_id in shortlisted_dataset_file_ids
     }
 
+    # Note that `relevantFilters` in the reranker response is for information only to return in the RerankerEventResponse,
+    # to justify the shortlisted datasets along with the relevance reason.
+    # The values don't affect the actual filtering of datasets in the filter selection agent run next in the next pipeline step.
+
     return RerankingAgentResult(
-        grouped_filters=shortlisted_grouped_filters,
-        grouped_indicators=grouped_indicators,
+        shortlisted_relevant_filters_by_file_id=shortlisted_relevant_filters_by_file_id,
+        shortlisted_indicators_by_file_id=shortlisted_indicators_by_file_id,
         reranker_response=reranker_parsed,
         total_tokens_used=total_tokens_used,
     )

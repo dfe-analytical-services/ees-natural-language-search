@@ -105,18 +105,27 @@ async def hybrid_search(user_query: str, publication_id: str | None = None, top:
 async def multi_index_search(
     user_query: str, publication_id: str, top: int = 10
 ) -> tuple[str, list[dict], dict, Mapping[str, list[str]]]:
+
+    # TODO check how useful this search is at present.
+    # We should check which of the following categories are relevant to search on here, and compare with those which are actually being searched.
+    # Find which are being searched by looking at the search index configuration and check how the search documents are built:
+    # Filter labels, filter item group labels, filter item labels, indicator labels.
+
     query, results = await hybrid_search(
         user_query=user_query, publication_id=publication_id, top=top
     )
     dataset_ids = set()
-    grouped_filters = defaultdict(list[str])
+    relevant_filters_by_file_id = defaultdict(list[str])
     scores = defaultdict(list)
     for r in results:
         dataset_ids.add(r['fileId'])
-        grouped_filters[r['fileId']].append(r['filterName'])
+        # Note, `filterName` is the filter item group label. When the group label is 'Default', `filterName` contains the filter label instead.
+        # TODO if multiple filter item groups with the same name exist in a dataset (possible if there are multiple filters each with their own groups),
+        # duplicate entries are added to `relevant_filters_by_file_id`, with no way to distinguish between them.
+        relevant_filters_by_file_id[r['fileId']].append(r['filterName'])
         scores[r['fileId']].append(r['@search.score'])
 
     max_scores = {k:max(v) for k, v in scores.items()}
     datasets = [dataset_client.get_document(dataset_id) for dataset_id in dataset_ids]
 
-    return query, datasets, max_scores, grouped_filters
+    return query, datasets, max_scores, relevant_filters_by_file_id
