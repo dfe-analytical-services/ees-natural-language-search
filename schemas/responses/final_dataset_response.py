@@ -48,8 +48,8 @@ class AutoSelectedFilterItem(StrictCamelModel):
     filter_item_id: str
 
 
-class DatasetValidationIssueCode(StrEnum):
-    """The set of reasons a dataset result can fail validation."""
+class DatasetValidationErrorCode(StrEnum):
+    """The set of reasons a dataset result is unusable for table generation."""
 
     INVALID_FILTER_ITEM = "invalid_filter_item"
     INVALID_INDICATOR = "invalid_indicator"
@@ -61,10 +61,28 @@ class DatasetValidationIssueCode(StrEnum):
     NO_TIME_PERIOD = "no_time_period"
 
 
-class DatasetValidationIssue(StrictCamelModel):
-    """A reason why a dataset result failed validation."""
+class DatasetValidationWarningCode(StrEnum):
+    """The set of reasons a dataset result needs user attention."""
 
-    code: DatasetValidationIssueCode
+    AUTO_SELECTED_FILTER_ITEMS = "auto_selected_filter_items"
+    UNFILTERED_FILTERS = "unfiltered_filters"
+
+
+class DatasetValidationError(StrictCamelModel):
+    """A reason why a dataset result cannot be used to generate a table."""
+
+    code: DatasetValidationErrorCode
+    message: str
+
+
+class DatasetValidationWarning(StrictCamelModel):
+    """A reason why a dataset result needs user attention, e.g. because it is broader than
+    the query requirement.
+
+    A warning on its own does not mean that the dataset result is invalid.
+    Warnings can appear alongside errors, and only the errors decide `is_valid_for_table_generation`."""
+
+    code: DatasetValidationWarningCode
     message: str
 
 
@@ -93,9 +111,10 @@ class FinalDatasetResponse(StrictCamelModel):
         default_factory=list,
         description="Labels of filters where every filter item is selected because there are no relevant selections made for the filter, and no auto_select_filter_item_id fallback exists either.",
     )
-    validation_issues: list[DatasetValidationIssue] = Field(default_factory=list)
+    validation_errors: list[DatasetValidationError] = Field(default_factory=list)
+    validation_warnings: list[DatasetValidationWarning] = Field(default_factory=list)
 
     @computed_field
     @property
     def is_valid_for_table_generation(self) -> bool:
-        return not self.validation_issues
+        return not self.validation_errors
