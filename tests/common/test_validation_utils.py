@@ -1,8 +1,13 @@
-"""Tests for `common.validation_utils.build_filter_fallback_warnings`."""
+"""Tests for the warning builders in `common.validation_utils`.
+"""
 
 import pytest
 
-from common.validation_utils import build_filter_fallback_warnings
+from common.validation_utils import (
+    build_filter_fallback_warnings,
+    build_no_time_period_requirement_warning,
+)
+from schemas.ees_data_api.subject_meta_response import TimePeriod
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
     DatasetValidationWarning,
@@ -114,3 +119,15 @@ def test_unfiltered_warning_names_every_filter_it_covers(
     assert len(validation_warnings) == 1
     assert validation_warnings[0].code == WarningCode.UNFILTERED_FILTERS
     assert validation_warnings[0].message == expected_message
+
+
+def test_no_time_period_requirement_warning_produces_expected_warning():
+    time_period_warning = build_no_time_period_requirement_warning(
+        TimePeriod(code="AY", label="2025/26", year=2025)
+    )
+
+    assert time_period_warning.code == WarningCode.NO_TIME_PERIOD_REQUIREMENT
+    assert time_period_warning.message == (
+        "No time period requirement was found in the query, so the latest available "
+        "time period (2025/26) was selected instead."
+    )

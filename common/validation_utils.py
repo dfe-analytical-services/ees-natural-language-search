@@ -2,6 +2,9 @@
 
 from collections.abc import Iterable
 
+from schemas.ees_data_api.subject_meta_response import (
+    TimePeriod as SubjectMetaTimePeriod,
+)
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
     DatasetValidationWarning,
@@ -65,3 +68,15 @@ def build_filter_fallback_warnings(
         )
 
     return validation_warnings
+
+
+def build_no_time_period_requirement_warning(
+    time_period: SubjectMetaTimePeriod,
+) -> DatasetValidationWarning:
+    return DatasetValidationWarning(
+        code=DatasetValidationWarningCode.NO_TIME_PERIOD_REQUIREMENT,
+        message=(
+            f"No time period requirement was found in the query, so the latest available "
+            f"time period ({time_period.label}) was selected instead."
+        ),
+    )
