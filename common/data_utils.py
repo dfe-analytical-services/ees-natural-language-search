@@ -5,7 +5,10 @@ from typing import TypeVar
 from pydantic import BaseModel
 from common.llm_response_parser import parse_llm_response
 from common.search_client import filter_client
-from common.validation_utils import build_filter_fallback_warnings
+from common.validation_utils import (
+    build_filter_fallback_warnings,
+    build_no_time_period_requirement_warning,
+)
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.domain.filter_item_candidates import (
     DatasetFilterItemCandidates,
@@ -15,6 +18,7 @@ from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
     DatasetValidationError,
     DatasetValidationErrorCode,
+    DatasetValidationWarning,
     FilterSelectionItem,
     FinalDatasetResponse,
     IndicatorSelectionItem,
@@ -246,55 +250,56 @@ def _resolve_time_period(
     subject_meta: SubjectMetaResponse,
     time_period_result: LlmTimePeriodRange | None,
     time_period_requirement: str | None,
-) -> tuple[TimePeriodRange | None, list[DatasetValidationError]]:
-    """Resolve the time period result for the final dataset response, along with any validation errors."""
-    validation_errors: list[DatasetValidationError] = []
-
+) -> tuple[TimePeriodRange | None, list[DatasetValidationError], list[DatasetValidationWarning]]:
+    """Resolve the time period result for the final dataset response, along with any validation
+    errors and warnings."""
     if time_period_result is not None:
         # The model returned a time period selection so validate it against the available time periods in the subject meta
         available_time_periods = {(time_period.code, time_period.year) for time_period in subject_meta.time_period.options}
         start_valid = (time_period_result.start.code, time_period_result.start.year) in available_time_periods
         end_valid = (time_period_result.end.code, time_period_result.end.year) in available_time_periods
         if not (start_valid and end_valid):
-            validation_errors.append(DatasetValidationError(
+            error = DatasetValidationError(
                 code=DatasetValidationErrorCode.INVALID_TIME_PERIOD,
                 message=(
                     f"No time period (start: {time_period_result.start.year} {time_period_result.start.code}, "
                     f"end: {time_period_result.end.year} {time_period_result.end.code}) was found for this dataset in the subject meta."
                 ),
-            ))
-            return None, validation_errors
+            )
+            return None, [error], []
 
         # Convert from the model response shape to the event response shape
         # The two are currently the same but we're allowing them to diverge in future if needed
-        return TimePeriodRange.model_validate(time_period_result.model_dump()), validation_errors
+        return TimePeriodRange.model_validate(time_period_result.model_dump()), [], []
 
     if time_period_requirement is None:
         # No time period requirement was extracted from the query, so the time period selection agent
-        # was skipped. Fallback to the dataset's latest available time period.
+        # was skipped. Fallback to the dataset's latest available time period and include a warning.
         latest_time_period = subject_meta.get_latest_time_period()
         if latest_time_period is None:
             # Should never happen because every dataset is expected to have at least one available time period
             # in its subject meta, but handle this gracefully anyway.
-            validation_errors.append(DatasetValidationError(
+            error = DatasetValidationError(
                 code=DatasetValidationErrorCode.NO_AVAILABLE_TIME_PERIODS,
                 message="No available time periods were found for this dataset in the subject meta.",
-            ))
-            return None, validation_errors
+            )
+            return None, [error], []
 
-        return TimePeriodRange(
+        time_period = TimePeriodRange(
             start=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
             end=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
-        ), validation_errors
+        )
+        warning = build_no_time_period_requirement_warning(latest_time_period)
+        return time_period, [], [warning]
 
     # A time period requirement was present, but the model couldn't find a relevant time period matching the requirement.
     # Return None to distinguish this case from the 'no requirement' case.
     # Falling back to the dataset's latest available time period would be misleading.
-    validation_errors.append(DatasetValidationError(
+    error = DatasetValidationError(
         code=DatasetValidationErrorCode.NO_TIME_PERIOD,
         message="No relevant time period range was found for this dataset matching the query.",
-    ))
-    return None, validation_errors
+    )
+    return None, [error], []
 
 
 def build_final_dataset_response(
@@ -309,6 +314,7 @@ def build_final_dataset_response(
 ) -> FinalDatasetResponse:
     subject_meta = dataset.subject_meta
     validation_errors: list[DatasetValidationError] = []
+    validation_warnings: list[DatasetValidationWarning] = []
 
     # Resolve the model's filter item selections against the filter item candidates it was provided
     selected_filter_items: list[FilterItem] = []
@@ -376,15 +382,18 @@ def build_final_dataset_response(
                     selected_filter_items.append(filter_item)
             unfiltered_filters.append(filter_.label)
 
-    validation_warnings = build_filter_fallback_warnings(auto_selected_filter_items, unfiltered_filters)
+    validation_warnings.extend(build_filter_fallback_warnings(auto_selected_filter_items, unfiltered_filters))
 
     filters = [FilterSelectionItem(id=filter_item.id, label=filter_item.label) for filter_item in selected_filter_items]
 
     indicators, indicator_errors = _resolve_indicators(subject_meta, indicator_results)
     validation_errors.extend(indicator_errors)
 
-    time_period, time_period_errors = _resolve_time_period(subject_meta, time_period_result, time_period_requirement)
+    time_period, time_period_errors, time_period_warnings = _resolve_time_period(
+        subject_meta, time_period_result, time_period_requirement
+    )
     validation_errors.extend(time_period_errors)
+    validation_warnings.extend(time_period_warnings)
 
     # The result must have at least one location selection at any geographic level.
     has_location = location_results is not None and any(len(locations) > 0 for locations in location_results.root.values())
