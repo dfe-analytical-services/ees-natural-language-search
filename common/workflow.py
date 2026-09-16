@@ -138,9 +138,11 @@ async def run_workflow(user_query: str, publication_id: str):
             subject_meta=subject_meta,
         )
 
+    geography_requirements = reranker_result.reranker_response.queryRequirements.geography
+
     logger.info("Getting location matches")
     location_responses = await get_location_matches(
-        reranked_datasets_by_file_id, reranker_result.reranker_response.queryRequirements.geography
+        reranked_datasets_by_file_id, geography_requirements
     )
 
     filter_item_candidates_by_file_id = build_filter_item_candidates(
@@ -243,6 +245,7 @@ async def run_workflow(user_query: str, publication_id: str):
                 time_period_result=time_period_result,
                 time_period_requirement=time_period_requirement,
                 location_results=location_results,
+                geography_requirements=geography_requirements,
                 relevance_reason=relevance_reasons_by_file_id.get(file_id),
             )
         )

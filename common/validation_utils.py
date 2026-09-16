@@ -2,6 +2,7 @@
 
 from collections.abc import Iterable
 
+from schemas.domain.locations_response import LocationItem
 from schemas.ees_data_api.subject_meta_response import (
     TimePeriod as SubjectMetaTimePeriod,
 )
@@ -68,6 +69,18 @@ def build_filter_fallback_warnings(
         )
 
     return validation_warnings
+
+
+def build_no_location_requirement_warning(
+    location: LocationItem,
+) -> DatasetValidationWarning:
+    return DatasetValidationWarning(
+        code=DatasetValidationWarningCode.NO_LOCATION_REQUIREMENT,
+        message=(
+            f"No location requirement was found in the query, so the national level "
+            f"location for ({location.label}) was selected instead."
+        ),
+    )
 
 
 def build_no_time_period_requirement_warning(

@@ -1,12 +1,13 @@
-"""Tests for the warning builders in `common.validation_utils`.
-"""
+"""Tests for the warning builders in `common.validation_utils`."""
 
 import pytest
 
 from common.validation_utils import (
     build_filter_fallback_warnings,
+    build_no_location_requirement_warning,
     build_no_time_period_requirement_warning,
 )
+from schemas.domain.locations_response import LocationItem
 from schemas.ees_data_api.subject_meta_response import TimePeriod
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
@@ -119,6 +120,18 @@ def test_unfiltered_warning_names_every_filter_it_covers(
     assert len(validation_warnings) == 1
     assert validation_warnings[0].code == WarningCode.UNFILTERED_FILTERS
     assert validation_warnings[0].message == expected_message
+
+
+def test_no_location_requirement_warning_produces_expected_warning():
+    location_warning = build_no_location_requirement_warning(
+        LocationItem(id="location-1", label="England", value="E92000001")
+    )
+
+    assert location_warning.code == WarningCode.NO_LOCATION_REQUIREMENT
+    assert location_warning.message == (
+        "No location requirement was found in the query, so the national level "
+        "location for England was selected instead."
+    )
 
 
 def test_no_time_period_requirement_warning_produces_expected_warning():

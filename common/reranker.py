@@ -65,7 +65,7 @@ Return only a valid JSON object in this exact structure:
             ],
         "geography":
             [
-                "Concise name of each distinct geography requirement extracted from the query. It can be as granular as a specific school. If nothing is identified then it should be National"
+                "Concise name of each distinct geography requirement extracted from the query. It can be as granular as a specific school. If no geography requirement is identified, return an empty JSON array `[]`."
             ],
         "timePeriod": "The specific time interval that the user wants the data for, as a string. If no time period requirement is identified, return JSON `null`."
     },

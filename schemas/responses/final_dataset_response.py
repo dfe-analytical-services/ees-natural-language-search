@@ -65,6 +65,7 @@ class DatasetValidationWarningCode(StrEnum):
     """The set of reasons a dataset result needs user attention."""
 
     AUTO_SELECTED_FILTER_ITEMS = "auto_selected_filter_items"
+    NO_LOCATION_REQUIREMENT = "no_location_requirement"
     NO_TIME_PERIOD_REQUIREMENT = "no_time_period_requirement"
     UNFILTERED_FILTERS = "unfiltered_filters"
 
