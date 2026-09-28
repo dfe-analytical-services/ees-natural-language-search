@@ -5,8 +5,15 @@ from schemas.domain.locations_response import LocationItem, LocationsResponse
 from schemas.ees_data_api.subject_meta_response import (
     GeographicLevel,
     LocationLevel,
-    LocationOption
+    LocationOption,
+    SubjectMetaResponse
 )
+
+# The location selected when a query has no location requirement
+DEFAULT_LOCATION_GEOGRAPHIC_LEVEL = GeographicLevel.COUNTRY
+DEFAULT_LOCATION_GEOGRAPHIC_LEVEL_LABEL = "national"
+DEFAULT_LOCATION_NAME = "England"
+DEFAULT_LOCATION_CODE = "E92000001"
 
 
 def hybrid_scorer(a: str, b: str, **kwargs) -> float:
@@ -56,9 +63,35 @@ def flatten_by_legend(
     return dict(flattened)
 
 
+def get_default_location(
+    subject_meta: SubjectMetaResponse
+) -> tuple[str, LocationItem] | None:
+    """Find the default location within the dataset's subject meta locations at the default
+    location's geographic level. Returns it alongside that level's label,
+    e.g. ("National", LocationItem(label="England", ...)).
+
+    Returns `None` when the dataset has no locations at the default location's
+    geographic level, or doesn't have the default location within it.
+    """
+    level_locations = subject_meta.locations.get(DEFAULT_LOCATION_GEOGRAPHIC_LEVEL)
+    if level_locations is None:
+        return None
+
+    # Flatten the level's options by label, supporting both flat lists and
+    # nested location hierarchies.
+    flattened = flatten_by_legend({DEFAULT_LOCATION_GEOGRAPHIC_LEVEL: level_locations})
+
+    for label, options in flattened.items():
+        for option in options:
+            if option.value == DEFAULT_LOCATION_CODE:
+                return label, option
+
+    return None
+
+
 async def get_location_matches(
     datasets_by_id: dict[str, DatasetWithSubjectMeta],
-    geography_requirements: list,
+    location_requirements: list[str],
     threshold: int = 90,
 ) -> LocationsResponse:
     valid_geo_per_file: dict[str, dict[str, list[LocationItem]]] = {}
@@ -68,7 +101,7 @@ async def get_location_matches(
         level_results = defaultdict(list)
         for level in valid_geographies:
             options = valid_geographies[level]
-            for query in geography_requirements:
+            for query in location_requirements:
                 matches = process.extract(
                     query,
                     options,

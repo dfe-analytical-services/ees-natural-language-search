@@ -8,7 +8,7 @@ from typing import Optional
 
 class QueryRequirements(BaseModel):
     filters: list[str] = Field(default_factory=list)
-    geography: list[str] = Field(default_factory=list)
+    locations: list[str] = Field(default_factory=list)
     timePeriod: Optional[str] = None
 
 
