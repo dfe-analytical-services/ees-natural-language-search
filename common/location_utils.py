@@ -1,5 +1,9 @@
 from collections import defaultdict
 from rapidfuzz import process, fuzz
+from common.default_location import (
+    DEFAULT_LOCATION_CODE,
+    DEFAULT_LOCATION_GEOGRAPHIC_LEVEL,
+)
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.domain.locations_response import LocationItem, LocationsResponse
 from schemas.ees_data_api.subject_meta_response import (
@@ -8,12 +12,6 @@ from schemas.ees_data_api.subject_meta_response import (
     LocationOption,
     SubjectMetaResponse
 )
-
-# The location selected when a query has no location requirement
-DEFAULT_LOCATION_GEOGRAPHIC_LEVEL = GeographicLevel.COUNTRY
-DEFAULT_LOCATION_GEOGRAPHIC_LEVEL_LABEL = "national"
-DEFAULT_LOCATION_NAME = "England"
-DEFAULT_LOCATION_CODE = "E92000001"
 
 
 def hybrid_scorer(a: str, b: str, **kwargs) -> float:

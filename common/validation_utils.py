@@ -2,7 +2,7 @@
 
 from collections.abc import Iterable
 
-from common.location_utils import (
+from common.default_location import (
     DEFAULT_LOCATION_GEOGRAPHIC_LEVEL_LABEL,
     DEFAULT_LOCATION_NAME,
 )
