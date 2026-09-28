@@ -2,11 +2,17 @@
 
 from collections.abc import Iterable
 
+from common.default_location import (
+    DEFAULT_LOCATION_GEOGRAPHIC_LEVEL_LABEL,
+    DEFAULT_LOCATION_NAME,
+)
 from schemas.ees_data_api.subject_meta_response import (
     TimePeriod as SubjectMetaTimePeriod,
 )
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
+    DatasetValidationError,
+    DatasetValidationErrorCode,
     DatasetValidationWarning,
     DatasetValidationWarningCode,
 )
@@ -68,6 +74,26 @@ def build_filter_fallback_warnings(
         )
 
     return validation_warnings
+
+
+def build_no_location_requirement_warning() -> DatasetValidationWarning:
+    return DatasetValidationWarning(
+        code=DatasetValidationWarningCode.NO_LOCATION_REQUIREMENT,
+        message=(
+            f"No location requirement was found in the query, so the {DEFAULT_LOCATION_GEOGRAPHIC_LEVEL_LABEL} "
+            f"level location for {DEFAULT_LOCATION_NAME} was selected instead."
+        ),
+    )
+
+
+def build_no_default_location_error() -> DatasetValidationError:
+    return DatasetValidationError(
+        code=DatasetValidationErrorCode.NO_DEFAULT_LOCATION,
+        message=(
+            f"No location requirement was found in the query, and no {DEFAULT_LOCATION_GEOGRAPHIC_LEVEL_LABEL} "
+            f"level location for {DEFAULT_LOCATION_NAME} was available for this dataset to select instead."
+        ),
+    )
 
 
 def build_no_time_period_requirement_warning(

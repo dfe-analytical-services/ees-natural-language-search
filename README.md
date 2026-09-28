@@ -81,7 +81,7 @@ ees-natural-language-search/
    │        yields {stage:"retrieved datasets", data:{datasets:[...]}}
    │
    ├── 2. run_reranking_agent                                    (reranker.py -> Azure OpenAI)
-   │        LLM shortlists datasets and extracts queryRequirements (filters, geography, timePeriod).
+   │        LLM shortlists datasets and extracts queryRequirements (filters, locations, timePeriod).
    │        Workflow augments the shortlisted datasets dataset metadata and relevanceScore obtained at the previous step.
    │        yields {stage:"reranker complete", data:{confidence, datasets:[...], query_requirements, token_usage, cost}}
    │
@@ -90,6 +90,8 @@ ees-natural-language-search/
    │
    ├── 4. get_location_matches                                   (location_utils.py)
    │        Fuzzy-match mentioned locations, group by allowed geographic levels per dataset
+   │        Matches nothing when the query has no location requirement, so that England is
+   │        selected as a fallback later on at step 7
    │
    ├── 5. build_filter_item_candidates                           (data_utils.py -> Azure Search filter index)
    │        Formats filter items for relevant shortlisted filter item groups, numbering every filter item.
@@ -119,7 +121,7 @@ ees-natural-language-search/
 ## Components in depth
 
 ### `workflow.py` - orchestrator
-The most important file. Accumulates `token_usage` across all LLM calls and `yield`s after each stage. It builds a `reranked_datasets_by_id` map with dataset metadata plus subject meta and passes that through geography/filter/indicator/time period stages. It also threads the per-dataset filter item candidates through the filter agent, the selection logging and the final response, so all three resolve the same reference numbers. If the reranker shortlists nothing, downstream stages simply produce empty results.
+The most important file. Accumulates `token_usage` across all LLM calls and `yield`s after each stage. It builds a `reranked_datasets_by_id` map with dataset metadata plus subject meta and passes that through location/filter/indicator/time period stages. It also threads the per-dataset filter item candidates through the filter agent, the selection logging and the final response, so all three resolve the same reference numbers. If the reranker shortlists nothing, downstream stages simply produce empty results.
 
 ### `search_client.py` - Azure Search and embeddings
 - Module-level `filter_client` and `dataset_client` are created at import. Credential is `AzureKeyCredential` if `AZURE_SEARCH_KEY` is set, else `DefaultAzureCredential()`.
@@ -130,7 +132,8 @@ The most important file. Accumulates `token_usage` across all LLM calls and `yie
 ### `reranker.py` - rerank + requirement extraction
 Sends the query plus trimmed dataset metadata `(fileId, title, content, filters, timePeriodRange)` to the LLM. Returns a typed `RerankingAgentResult` used downstream:
 `shortlisted_relevant_filters_by_file_id`, `shortlisted_indicators_by_file_id`, `reranker_response`, and `total_tokens_used`. The LLM output schema remains:
-`queryRequirements{filters[], geography[], timePeriod}`, `shortlistedDatasets[{fileId, title, relevanceReason, relevantFilters[]}]`, `confidence`.
+`queryRequirements{filters[], locations[], timePeriod}`, `shortlistedDatasets[{fileId, title, relevanceReason, relevantFilters[]}]`, `confidence`.
+`locations` is an empty array when the query has no location requirement, in the same way that `timePeriod` is null when it has no time period requirement. Both are the signal that a fallback selection should be made for the dataset results.
 
 ### `filter_selection.py` / `indicator_selection.py` / `time_period_selection.py` - selection agents
 One LLM call per reranked dataset, all gathered concurrently. Each returns a list of `(fileId, raw JSON string)` pairs plus a token total.
@@ -141,11 +144,12 @@ One LLM call per reranked dataset, all gathered concurrently. Each returns a lis
 ### `data_utils.py`
 - `build_filter_item_candidates(...)` uses the Azure Search filter index to lookup filter item group ID's, then numbers the filter items of those groups taken from subject meta. Each candidate holds the real filter item (id and label), and the filter that owns it, so a model selection needs no further lookup.
 - `parse_selection_responses(...)` parses the filter/indicator/time period agent responses into dicts keyed by file id, taking each file id from the request that produced the response. A response that fails to parse is logged and dropped, leaving that dataset without results for that agent.
-- `build_final_dataset_response(...)` takes the parsed filter/indicator/time period results, keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and returns a `FinalDatasetResponse`. Every filter always ends up with a selection. A filter without any relevant filter items uses the filter item with its `autoSelectFilterItemId` as a fallback if set. If there's no `autoSelectFilterItemId` every filter item of that filter is selected. Indicator and time period selections are validated against subject meta rather than trusted. When no time period requirement was extracted from the query the time period agent is skipped and the dataset's latest available time period is selected as a fallback. Anything unresolvable is recorded in `validationErrors`, and `isValidForTableGeneration` is `true` only when that list is empty. A dataset result that is broader than the query requirements, e.g. because of a fallback to default selections will have warnings included in `validationWarnings` so that they can be raised for the user's attention. A dataset can have multiple errors and warnings, and only `validationErrors` decide `isValidForTableGeneration`. See `DatasetValidationErrorCode` and `DatasetValidationWarningCode` for the full set of codes. Filter selections are resolved through the reference numbers the agent was provided rather than looked up again in subject meta, so the reference number is the only part of a filter selection that can be invalid.
+- `build_final_dataset_response(...)` takes the parsed filter/indicator/time period results, keeps only values marked `relevant: true`, resolves ids from subject meta, attaches `geographicLevels` and a `relevanceReason`, and returns a `FinalDatasetResponse`. Every filter always ends up with a selection. A filter without any relevant filter items uses the filter item with its `autoSelectFilterItemId` as a fallback if set. If there's no `autoSelectFilterItemId` every filter item of that filter is selected. Indicator and time period selections are validated against subject meta rather than trusted. When no time period requirement was extracted from the query the time period agent is skipped and the dataset's latest available time period is selected as a fallback. Likewise, when no location requirement was extracted from the query, England is selected as a fallback for any dataset that has it available at its national level. Neither fallback is applied when a requirement was extracted but nothing matched it, since selecting something other than what was asked for would be misleading. Anything unresolvable is recorded in `validationErrors`, and `isValidForTableGeneration` is `true` only when that list is empty. A dataset result that is broader than the query requirements, e.g. because of a fallback to default selections will have warnings included in `validationWarnings` so that they can be raised for the user's attention. A dataset can have multiple errors and warnings, and only `validationErrors` decide `isValidForTableGeneration`. See `DatasetValidationErrorCode` and `DatasetValidationWarningCode` for the full set of codes. Filter selections are resolved through the reference numbers the agent was provided rather than looked up again in subject meta, so the reference number is the only part of a filter selection that can be invalid.
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 
 ### `location_utils.py`
 - `hybrid_scorer` only accepts a perfect `token_set_ratio` (100) when >= 2 tokens overlap and the candidate isn't much shorter than they query; otherwise falls back to `WRatio`
+- `get_default_location(subject_meta)` finds England within a dataset's national level, returned with that level's label. Returns `None` for a dataset that has no national level, or no England option within it.
 
 ### `openai_client.py`
 `generate_answer(...)` calls Azure OpenAI chat completions with `temperature=0, top_p=1, seed=42` (deterministic-ish) and returns the full response object

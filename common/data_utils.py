@@ -4,9 +4,12 @@ from collections.abc import Mapping
 from typing import TypeVar
 from pydantic import BaseModel
 from common.llm_response_parser import parse_llm_response
+from common.location_utils import get_default_location
 from common.search_client import filter_client
 from common.validation_utils import (
     build_filter_fallback_warnings,
+    build_no_default_location_error,
+    build_no_location_requirement_warning,
     build_no_time_period_requirement_warning,
 )
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
@@ -302,6 +305,43 @@ def _resolve_time_period(
     return None, [error], []
 
 
+def _resolve_locations(
+    subject_meta: SubjectMetaResponse,
+    location_results: DatasetLocations | None,
+    location_requirements: list[str],
+) -> tuple[DatasetLocations | None, list[DatasetValidationError], list[DatasetValidationWarning]]:
+    """Resolve the location result for the final dataset response, along with any validation
+    errors and warnings."""
+    # The result must have at least one location selection at any geographic level.
+    has_location = location_results is not None and any(len(locations) > 0 for locations in location_results.root.values())
+
+    if has_location:
+        return location_results, [], []
+
+    if location_requirements:
+        # A location requirement was present, but there were no matching locations in the dataset.
+        # Return an error as falling back to a default location would be misleading, since the query asked for somewhere else.
+        error = DatasetValidationError(
+            code=DatasetValidationErrorCode.NO_LOCATION,
+            message="No relevant location was found for this dataset matching the query.",
+        )
+        return location_results, [error], []
+
+    # No location requirements were extracted from the query, so check if the default location is available
+    # in the database to use as a fallback.
+    default_location = get_default_location(subject_meta)
+
+    if default_location is None:
+        # The default location is not available in the dataset, so return an error.
+        error = build_no_default_location_error()
+        return location_results, [error], []
+
+    # The default location is available, so use it as a fallback but include a warning.
+    level_label, location = default_location
+    warning = build_no_location_requirement_warning()
+    return DatasetLocations({level_label: [location]}), [], [warning]
+
+
 def build_final_dataset_response(
     dataset: DatasetWithSubjectMeta,
     filter_item_candidates: DatasetFilterItemCandidates,
@@ -310,6 +350,7 @@ def build_final_dataset_response(
     time_period_result: LlmTimePeriodRange | None,
     time_period_requirement: str | None,
     location_results: DatasetLocations | None,
+    location_requirements: list[str],
     relevance_reason: str | None,
 ) -> FinalDatasetResponse:
     subject_meta = dataset.subject_meta
@@ -395,14 +436,11 @@ def build_final_dataset_response(
     validation_errors.extend(time_period_errors)
     validation_warnings.extend(time_period_warnings)
 
-    # The result must have at least one location selection at any geographic level.
-    has_location = location_results is not None and any(len(locations) > 0 for locations in location_results.root.values())
-
-    if not has_location:
-        validation_errors.append(DatasetValidationError(
-            code=DatasetValidationErrorCode.NO_LOCATION,
-            message="No relevant location was found for this dataset matching the query.",
-        ))
+    locations, location_errors, location_warnings = _resolve_locations(
+        subject_meta, location_results, location_requirements
+    )
+    validation_errors.extend(location_errors)
+    validation_warnings.extend(location_warnings)
 
     return FinalDatasetResponse(
         data_set_file_id=dataset.dataset_file_id,
@@ -418,7 +456,7 @@ def build_final_dataset_response(
         filters=filters,
         indicators=indicators,
         time_period=time_period,
-        geographic_levels=location_results,
+        geographic_levels=locations,
         relevance_reason=relevance_reason,
         auto_selected_filter_items=auto_selected_filter_items,
         unfiltered_filters=unfiltered_filters,

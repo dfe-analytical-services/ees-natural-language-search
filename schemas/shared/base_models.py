@@ -15,6 +15,10 @@ class CamelModel(BaseModel):
     )
 
 
+class StrictModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
 class StrictCamelModel(BaseModel):
     model_config = ConfigDict(
         alias_generator=to_camel,

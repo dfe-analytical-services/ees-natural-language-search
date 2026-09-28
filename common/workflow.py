@@ -92,10 +92,12 @@ async def run_workflow(user_query: str, publication_id: str):
         data=RerankerEventData(
             confidence=reranker_result.reranker_response.confidence,
             datasets=reranker_datasets,
-            # Convert from the LLM response shape to the event response shape
-            # The two are currently the same but we're allowing them to diverge in future if needed
-            query_requirements=QueryRequirements.model_validate(
-                reranker_result.reranker_response.queryRequirements.model_dump()
+            # Convert from the LLM response shape to the event response shape.
+            # The types are intentionally separate, allowing them to evolve independently.
+            query_requirements=QueryRequirements(
+                filters=reranker_result.reranker_response.queryRequirements.filters,
+                geography=reranker_result.reranker_response.queryRequirements.locations,
+                time_period=reranker_result.reranker_response.queryRequirements.timePeriod,
             ),
             token_usage=reranker_result.total_tokens_used,
             cost=calculate_token_cost(reranker_result.total_tokens_used),
@@ -138,9 +140,11 @@ async def run_workflow(user_query: str, publication_id: str):
             subject_meta=subject_meta,
         )
 
+    location_requirements = reranker_result.reranker_response.queryRequirements.locations
+
     logger.info("Getting location matches")
     location_responses = await get_location_matches(
-        reranked_datasets_by_file_id, reranker_result.reranker_response.queryRequirements.geography
+        reranked_datasets_by_file_id, location_requirements
     )
 
     filter_item_candidates_by_file_id = build_filter_item_candidates(
@@ -243,6 +247,7 @@ async def run_workflow(user_query: str, publication_id: str):
                 time_period_result=time_period_result,
                 time_period_requirement=time_period_requirement,
                 location_results=location_results,
+                location_requirements=location_requirements,
                 relevance_reason=relevance_reasons_by_file_id.get(file_id),
             )
         )
