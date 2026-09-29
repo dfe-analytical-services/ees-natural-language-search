@@ -2,52 +2,174 @@
   "queries": [
     {
       "id": "attendance-holiday-last-4-weeks",
-      "description": "Starter query, until the gold standard queries are supplied. Relative time period.",
+      "description": "Starter query, until the gold standard queries are supplied. Relative time period, so the time period isn't expected. Expected results written by a developer from the dev subject meta.",
       "userQuery": "Show me the percentage of pupils reported as on holiday in the last 4 weeks",
       "publicationId": "96f418e7-3ddb-4a8c-60dc-08deb7f1c424",
-      "tags": ["starter", "attendance", "time-period"]
+      "tags": ["starter", "attendance", "time-period"],
+      "expected": {
+        "author": "developer",
+        "minDatasets": 1,
+        "datasets": [
+          {
+            "dataSetFileId": "9e2601f1-2ff5-43a2-b892-502a7dec9ecf",
+            "title": "Reasons for absence and attendance",
+            "maxRank": 1,
+            "filters": {
+              "Attendance reason": ["Authorised holiday (h)", "Unauthorised holiday (g)"],
+              "Time frame": ["Week"],
+              "Education phase": "*"
+            },
+            "indicators": ["Percent of sessions"]
+          }
+        ]
+      }
     },
     {
       "id": "attendance-persistent-absence-london-secondary",
-      "description": "Starter query, until the gold standard queries are supplied. No time period, so expect a 'no_time_period_requirement' warning.",
+      "description": "Starter query, until the gold standard queries are supplied. No time period, so expect a 'no_time_period_requirement' warning. Expected results written by a developer from the dev subject meta.",
       "userQuery": "persistent absence rates in London secondary schools",
       "publicationId": "96f418e7-3ddb-4a8c-60dc-08deb7f1c424",
-      "tags": ["starter", "attendance", "geography", "no-time-period"]
+      "tags": ["starter", "attendance", "geography", "no-time-period"],
+      "expected": {
+        "author": "developer",
+        "minDatasets": 1,
+        "datasets": [
+          {
+            "dataSetFileId": "52d98825-1e90-4752-acb9-e751d03d0d1d",
+            "title": "Persistent absence in schools",
+            "maxRank": 1,
+            "filters": {
+              "Education phase": ["Secondary"]
+            },
+            "indicators": ["Persistent absence rate"],
+            "locations": {
+              "Regional": ["E12000007"]
+            }
+          }
+        ]
+      }
     },
     {
       "id": "absence-by-characteristic-2015-16",
-      "description": "Starter query, until the gold standard queries are supplied.",
+      "description": "Starter query, until the gold standard queries are supplied. Expected results written by a developer from the dev subject meta.",
       "userQuery": "overall absence rates for pupils eligible for free school meals in 2015/16",
       "publicationId": "54566469-2b91-408f-b6fd-08ded070cf31",
-      "tags": ["starter", "absence", "characteristics", "time-period"]
+      "tags": ["starter", "absence", "characteristics", "time-period"],
+      "expected": {
+        "author": "developer",
+        "minDatasets": 1,
+        "datasets": [
+          {
+            "dataSetFileId": "43b10ce8-d964-4a7b-a7ca-67b14c3b7c77",
+            "title": "Absence by characteristic",
+            "maxRank": 1,
+            "filters": {
+              "Characteristic": ["FSM eligible"],
+              "School type": "*"
+            },
+            "indicators": ["Overall absence rate"],
+            "timePeriod": {
+              "start": { "code": "AY", "year": 2015 },
+              "end": { "code": "AY", "year": 2015 }
+            }
+          }
+        ]
+      }
     },
     {
       "id": "absence-pupil-referral-units-by-region",
-      "description": "Starter query, until the gold standard queries are supplied. No time period, so expect a 'no_time_period_requirement' warning.",
+      "description": "Starter query, until the gold standard queries are supplied. No time period, so expect a 'no_time_period_requirement' warning. The dataset has Inner and Outer London instead of London at the regional level. Expected results written by a developer from the dev subject meta.",
       "userQuery": "absence in pupil referral units by region",
       "publicationId": "54566469-2b91-408f-b6fd-08ded070cf31",
-      "tags": ["starter", "absence", "geography", "no-time-period"]
+      "tags": ["starter", "absence", "geography", "no-time-period"],
+      "expected": {
+        "author": "developer",
+        "minDatasets": 1,
+        "datasets": [
+          {
+            "dataSetFileId": "cba2b504-d2d5-40da-88a8-f6276e9c6ad7",
+            "title": "Absence in PRUs",
+            "maxRank": 1,
+            "locations": {
+              "Regional": [
+                "E12000001",
+                "E12000002",
+                "E12000003",
+                "E12000004",
+                "E12000005",
+                "E12000006",
+                "E12000008",
+                "E12000009",
+                "E13000001",
+                "E13000002"
+              ]
+            }
+          }
+        ]
+      }
     },
     {
       "id": "fe-sustained-employment",
-      "description": "Starter query, until the gold standard queries are supplied. The publication has no datasets listed in the Data API.",
+      "description": "Starter query, until the gold standard queries are supplied. The publication has no datasets listed in the Data API, so there are no expected results.",
       "userQuery": "sustained employment rates for further education learners",
       "publicationId": "8b12776b-3d36-4475-8115-00974d7de1d0",
       "tags": ["starter", "further-education", "edge-case"]
     },
     {
       "id": "ks2-disadvantaged-expected-standard-manchester",
-      "description": "Starter query, until the gold standard queries are supplied.",
+      "description": "Starter query, until the gold standard queries are supplied. Expected results written by a developer from the dev subject meta.",
       "userQuery": "percentage of disadvantaged pupils meeting the expected standard in reading, writing and maths in Manchester in 2024/25",
       "publicationId": "78724875-1235-4992-03bc-08deb8011eea",
-      "tags": ["starter", "ks2", "characteristics", "geography", "time-period"]
+      "tags": ["starter", "ks2", "characteristics", "geography", "time-period"],
+      "expected": {
+        "author": "developer",
+        "minDatasets": 1,
+        "datasets": [
+          {
+            "dataSetFileId": "ce3462f4-9c2f-48be-a0ce-f2ccb8dc81ad",
+            "title": "Attainment by region, local authority and pupil characteristics",
+            "maxRank": 1,
+            "filters": {
+              "Disadvantage status": ["Disadvantaged"],
+              "Subjects": ["Reading, writing and maths"]
+            },
+            "indicators": ["Percentage of pupils meeting the expected standard"],
+            "timePeriod": {
+              "start": { "code": "AY", "year": 2024 },
+              "end": { "code": "AY", "year": 2024 }
+            },
+            "locations": {
+              "Local authority": ["E08000003"]
+            }
+          }
+        ]
+      }
     },
     {
       "id": "ks2-national-expected-standard-since-2016",
-      "description": "Starter query, until the gold standard queries are supplied. Time period range.",
+      "description": "Starter query, until the gold standard queries are supplied. Time period range, where 2016 is taken to be the 2015/16 academic year, the first in the dataset. Expected results written by a developer from the dev subject meta.",
       "userQuery": "how has the percentage of pupils reaching the expected standard in reading, writing and maths changed since 2016",
       "publicationId": "135873c7-2375-4a94-03bb-08deb8011eea",
-      "tags": ["starter", "ks2", "time-period"]
+      "tags": ["starter", "ks2", "time-period"],
+      "expected": {
+        "author": "developer",
+        "minDatasets": 1,
+        "datasets": [
+          {
+            "dataSetFileId": "bd06ee80-b39e-44bf-b619-064887ea7ab8",
+            "title": "Key stage 2 national headlines 2016 to 2025",
+            "maxRank": 1,
+            "indicators": ["Percentage meeting the expected standard in reading, writing and maths (combined)"],
+            "timePeriod": {
+              "start": { "code": "AY", "year": 2015 },
+              "end": { "code": "AY", "year": 2024 }
+            },
+            "locations": {
+              "National": ["E92000001"]
+            }
+          }
+        ]
+      }
     }
   ]
 }

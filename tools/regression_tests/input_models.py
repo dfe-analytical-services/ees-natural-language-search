@@ -66,6 +66,10 @@ class ExpectedDataset(StrictCamelModel):
 
 
 class ExpectedResults(StrictCamelModel):
+    author: Literal["developer", "product-owner"] | None = Field(
+        default=None,
+        description="Who wrote the expected results, so that the accuracy against each can be reported separately.",
+    )
     min_datasets: int | None = Field(default=None, ge=0)
     datasets: list[ExpectedDataset] = Field(default_factory=list)
 

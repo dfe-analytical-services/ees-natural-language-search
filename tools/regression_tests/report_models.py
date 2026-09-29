@@ -3,6 +3,9 @@ Regression test report Pydantic models
 
 A report is structured as run -> iterations -> queries -> datasets, with a summary at the run and iteration
 levels aggregating the query results beneath them. Dump with `model_dump_json(by_alias=True)`.
+
+Each query result has an execution status, describing how its request was executed, and separately an accuracy,
+describing whether its results match the expected results in the gold standard file.
 """
 
 from datetime import datetime
@@ -11,13 +14,19 @@ from typing import Any
 
 from pydantic import Field
 
+from schemas.domain.locations_response import DatasetLocations
 from schemas.responses.event_responses import QueryRequirements
 from schemas.responses.final_dataset_response import (
+    AutoSelectedFilterItem,
     DatasetValidationError,
     DatasetValidationWarning,
+    FilterSelectionItem,
+    IndicatorSelectionItem,
+    TimePeriodRange,
 )
 from schemas.shared.base_models import StrictCamelModel
 from schemas.shared.token_usage import TokenUsage
+from tools.regression_tests.input_models import ExpectedTimePeriodRange
 
 
 class ExecutionStatus(StrEnum):
@@ -51,6 +60,7 @@ class DatasetResult(StrictCamelModel):
     rank: int = Field(description="Position in the results, where 1 is the first result.")
     file_id: str
     data_set_file_id: str
+    subject_id: str
     title: str
     relevance_score: float | None = Field(
         default=None,
@@ -59,6 +69,12 @@ class DatasetResult(StrictCamelModel):
     is_valid_for_table_generation: bool
     validation_errors: list[DatasetValidationError] = Field(default_factory=list)
     validation_warnings: list[DatasetValidationWarning] = Field(default_factory=list)
+    filters: list[FilterSelectionItem] = Field(default_factory=list)
+    indicators: list[IndicatorSelectionItem] = Field(default_factory=list)
+    time_period: TimePeriodRange | None = None
+    geographic_levels: DatasetLocations | None = None
+    auto_selected_filter_items: dict[str, AutoSelectedFilterItem] = Field(default_factory=dict)
+    unfiltered_filters: list[str] = Field(default_factory=list)
 
 
 class DatasetResultsSummary(StrictCamelModel):
@@ -72,6 +88,84 @@ class DatasetResultsSummary(StrictCamelModel):
         default_factory=dict, description="Keyed by validation warning code."
     )
     mean_relevance_score: float | None = None
+
+
+class AccuracyResult(StrEnum):
+    """Whether results match the expected results, regardless of how the query's request was executed."""
+
+    PASS = "pass"
+    PARTIAL = "partial"
+    """Some, but not all, of the expected results matched."""
+    FAIL = "fail"
+    NOT_EVALUATED = "not_evaluated"
+    """The results couldn't be compared, e.g. because the pipeline didn't complete."""
+
+
+class SelectionAccuracy(StrictCamelModel):
+    """Compares the selected values with the expected values, e.g. of the indicators, or of one filter.
+
+    Selections pass on an exact match. Precision and recall show how close a selection that doesn't pass is."""
+
+    passed: bool
+    expected: list[str] = Field(default_factory=list)
+    selected: list[str] = Field(default_factory=list)
+    missing: list[str] = Field(default_factory=list, description="Expected, but not selected.")
+    unexpected: list[str] = Field(default_factory=list, description="Selected, but not expected.")
+    precision: float | None = Field(
+        default=None,
+        description="The proportion of the selected values that were expected. Unset if nothing was selected.",
+    )
+    recall: float | None = Field(
+        default=None,
+        description="The proportion of the expected values that were selected. Unset if nothing was expected.",
+    )
+
+
+class GroupedSelectionAccuracy(StrictCamelModel):
+    """Compares selections which are grouped, e.g. filter items by filter, or locations by geographic level."""
+
+    passed: bool
+    precision: float | None = None
+    recall: float | None = None
+    groups: dict[str, SelectionAccuracy] = Field(
+        default_factory=dict, description="Keyed by filter label, or geographic level label."
+    )
+
+
+class TimePeriodAccuracy(StrictCamelModel):
+    passed: bool
+    expected: ExpectedTimePeriodRange
+    selected: TimePeriodRange | None = None
+
+
+class ExpectedDatasetAccuracy(StrictCamelModel):
+    data_set_file_id: str
+    title: str | None = Field(default=None, description="The title given in the gold standard file.")
+    required: bool
+    result: AccuracyResult
+    found: bool
+    rank: int | None = None
+    max_rank: int | None = None
+    rank_passed: bool | None = Field(default=None, description="Unset if no maximum rank is expected.")
+    filters: GroupedSelectionAccuracy | None = Field(
+        default=None, description="Unset if no filters are expected, or if they couldn't be compared."
+    )
+    indicators: SelectionAccuracy | None = None
+    time_period: TimePeriodAccuracy | None = None
+    locations: GroupedSelectionAccuracy | None = None
+    problems: list[str] = Field(
+        default_factory=list,
+        description="Problems comparing the dataset, e.g. expected labels that don't exist in its subject meta.",
+    )
+
+
+class QueryAccuracy(StrictCamelModel):
+    result: AccuracyResult
+    author: str | None = Field(default=None, description="Who wrote the expected results.")
+    reason: str | None = Field(default=None, description="Why the results weren't evaluated.")
+    min_datasets: int | None = None
+    min_datasets_passed: bool | None = None
+    datasets: list[ExpectedDatasetAccuracy] = Field(default_factory=list)
 
 
 class QueryResult(StrictCamelModel):
@@ -103,6 +197,9 @@ class QueryResult(StrictCamelModel):
     )
     dataset_summary: DatasetResultsSummary | None = None
     datasets: list[DatasetResult] = Field(default_factory=list)
+    accuracy: QueryAccuracy | None = Field(
+        default=None, description="Unset if the query has no expected results."
+    )
     raw_events: list[RawEvent] = Field(default_factory=list)
 
 
@@ -125,10 +222,44 @@ class ExecutionSummary(StrictCamelModel):
     datasets: DatasetResultsSummary
 
 
+class PassRate(StrictCamelModel):
+    evaluated: int
+    passed: int
+    pass_rate: float | None = Field(default=None, description="Unset if nothing was evaluated.")
+
+
+class AccuracySummary(StrictCamelModel):
+    """Aggregates the accuracy of the queries with expected results."""
+
+    query_count: int
+    result_counts: dict[AccuracyResult, int]
+    result_counts_by_author: dict[str, dict[AccuracyResult, int]] = Field(
+        default_factory=dict,
+        description="Keyed by who wrote the expected results, or 'unspecified', so that each can be compared separately.",
+    )
+    required_datasets_found: PassRate
+    rank: PassRate
+    filters: PassRate
+    indicators: PassRate
+    time_period: PassRate
+    locations: PassRate
+    mean_reciprocal_rank: float | None = Field(
+        default=None,
+        description="The mean over evaluated queries of 1 / the rank of the highest ranked expected dataset found, "
+        "or 0 if none were found.",
+    )
+    problem_count: int = Field(
+        description="The number of problems comparing datasets, e.g. expected labels that don't exist."
+    )
+
+
 class IterationReport(StrictCamelModel):
     iteration: int
     duration_seconds: float
     summary: ExecutionSummary
+    accuracy_summary: AccuracySummary | None = Field(
+        default=None, description="Unset if none of the queries have expected results."
+    )
     skipped_query_ids: list[str] = Field(
         default_factory=list,
         description="Queries that were not run because the maximum cost of the run had been reached.",
@@ -172,4 +303,7 @@ class RunMetadata(StrictCamelModel):
 class RegressionReport(StrictCamelModel):
     run: RunMetadata
     summary: ExecutionSummary
+    accuracy_summary: AccuracySummary | None = Field(
+        default=None, description="Unset if none of the queries have expected results."
+    )
     iterations: list[IterationReport] = Field(default_factory=list)
