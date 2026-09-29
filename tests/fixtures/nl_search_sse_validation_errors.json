@@ -1,0 +1,199 @@
+[
+  {
+    "stage": "starting pipeline"
+  },
+  {
+    "stage": "retrieved datasets",
+    "data": {
+      "datasets": [
+        {
+          "dataSetFileId": "9e2601f1-2ff5-43a2-b892-502a7dec9ecf",
+          "fileId": "688db31c-66bd-4dbd-b73c-08dec0963904",
+          "publicationId": "96f418e7-3ddb-4a8c-60dc-08deb7f1c424",
+          "publicationSlug": "pupil-attendance-in-schools-in-england",
+          "publicationTitle": "Pupil attendance in schools in England",
+          "releaseSlug": "2026-week-20",
+          "releaseVersionId": "db7aad55-30b2-4d7e-bb45-08dec09602df",
+          "subjectId": "10ea4c1e-2124-4da4-ed21-08dec09638f8",
+          "title": "Reasons for absence and attendance",
+          "description": "Daily and weekly local authority, regional and national reasons for pupil attendance and absence. Figures are provided for state-funded primary, secondary and special schools.",
+          "filters": [
+            "Attendance reason",
+            "Education phase",
+            "Time frame"
+          ],
+          "indicators": [
+            "Number of sessions",
+            "Percent of sessions",
+            "Reference date"
+          ],
+          "timePeriodRange": {
+            "from": "Week 37 2025",
+            "to": "Week 9 2026"
+          },
+          "rawRelevanceScore": 0.02472677454352379,
+          "relevanceScore": 75.4
+        },
+        {
+          "dataSetFileId": "52d98825-1e90-4752-acb9-e751d03d0d1d",
+          "fileId": "9a0aa599-fdfd-40ad-b73a-08dec0963904",
+          "publicationId": "96f418e7-3ddb-4a8c-60dc-08deb7f1c424",
+          "publicationSlug": "pupil-attendance-in-schools-in-england",
+          "publicationTitle": "Pupil attendance in schools in England",
+          "releaseSlug": "2026-week-20",
+          "releaseVersionId": "db7aad55-30b2-4d7e-bb45-08dec09602df",
+          "subjectId": "6806855d-79e6-4abd-ed1f-08dec09638f8",
+          "title": "Persistent absence in schools",
+          "description": "Persistent absence measures, year to date only, updated each publication week. Figures are provided at the local authority, regional and national level for state-funded primary, secondary and special schools.",
+          "filters": [
+            "Education phase"
+          ],
+          "indicators": [
+            "Persistent absence rate"
+          ],
+          "timePeriodRange": {
+            "from": "Week 10 2025",
+            "to": "Week 8 2026"
+          },
+          "rawRelevanceScore": 0.023704789578914642,
+          "relevanceScore": 72.3
+        }
+      ]
+    }
+  },
+  {
+    "stage": "reranker complete",
+    "data": {
+      "confidence": "high",
+      "datasets": [
+        {
+          "dataSetFileId": "9e2601f1-2ff5-43a2-b892-502a7dec9ecf",
+          "fileId": "688db31c-66bd-4dbd-b73c-08dec0963904",
+          "publicationId": "96f418e7-3ddb-4a8c-60dc-08deb7f1c424",
+          "publicationSlug": "pupil-attendance-in-schools-in-england",
+          "publicationTitle": "Pupil attendance in schools in England",
+          "releaseSlug": "2026-week-20",
+          "releaseVersionId": "db7aad55-30b2-4d7e-bb45-08dec09602df",
+          "subjectId": "10ea4c1e-2124-4da4-ed21-08dec09638f8",
+          "title": "Reasons for absence and attendance",
+          "description": "Daily and weekly local authority, regional and national reasons for pupil attendance and absence. Figures are provided for state-funded primary, secondary and special schools.",
+          "relevanceReason": "This dataset includes daily and weekly reasons for pupil attendance and absence, including specific attendance reasons such as being on holiday, and covers the relevant recent time frame.",
+          "relevantFilters": [
+            "Attendance reason",
+            "Time frame"
+          ],
+          "relevanceScore": 75.4
+        }
+      ],
+      "queryRequirements": {
+        "filters": [
+          "Percentage of pupils reported as on holiday",
+          "Time frame of the last 4 weeks"
+        ],
+        "geography": [],
+        "timePeriod": "Last 4 weeks from 29-09-2026"
+      },
+      "tokenUsage": {
+        "input": 989,
+        "output": 173
+      },
+      "cost": 0.0006378
+    }
+  },
+  {
+    "stage": "pipeline complete",
+    "data": {
+      "datasets": [
+        {
+          "dataSetFileId": "9e2601f1-2ff5-43a2-b892-502a7dec9ecf",
+          "fileId": "688db31c-66bd-4dbd-b73c-08dec0963904",
+          "publicationId": "96f418e7-3ddb-4a8c-60dc-08deb7f1c424",
+          "publicationSlug": "pupil-attendance-in-schools-in-england",
+          "publicationTitle": "Pupil attendance in schools in England",
+          "releaseSlug": "2026-week-20",
+          "releaseVersionId": "db7aad55-30b2-4d7e-bb45-08dec09602df",
+          "subjectId": "10ea4c1e-2124-4da4-ed21-08dec09638f8",
+          "title": "Reasons for absence and attendance",
+          "description": "Daily and weekly local authority, regional and national reasons for pupil attendance and absence. Figures are provided for state-funded primary, secondary and special schools.",
+          "filters": [
+            {
+              "id": "62e7150f-29ae-44d7-be9b-85aca0636094",
+              "label": "Authorised holiday (h)"
+            },
+            {
+              "id": "b36a0689-f2c6-4464-95be-d82921199721",
+              "label": "Unauthorised holiday (g)"
+            },
+            {
+              "id": "45eff781-6dbe-4c06-8c90-795cc17bbf38",
+              "label": "Week"
+            },
+            {
+              "id": "ba8d19c5-8ffa-4647-8425-4f81863aad78",
+              "label": "All schools"
+            },
+            {
+              "id": "b349aa16-03a6-4460-b3da-1cfb172f6a46",
+              "label": "Primary"
+            },
+            {
+              "id": "8df06cef-7581-42b3-a51b-4ce1230a80da",
+              "label": "Secondary"
+            },
+            {
+              "id": "33b411a0-28a2-43db-8f91-393bcc801ca1",
+              "label": "Special"
+            }
+          ],
+          "indicators": [],
+          "timePeriod": {
+            "start": {
+              "code": "W16",
+              "year": 2026
+            },
+            "end": {
+              "code": "W19",
+              "year": 2026
+            }
+          },
+          "geographicLevels": {
+            "National": [
+              {
+                "id": "376f9a26-dc39-4db3-bb19-0549e59d322a",
+                "label": "England",
+                "value": "E92000001"
+              }
+            ]
+          },
+          "relevanceReason": "This dataset includes daily and weekly reasons for pupil attendance and absence, including specific attendance reasons such as being on holiday, and covers the relevant recent time frame.",
+          "autoSelectedFilterItems": {},
+          "unfilteredFilters": [
+            "Education phase"
+          ],
+          "validationErrors": [
+            {
+              "code": "no_indicators",
+              "message": "No relevant indicators were found for this dataset matching the query."
+            }
+          ],
+          "validationWarnings": [
+            {
+              "code": "unfiltered_filters",
+              "message": "No relevant filter items were found matching the query for the filter 'Education phase', and no auto-select fallback was configured, so every filter item was selected instead."
+            },
+            {
+              "code": "no_location_requirement",
+              "message": "No location requirement was found in the query, so the national level location for England was selected instead."
+            }
+          ],
+          "isValidForTableGeneration": false
+        }
+      ],
+      "tokenUsage": {
+        "input": 4204,
+        "output": 631
+      },
+      "cost": 0.002565
+    }
+  }
+]

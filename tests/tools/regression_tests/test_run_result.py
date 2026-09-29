@@ -221,3 +221,65 @@ def test_raw_events_are_reported_exactly_as_received(
 
     assert [event.data for event in result.raw_events] == received
     assert result.raw_events[-1].data["data"]["datasets"][0]["isValidForTableGeneration"] is True
+
+
+# Streams captured from the dev environment, as the service's own output rather than events built by the tests
+REAL_STREAM_CASES = [
+    pytest.param(
+        "nl_search_sse_success.json",
+        ExecutionStatus.SUCCESS,
+        [[]],
+        [["no_time_period_requirement"]],
+        id="success",
+    ),
+    pytest.param(
+        "nl_search_sse_validation_errors.json",
+        ExecutionStatus.SUCCESS_WITH_VALIDATION_ERRORS,
+        [["no_indicators"]],
+        [["unfiltered_filters", "no_location_requirement"]],
+        id="validation_errors",
+    ),
+    pytest.param(
+        "nl_search_sse_no_datasets.json",
+        ExecutionStatus.SUCCESS,
+        [],
+        [],
+        id="no_datasets",
+    ),
+]
+
+
+@pytest.mark.parametrize("fixture, expected_status, expected_error_codes, expected_warning_codes", REAL_STREAM_CASES)
+def test_real_streams(
+    query, load_json_fixture, build_execution, fixture, expected_status, expected_error_codes, expected_warning_codes
+):
+    events = load_json_fixture(fixture)
+
+    result = build_query_result(query, build_execution(events))
+
+    assert result.status == expected_status
+    assert result.last_stage == "pipeline complete"
+    assert result.dataset_count == len(expected_error_codes)
+    assert [[error.code for error in dataset.validation_errors] for dataset in result.datasets] == expected_error_codes
+    assert [[warning.code for warning in dataset.validation_warnings] for dataset in result.datasets] == expected_warning_codes
+
+    pipeline_complete = _event_data(events, "pipeline complete")
+    assert result.token_usage.model_dump() == pipeline_complete["tokenUsage"]
+    assert result.cost == pipeline_complete["cost"]
+    assert not result.cost_is_partial
+
+
+def test_real_stream_relevance_scores_and_query_requirements_come_from_the_reranker(
+    query, load_json_fixture, build_execution
+):
+    events = load_json_fixture("nl_search_sse_success.json")
+
+    result = build_query_result(query, build_execution(events))
+
+    reranker_complete = _event_data(events, "reranker complete")
+    assert [dataset.relevance_score for dataset in result.datasets] == [
+        dataset["relevanceScore"] for dataset in reranker_complete["datasets"]
+    ]
+    assert result.confidence == reranker_complete["confidence"]
+    assert result.query_requirements.geography == ["London"]
+    assert result.query_requirements.time_period is None
