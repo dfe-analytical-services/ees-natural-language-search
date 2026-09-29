@@ -14,6 +14,7 @@ from tools.regression_tests.report_models import (
     IterationReport,
     QueryResult,
     RegressionReport,
+    ReplaySource,
     RunMetadata,
 )
 from tools.regression_tests.run_result import build_query_result
@@ -36,6 +37,7 @@ class RunOptions:
     concurrency: int
     timeout_seconds: float
     max_cost: float | None
+    replayed_from: ReplaySource | None = None
 
 
 class HealthCheckError(Exception):
@@ -65,7 +67,7 @@ async def run_regression_tests(
     options: RunOptions,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> RegressionReport:
-    """`transport` is only for replacing the HTTP transport in tests."""
+    """`transport` replaces the HTTP transport, e.g. to replay a previous report, or in tests."""
     started_at = datetime.now(UTC)
     budget = _CostBudget(options.max_cost)
     iteration_reports: list[IterationReport] = []
@@ -105,6 +107,7 @@ async def run_regression_tests(
             timeout_seconds=options.timeout_seconds,
             max_cost=options.max_cost,
             budget_exceeded=budget.is_exceeded,
+            replayed_from=options.replayed_from,
         ),
         summary=summarise_queries(
             [result for report in iteration_reports for result in report.queries]

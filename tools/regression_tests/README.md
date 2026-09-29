@@ -10,7 +10,8 @@ Azure credentials.
 
 > [!IMPORTANT]
 > Every query calls Azure OpenAI and costs money, so this is run manually and **not** as part of the CI
-> pipeline. See [Cost](#cost) before running a large number of queries or iterations.
+> pipeline. See [Cost](#cost) before running a large number of queries or iterations, and use
+> [Replay](#replay) to develop the script without using any tokens.
 
 Comparing results against the expected results in the gold standard file is not implemented yet. The
 expected results are validated, but not scored.
@@ -61,15 +62,19 @@ python -m tools.regression_tests --env dev --query attendance-holiday-last-4-wee
 
 # Run the queries tagged 'attendance'
 python -m tools.regression_tests --env dev --tag attendance
+
+# Replay a previous report, without calling the service or using any tokens
+python -m tools.regression_tests --replay tools/regression_tests/reports/regression-report-dev-20260929T142944Z.json
 ```
 
 | Option | Default | Description |
 |---|---|---|
-| `--env` | | The environment to run against, from `environments.json`. Required unless `--validate` is given. |
+| `--env` | | The environment to run against, from `environments.json`. Either this or `--replay` is required, unless `--validate` is given. |
+| `--replay` | | Replay the streams recorded in a previous report instead of calling the service. See [Replay](#replay). |
 | `--input` | `gold_standard/queries.json` | The gold standard queries file. |
 | `--query` | | Only run the query with this id. Can be repeated. |
 | `--tag` | | Only run queries with this tag. Can be repeated. A query is run if it matches any `--query` or `--tag`. |
-| `--iterations` | `1` | How many times to run each query, to measure consistency. Iterations run one after another. |
+| `--iterations` | `1`, or every recorded iteration when replaying | How many times to run each query, to measure consistency. Iterations run one after another. |
 | `--concurrency` | `2` | How many queries to run at once. Keep it low, as higher concurrency skews durations and risks Azure OpenAI rate limiting. |
 | `--timeout` | `180` | Seconds to wait for each query to complete. |
 | `--max-cost` | | Stops starting new queries once the run's cost reaches this. |
@@ -77,7 +82,32 @@ python -m tools.regression_tests --env dev --tag attendance
 | `--validate` | | Only validate the gold standard queries file. |
 
 The exit code is `0` when every selected query completed the pipeline in every iteration, `1` when any
-didn't, or the health check failed, and `2` for invalid arguments or an invalid gold standard file.
+didn't, or the health check failed, and `2` for invalid arguments, an invalid gold standard file, or a report
+that can't be replayed.
+
+## Replay
+
+`--replay <report>` serves the SSE streams recorded in a previous report's `rawEvents` instead of calling the
+service, so no Azure OpenAI tokens are used. Everything after the network runs exactly as it does against a real
+environment, e.g. parsing the streams, classifying each query's status and summarising the results. Use it to:
+
+- develop and test changes to the script against real output from an environment, without any cost.
+- re-examine a previous run's results with the current version of the script.
+
+How recordings are matched and replayed:
+
+- A recording is matched to a query by its query text and publication id, not its query id, so a query whose text
+  has changed since it was recorded isn't replayed with events that no longer correspond to it.
+- Each iteration replays the streams recorded in the same iteration of the report. By default every recorded
+  iteration is replayed, and `--iterations` can't exceed the number recorded.
+- Without `--query` or `--tag`, only the queries recorded in the report are replayed. Queries selected explicitly
+  that weren't recorded, or whose recorded request failed without a stream, are reported as an `http_error`.
+- Recordings of queries that timed out replay as an `incomplete_stream`, as only the events received before the
+  timeout were recorded.
+
+The new report's environment is `replay`, and `run.replayedFrom` records which report was replayed and which
+environment it was recorded against. Its token usage and cost are the recorded ones, and its durations are
+meaningless, as the streams are replayed without any delay.
 
 ## Gold standard queries file
 
