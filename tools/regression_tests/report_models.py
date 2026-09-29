@@ -136,6 +136,15 @@ class IterationReport(StrictCamelModel):
     queries: list[QueryResult] = Field(default_factory=list)
 
 
+class ReplaySource(StrictCamelModel):
+    """The report whose recorded events were replayed, instead of calling the service."""
+
+    report_file: str
+    environment_name: str
+    base_url: str
+    started_at: datetime
+
+
 class RunMetadata(StrictCamelModel):
     started_at: datetime
     finished_at: datetime
@@ -151,6 +160,12 @@ class RunMetadata(StrictCamelModel):
     max_cost: float | None = None
     budget_exceeded: bool = Field(
         description="Whether the maximum cost was reached, after which no further queries are started."
+    )
+    replayed_from: ReplaySource | None = Field(
+        default=None,
+        description="Set when the run replayed a previous report's recorded events. The token usage and cost are "
+        "then the recorded ones, and no tokens were used. Durations are meaningless, as the events are replayed "
+        "without any delay.",
     )
 
 
