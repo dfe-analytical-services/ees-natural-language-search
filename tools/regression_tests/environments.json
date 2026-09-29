@@ -1,0 +1,8 @@
+{
+  "dev": {
+    "baseUrl": "https://replace-with-dev-function-app-host.invalid"
+  },
+  "local": {
+    "baseUrl": "http://localhost:7071"
+  }
+}

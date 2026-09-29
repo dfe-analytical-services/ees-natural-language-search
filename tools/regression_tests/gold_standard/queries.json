@@ -1,0 +1,47 @@
+{
+  "queries": [
+    {
+      "id": "attendance-holiday-last-4-weeks",
+      "description": "Placeholder, to be replaced by the gold standard queries",
+      "userQuery": "Show me the percentage of pupils reported as on holiday in the last 4 weeks",
+      "publicationId": "00000000-0000-0000-0000-000000000000",
+      "tags": ["placeholder", "attendance"]
+    },
+    {
+      "id": "absence-by-school-type",
+      "description": "Placeholder, to be replaced by the gold standard queries. Has no time period, so expect a 'no_time_period_requirement' warning.",
+      "userQuery": "pupil absence rates by school type",
+      "publicationId": "00000000-0000-0000-0000-000000000000",
+      "tags": ["placeholder", "absence", "no-time-period"]
+    },
+    {
+      "id": "attendance-london-secondary-2023",
+      "description": "Placeholder, to be replaced by the gold standard queries. Shows the format of the expected results.",
+      "userQuery": "pupil attendance in London secondary schools in 2023",
+      "publicationId": "00000000-0000-0000-0000-000000000000",
+      "tags": ["placeholder", "attendance", "geography"],
+      "expected": {
+        "minDatasets": 1,
+        "datasets": [
+          {
+            "dataSetFileId": "00000000-0000-0000-0000-000000000000",
+            "title": "Placeholder dataset title",
+            "maxRank": 3,
+            "filters": {
+              "School type": ["State-funded secondary"],
+              "Reason": "*"
+            },
+            "indicators": ["Overall absence rate"],
+            "timePeriod": {
+              "start": { "code": "AY", "year": 2023 },
+              "end": { "code": "AY", "year": 2023 }
+            },
+            "locations": {
+              "Regional": ["E12000007"]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
