@@ -3,13 +3,20 @@
 import json
 from pathlib import Path
 
+from pydantic import Field
+
 from schemas.shared.base_models import StrictCamelModel
 
 ENVIRONMENTS_FILE = Path(__file__).parent / "environments.json"
 
 
 class Environment(StrictCamelModel):
-    base_url: str
+    base_url: str = Field(description="The function app's host, without any path.")
+    ees_data_api_url: str | None = Field(
+        default=None,
+        description="The environment's `EES_URL_API_DATA` setting, for looking up the subject meta of dataset results. "
+        "Not used yet.",
+    )
 
     @property
     def search_url(self) -> str:

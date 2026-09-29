@@ -2,46 +2,52 @@
   "queries": [
     {
       "id": "attendance-holiday-last-4-weeks",
-      "description": "Placeholder, to be replaced by the gold standard queries",
+      "description": "Starter query, until the gold standard queries are supplied. Relative time period.",
       "userQuery": "Show me the percentage of pupils reported as on holiday in the last 4 weeks",
-      "publicationId": "00000000-0000-0000-0000-000000000000",
-      "tags": ["placeholder", "attendance"]
+      "publicationId": "96f418e7-3ddb-4a8c-60dc-08deb7f1c424",
+      "tags": ["starter", "attendance", "time-period"]
     },
     {
-      "id": "absence-by-school-type",
-      "description": "Placeholder, to be replaced by the gold standard queries. Has no time period, so expect a 'no_time_period_requirement' warning.",
-      "userQuery": "pupil absence rates by school type",
-      "publicationId": "00000000-0000-0000-0000-000000000000",
-      "tags": ["placeholder", "absence", "no-time-period"]
+      "id": "attendance-persistent-absence-london-secondary",
+      "description": "Starter query, until the gold standard queries are supplied. No time period, so expect a 'no_time_period_requirement' warning.",
+      "userQuery": "persistent absence rates in London secondary schools",
+      "publicationId": "96f418e7-3ddb-4a8c-60dc-08deb7f1c424",
+      "tags": ["starter", "attendance", "geography", "no-time-period"]
     },
     {
-      "id": "attendance-london-secondary-2023",
-      "description": "Placeholder, to be replaced by the gold standard queries. Shows the format of the expected results.",
-      "userQuery": "pupil attendance in London secondary schools in 2023",
-      "publicationId": "00000000-0000-0000-0000-000000000000",
-      "tags": ["placeholder", "attendance", "geography"],
-      "expected": {
-        "minDatasets": 1,
-        "datasets": [
-          {
-            "dataSetFileId": "00000000-0000-0000-0000-000000000000",
-            "title": "Placeholder dataset title",
-            "maxRank": 3,
-            "filters": {
-              "School type": ["State-funded secondary"],
-              "Reason": "*"
-            },
-            "indicators": ["Overall absence rate"],
-            "timePeriod": {
-              "start": { "code": "AY", "year": 2023 },
-              "end": { "code": "AY", "year": 2023 }
-            },
-            "locations": {
-              "Regional": ["E12000007"]
-            }
-          }
-        ]
-      }
+      "id": "absence-by-characteristic-2015-16",
+      "description": "Starter query, until the gold standard queries are supplied.",
+      "userQuery": "overall absence rates for pupils eligible for free school meals in 2015/16",
+      "publicationId": "54566469-2b91-408f-b6fd-08ded070cf31",
+      "tags": ["starter", "absence", "characteristics", "time-period"]
+    },
+    {
+      "id": "absence-pupil-referral-units-by-region",
+      "description": "Starter query, until the gold standard queries are supplied. No time period, so expect a 'no_time_period_requirement' warning.",
+      "userQuery": "absence in pupil referral units by region",
+      "publicationId": "54566469-2b91-408f-b6fd-08ded070cf31",
+      "tags": ["starter", "absence", "geography", "no-time-period"]
+    },
+    {
+      "id": "fe-sustained-employment",
+      "description": "Starter query, until the gold standard queries are supplied. The publication has no datasets listed in the Data API.",
+      "userQuery": "sustained employment rates for further education learners",
+      "publicationId": "8b12776b-3d36-4475-8115-00974d7de1d0",
+      "tags": ["starter", "further-education", "edge-case"]
+    },
+    {
+      "id": "ks2-disadvantaged-expected-standard-manchester",
+      "description": "Starter query, until the gold standard queries are supplied.",
+      "userQuery": "percentage of disadvantaged pupils meeting the expected standard in reading, writing and maths in Manchester in 2024/25",
+      "publicationId": "78724875-1235-4992-03bc-08deb8011eea",
+      "tags": ["starter", "ks2", "characteristics", "geography", "time-period"]
+    },
+    {
+      "id": "ks2-national-expected-standard-since-2016",
+      "description": "Starter query, until the gold standard queries are supplied. Time period range.",
+      "userQuery": "how has the percentage of pupils reaching the expected standard in reading, writing and maths changed since 2016",
+      "publicationId": "135873c7-2375-4a94-03bb-08deb8011eea",
+      "tags": ["starter", "ks2", "time-period"]
     }
   ]
 }
