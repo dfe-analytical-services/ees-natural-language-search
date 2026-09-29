@@ -64,12 +64,16 @@ python -m tools.regression_tests --env dev --tag attendance
 
 # Replay a previous report, without calling the service or using any tokens
 python -m tools.regression_tests --replay tools/regression_tests/reports/regression-report-dev-20260929T142944Z.json
+
+# Run every query three times against dev, to measure consistency, and compare the results with a previous run
+python -m tools.regression_tests --env dev --iterations 3 --baseline tools/regression_tests/reports/regression-report-dev-20260929T142944Z.json
 ```
 
 | Option | Default | Description |
 |---|---|---|
 | `--env` | | The environment to run against, from `environments.json`. Either this or `--replay` is required, unless `--validate` is given. |
 | `--replay` | | Replay the streams recorded in a previous report instead of calling the service. See [Replay](#replay). |
+| `--baseline` | | Compare the results with a previous report, to find the queries that got worse or better. See [Baseline](#baseline). |
 | `--input` | `gold_standard/queries.json` | The gold standard queries file. |
 | `--query` | | Only run the query with this id. Can be repeated. |
 | `--tag` | | Only run queries with this tag. Can be repeated. A query is run if it matches any `--query` or `--tag`. |
@@ -80,9 +84,14 @@ python -m tools.regression_tests --replay tools/regression_tests/reports/regress
 | `--out` | `reports/` | The directory to write the report to. It is ignored by git. |
 | `--validate` | | Only validate the gold standard queries file. |
 
-The exit code is `0` when every selected query completed the pipeline in every iteration, `1` when any
-didn't, or the health check failed, and `2` for invalid arguments, an invalid gold standard file, or a report
-that can't be replayed.
+| Exit code | Meaning |
+|---|---|
+| `0` | Every selected query completed the pipeline in every iteration, and none regressed from the baseline. |
+| `1` | A query didn't complete the pipeline in every iteration, or the health check failed. |
+| `2` | Invalid arguments, an invalid gold standard file, or a report that can't be replayed or used as a baseline. |
+| `3` | A query regressed from the baseline, i.e. it's `regressed` or `mixed`. This takes precedence over `1`. |
+
+The exit code doesn't depend on accuracy on its own, only on how accuracy changed from the baseline.
 
 ## Replay
 
@@ -176,6 +185,45 @@ a new release, can never be selected, so they're reported as `problems`.
 
 Accuracy is separate from the execution status, so a query can be a `success` with a `fail` accuracy.
 
+## Consistency
+
+The service calls Azure OpenAI with a temperature of 0 and a fixed seed, but that isn't fully deterministic, so the
+same query can return different results from one iteration to the next. When a run has more than one iteration, each
+query is checked for whether its status, accuracy, datasets, filter items, indicators, time period and locations were
+the same in every iteration. Selections are only compared between iterations where the pipeline completed, and each
+is compared with the first of those iterations.
+
+## Baseline
+
+`--baseline <report>` compares the run with a previous report, the baseline, to find the queries whose results got
+worse or better, e.g. before and after a change to the service.
+
+The baseline's results are rebuilt from its recorded events with the current version of the script, and compared with
+the **current** expected results, in exactly the same way as the run's results. Differences therefore come from the
+service, rather than from changes to the expected results or to this script, and an old report can still be used as a
+baseline. Queries are matched with the baseline in the same way as [Replay](#replay), by their query text and
+publication.
+
+Each query is compared by its worst status, and its worst accuracy, in any iteration, and by whether each check, e.g.
+its indicators, passed in every iteration, so a query that only sometimes fails is treated as failing.
+
+| Change | Meaning |
+|---|---|
+| `regressed` | Something got worse, e.g. its status, its accuracy, or a check that passed now fails, and nothing got better. |
+| `improved` | Something got better, and nothing got worse. |
+| `mixed` | Some things got better, and some got worse. |
+| `changed` | The results changed, e.g. different datasets or selections, but nothing got better or worse. |
+| `unchanged` | The results are the same. |
+| `new` | The query isn't in the baseline, e.g. because it's new, or its text has changed. |
+
+The comparison also includes metrics of the run and the baseline side by side, e.g. the proportion of queries that
+completed, the pass rate of each check, and the mean cost and duration of a query. They're only compared over the
+queries in both, so that they aren't skewed by queries that are only in one.
+
+To check a change to the service before releasing it, run the gold standard queries against an environment before and
+after deploying the change, and use the first report as the baseline of the second. `--baseline` can also be combined
+with `--replay`, e.g. to see how changes to the expected results affect a previous run, without using any tokens.
+
 ## Report
 
 Each run writes a JSON report, `reports/regression-report-<env>-<timestamp>.json`, and renders it as Markdown for
@@ -186,6 +234,8 @@ reading, in a `.md` file with the same name. The JSON report is structured as:
 - `summary` - aggregates how every query in every iteration was executed.
 - `accuracySummary` - aggregates the accuracy of every query with expected results: the result counts, overall and
   by `author`, the pass rate of each check, the mean reciprocal rank, and the number of problems.
+- `consistency` - see [Consistency](#consistency). Unset unless a query ran in more than one iteration.
+- `baselineComparison` - see [Baseline](#baseline). Unset unless `--baseline` is given.
 - `iterations` - each with its own `summary` and `accuracySummary`, duration, any queries skipped because the
   maximum cost was reached, and `queries`. Each query result has:
   - `status` - see below. `errorMessage` and `lastStage` explain any failure.

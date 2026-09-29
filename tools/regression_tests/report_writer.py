@@ -7,14 +7,18 @@ from schemas.responses.final_dataset_response import TimePeriodRange
 from tools.regression_tests.input_models import ExpectedTimePeriodRange
 from tools.regression_tests.report_models import (
     AccuracySummary,
+    BaselineComparison,
     DatasetResult,
     ExecutionSummary,
     ExpectedDatasetAccuracy,
     GroupedSelectionAccuracy,
     IterationReport,
+    MetricComparison,
     PassRate,
+    QueryChange,
     QueryResult,
     RegressionReport,
+    RunConsistency,
     SelectionAccuracy,
 )
 
@@ -50,6 +54,8 @@ def render_markdown_report(report: RegressionReport) -> str:
     lines += ["## Summary", ""]
     lines += _render_execution_summary(report.summary)
     lines += _render_accuracy_summary(report.accuracy_summary)
+    lines += _render_baseline_comparison(report.baseline_comparison)
+    lines += _render_consistency(report.consistency)
     for iteration in report.iterations:
         lines += _render_iteration(iteration, len(report.iterations))
     return "\n".join(lines).rstrip("\n") + "\n"
@@ -150,6 +156,70 @@ def _render_accuracy_summary(summary: AccuracySummary | None) -> list[str]:
         "",
     ]
     return lines
+
+
+def _render_baseline_comparison(comparison: BaselineComparison | None) -> list[str]:
+    if comparison is None:
+        return []
+
+    source = comparison.baseline
+    lines = [
+        "## Compared with the baseline",
+        "",
+        f"The baseline was recorded against `{source.environment_name}` at {_format_datetime(source.started_at)}, "
+        f"in `{source.report_file}`. Its results were compared with the current expected results.",
+        "",
+    ]
+    lines += _table(
+        ["Change", "Queries"],
+        [(f"`{change}`", count) for change, count in comparison.change_counts.items() if count],
+    )
+    lines += [
+        "",
+        f"The metrics are compared over the {_plural(comparison.metrics_query_count, 'query', 'queries')} "
+        "in both the run and the baseline.",
+        "",
+    ]
+    lines += _table(
+        ["Metric", "Baseline", "Current"],
+        [(metric.name, _format_metric(metric, metric.baseline), _format_metric(metric, metric.current)) for metric in comparison.metrics],
+    )
+    lines.append("")
+
+    # Most important first
+    order = [QueryChange.REGRESSED, QueryChange.MIXED, QueryChange.IMPROVED, QueryChange.CHANGED, QueryChange.NEW]
+    for change in order:
+        for query in comparison.queries:
+            if query.change != change:
+                continue
+            lines.append(f"- **{query.query_id}**: `{query.change}`")
+            for difference in query.differences:
+                lines.append(f"  - {difference}")
+    return lines + [""]
+
+
+def _render_consistency(consistency: RunConsistency | None) -> list[str]:
+    if consistency is None:
+        return []
+
+    summary = consistency.summary
+    lines = [
+        "## Consistency across iterations",
+        "",
+        f"{summary.consistent_count} of {_plural(summary.query_count, 'query', 'queries')} returned the same results "
+        "in every iteration.",
+        "",
+    ]
+    inconsistent_counts = [(f"`{aspect}`", count) for aspect, count in summary.inconsistent_counts.items() if count]
+    if inconsistent_counts:
+        lines += _table(["Inconsistent", "Queries"], inconsistent_counts) + [""]
+    for query in consistency.queries:
+        if query.consistent:
+            continue
+        lines.append(f"- **{query.query_id}**, over {_plural(query.iterations, 'iteration')}:")
+        for difference in query.differences:
+            lines.append(f"  - {difference}")
+    return lines + [""]
 
 
 def _render_iteration(iteration: IterationReport, iteration_count: int) -> list[str]:
@@ -292,6 +362,16 @@ def _format_time_period(time_period: TimePeriodRange | ExpectedTimePeriodRange |
 
 def _format_passed(passed: bool | None) -> str:
     return "passed" if passed else "**failed**"
+
+
+def _format_metric(metric: MetricComparison, value: float | None) -> str:
+    if value is None:
+        return "-"
+    if metric.unit == "cost":
+        return f"{value:.6f}"
+    if metric.unit == "seconds":
+        return f"{value:.1f}s"
+    return f"{value:.0%}"
 
 
 def _format_rate(rate: PassRate) -> str:
