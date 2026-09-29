@@ -208,11 +208,18 @@ def _build_dataset_results(parsed: _ParsedEvents) -> list[DatasetResult]:
             rank=rank,
             file_id=dataset.file_id,
             data_set_file_id=dataset.data_set_file_id,
+            subject_id=dataset.subject_id,
             title=dataset.title,
             relevance_score=relevance_scores_by_file_id.get(dataset.file_id),
             is_valid_for_table_generation=dataset.is_valid_for_table_generation,
             validation_errors=dataset.validation_errors,
             validation_warnings=dataset.validation_warnings,
+            filters=dataset.filters,
+            indicators=dataset.indicators,
+            time_period=dataset.time_period,
+            geographic_levels=dataset.geographic_levels,
+            auto_selected_filter_items=dataset.auto_selected_filter_items,
+            unfiltered_filters=dataset.unfiltered_filters,
         )
         for rank, dataset in enumerate(parsed.pipeline_complete.datasets, start=1)
     ]

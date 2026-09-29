@@ -14,8 +14,8 @@ class Environment(StrictCamelModel):
     base_url: str = Field(description="The function app's host, without any path.")
     ees_data_api_url: str | None = Field(
         default=None,
-        description="The environment's `EES_URL_API_DATA` setting, for looking up the subject meta of dataset results. "
-        "Not used yet.",
+        description="The environment's `EES_URL_API_DATA` setting, without `/api`, for looking up the subject meta "
+        "of dataset results when comparing them with the expected results.",
     )
 
     @property

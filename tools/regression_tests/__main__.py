@@ -12,7 +12,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from tools.regression_tests.environments import load_environments
+from tools.regression_tests.environments import Environment, load_environments
+from tools.regression_tests.evaluator import evaluate_report
 from tools.regression_tests.input_models import GoldStandardFileError, load_gold_standard
 from tools.regression_tests.replay import (
     REPLAY_ENVIRONMENT,
@@ -22,8 +23,13 @@ from tools.regression_tests.replay import (
     load_replay,
 )
 from tools.regression_tests.report_models import COMPLETED_STATUSES, RegressionReport
-from tools.regression_tests.report_writer import write_json_report
+from tools.regression_tests.report_writer import write_json_report, write_markdown_report
 from tools.regression_tests.runner import HealthCheckError, RunOptions, run_regression_tests
+from tools.regression_tests.subject_meta import (
+    SubjectMetaLookup,
+    SubjectMetaSource,
+    UnavailableSubjectMeta,
+)
 
 logger = logging.getLogger("tools.regression_tests")
 
@@ -128,8 +134,17 @@ def main(argv: list[str] | None = None) -> int:
         logger.error("%s", e)
         return EXIT_QUERIES_NOT_COMPLETED
 
+    # Subject meta is looked up in the environment the results came from, which for a replay is the recorded one
+    subject_meta_environment_name = replay.source.environment_name if replay else args.env
+    evaluate_report(
+        report,
+        queries,
+        _get_subject_meta_source(subject_meta_environment_name, environments.get(subject_meta_environment_name)),
+    )
+
     report_path = write_json_report(report, args.out)
-    _log_run_summary(report, report_path)
+    markdown_report_path = write_markdown_report(report, report_path)
+    _log_run_summary(report, report_path, markdown_report_path)
     return EXIT_OK if _all_queries_completed(report) else EXIT_QUERIES_NOT_COMPLETED
 
 
@@ -203,6 +218,16 @@ def _get_git_commit() -> str | None:
     return result.stdout.strip()
 
 
+def _get_subject_meta_source(environment_name: str, environment: Environment | None) -> SubjectMetaSource:
+    if environment is None or environment.ees_data_api_url is None:
+        reason = (
+            f"The environment '{environment_name}' has no eesDataApiUrl in environments.json to get subject meta from"
+        )
+        logger.warning("%s, so filters won't be compared, and expected labels won't be checked", reason)
+        return UnavailableSubjectMeta(reason)
+    return SubjectMetaLookup(environment.ees_data_api_url)
+
+
 def _all_queries_completed(report: RegressionReport) -> bool:
     # Reaching the maximum cost only matters if it stopped queries from running
     return (
@@ -215,7 +240,7 @@ def _all_queries_completed(report: RegressionReport) -> bool:
     )
 
 
-def _log_run_summary(report: RegressionReport, report_path: Path) -> None:
+def _log_run_summary(report: RegressionReport, report_path: Path, markdown_report_path: Path) -> None:
     summary = report.summary
     status_counts = ", ".join(
         f"{status}: {count}" for status, count in summary.status_counts.items() if count
@@ -230,7 +255,16 @@ def _log_run_summary(report: RegressionReport, report_path: Path) -> None:
         if summary.queries_with_partial_cost
         else "",
     )
-    logger.info("Report written to %s", report_path)
+
+    accuracy = report.accuracy_summary
+    if accuracy:
+        logger.info(
+            "Accuracy of %d queries with expected results (%s), with %d problems comparing datasets",
+            accuracy.query_count,
+            ", ".join(f"{result}: {count}" for result, count in accuracy.result_counts.items() if count),
+            accuracy.problem_count,
+        )
+    logger.info("Report written to %s and %s", report_path, markdown_report_path.name)
 
 
 if __name__ == "__main__":
