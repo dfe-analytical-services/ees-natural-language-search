@@ -32,9 +32,16 @@ The environments are configured in `environments.json`, keyed by the name given 
 
 ```json
 {
-  "dev": { "baseUrl": "https://<function app host>" }
+  "dev": {
+    "baseUrl": "https://s101d01-ees-fa-nlsearch.azurewebsites.net",
+    "eesDataApiUrl": "https://data.dev.explore-education-statistics.service.gov.uk/api"
+  }
 }
 ```
+
+- `baseUrl` - the function app's host, without any path. The search and health check paths are added to it.
+- `eesDataApiUrl` - optional, and not used yet. The environment's `EES_URL_API_DATA` setting, which will be
+  used to look up the subject meta of dataset results, so it must match the setting of the function app.
 
 The `local` environment is for running against `func start` on http://localhost:7071.
 
@@ -50,7 +57,7 @@ python -m tools.regression_tests --validate
 python -m tools.regression_tests --env dev
 
 # Run two queries three times each, stopping once the cost reaches 0.50
-python -m tools.regression_tests --env dev --query attendance-holiday-last-4-weeks --query absence-by-school-type --iterations 3 --max-cost 0.5
+python -m tools.regression_tests --env dev --query attendance-holiday-last-4-weeks --query absence-pupil-referral-units-by-region --iterations 3 --max-cost 0.5
 
 # Run the queries tagged 'attendance'
 python -m tools.regression_tests --env dev --tag attendance
@@ -74,7 +81,8 @@ didn't, or the health check failed, and `2` for invalid arguments or an invalid 
 
 ## Gold standard queries file
 
-`gold_standard/queries.json` currently contains placeholder queries showing the format. Each query has:
+`gold_standard/queries.json` currently contains starter queries against publications in dev, without any
+expected results, until the gold standard queries are supplied. Each query has:
 
 | Field | Required | Description |
 |---|---|---|
