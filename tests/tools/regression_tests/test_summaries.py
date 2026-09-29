@@ -1,0 +1,169 @@
+"""Tests for aggregating results in `tools.regression_tests.summaries`."""
+
+import pytest
+
+from schemas.responses.final_dataset_response import (
+    DatasetValidationError,
+    DatasetValidationErrorCode,
+    DatasetValidationWarning,
+    DatasetValidationWarningCode,
+)
+from schemas.shared.token_usage import TokenUsage
+from tools.regression_tests.report_models import (
+    DatasetResult,
+    ExecutionStatus,
+    QueryResult,
+)
+from tools.regression_tests.summaries import (
+    percentile,
+    summarise_datasets,
+    summarise_queries,
+)
+
+
+def _dataset(
+    relevance_score: float | None = 50,
+    error_codes: list[DatasetValidationErrorCode] | None = None,
+    warning_codes: list[DatasetValidationWarningCode] | None = None,
+) -> DatasetResult:
+    return DatasetResult(
+        rank=1,
+        file_id="file-id",
+        data_set_file_id="data-set-file-id",
+        title="Test dataset",
+        relevance_score=relevance_score,
+        is_valid_for_table_generation=not error_codes,
+        validation_errors=[DatasetValidationError(code=code, message="") for code in error_codes or []],
+        validation_warnings=[DatasetValidationWarning(code=code, message="") for code in warning_codes or []],
+    )
+
+
+def _query_result(
+    status: ExecutionStatus = ExecutionStatus.SUCCESS,
+    duration_seconds: float = 10,
+    token_usage: TokenUsage | None = None,
+    cost: float | None = 0.01,
+    cost_is_partial: bool = False,
+    datasets: list[DatasetResult] | None = None,
+) -> QueryResult:
+    return QueryResult(
+        query_id="test-query",
+        user_query="Test query",
+        publication_id="test-publication-id",
+        status=status,
+        duration_seconds=duration_seconds,
+        token_usage=token_usage or TokenUsage(input=1000, output=100),
+        cost=cost,
+        cost_is_partial=cost_is_partial,
+        datasets=datasets or [],
+    )
+
+
+def test_summarise_datasets_counts_validity_and_codes():
+    summary = summarise_datasets(
+        [
+            _dataset(relevance_score=90),
+            _dataset(
+                relevance_score=60,
+                error_codes=[DatasetValidationErrorCode.NO_INDICATORS, DatasetValidationErrorCode.NO_LOCATION],
+                warning_codes=[DatasetValidationWarningCode.UNFILTERED_FILTERS],
+            ),
+            _dataset(
+                relevance_score=None,
+                error_codes=[DatasetValidationErrorCode.NO_INDICATORS],
+            ),
+        ]
+    )
+
+    assert summary.dataset_count == 3
+    assert summary.valid_for_table_generation_count == 1
+    assert summary.with_validation_warnings_count == 1
+    assert summary.validation_error_counts == {"no_indicators": 2, "no_location": 1}
+    assert summary.validation_warning_counts == {"unfiltered_filters": 1}
+    assert summary.mean_relevance_score == 75
+
+
+def test_summarise_no_datasets():
+    summary = summarise_datasets([])
+
+    assert summary.dataset_count == 0
+    assert summary.mean_relevance_score is None
+
+
+def test_summarise_queries_counts_every_status():
+    summary = summarise_queries(
+        [
+            _query_result(ExecutionStatus.SUCCESS),
+            _query_result(ExecutionStatus.SUCCESS),
+            _query_result(ExecutionStatus.TIMEOUT),
+        ]
+    )
+
+    assert summary.query_count == 3
+    assert summary.status_counts[ExecutionStatus.SUCCESS] == 2
+    assert summary.status_counts[ExecutionStatus.TIMEOUT] == 1
+    assert set(summary.status_counts) == set(ExecutionStatus)
+    assert sum(summary.status_counts.values()) == 3
+
+
+def test_summarise_queries_totals_tokens_and_cost_including_partial_costs():
+    summary = summarise_queries(
+        [
+            _query_result(token_usage=TokenUsage(input=1000, output=100), cost=0.01),
+            _query_result(
+                ExecutionStatus.SSE_ERROR,
+                token_usage=TokenUsage(input=200, output=20),
+                cost=0.002,
+                cost_is_partial=True,
+            ),
+            _query_result(ExecutionStatus.HTTP_ERROR, cost=None, cost_is_partial=True),
+        ]
+    )
+
+    assert summary.token_usage == TokenUsage(input=2200, output=220)
+    assert summary.cost == pytest.approx(0.012)
+    assert summary.queries_with_partial_cost == 2
+
+
+def test_summarise_queries_durations_only_include_completed_queries():
+    summary = summarise_queries(
+        [
+            _query_result(ExecutionStatus.SUCCESS, duration_seconds=10),
+            _query_result(ExecutionStatus.SUCCESS_WITH_VALIDATION_ERRORS, duration_seconds=20),
+            _query_result(ExecutionStatus.HTTP_ERROR, duration_seconds=0.1),
+        ]
+    )
+
+    assert summary.completed_query_durations.mean_seconds == 15
+    assert summary.completed_query_durations.max_seconds == 20
+
+
+def test_summarise_queries_without_completed_queries_has_no_durations():
+    summary = summarise_queries([_query_result(ExecutionStatus.TIMEOUT)])
+
+    assert summary.completed_query_durations is None
+
+
+def test_summarise_queries_aggregates_datasets_across_queries():
+    summary = summarise_queries(
+        [
+            _query_result(datasets=[_dataset(), _dataset()]),
+            _query_result(datasets=[_dataset(error_codes=[DatasetValidationErrorCode.NO_TIME_PERIOD])]),
+        ]
+    )
+
+    assert summary.datasets.dataset_count == 3
+    assert summary.datasets.validation_error_counts == {"no_time_period": 1}
+
+
+@pytest.mark.parametrize(
+    "values, percent, expected",
+    [
+        pytest.param([5], 95, 5, id="single_value"),
+        pytest.param([1, 2, 3, 4], 50, 2, id="median_of_even_count"),
+        pytest.param(list(range(1, 21)), 95, 19, id="p95_of_20"),
+        pytest.param([3, 1, 2], 100, 3, id="unordered_max"),
+    ],
+)
+def test_percentile_is_nearest_rank(values, percent, expected):
+    assert percentile(values, percent) == expected
