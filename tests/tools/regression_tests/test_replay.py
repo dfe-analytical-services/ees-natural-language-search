@@ -214,9 +214,9 @@ def test_queries_with_the_same_text_cannot_be_replayed(tmp_path, build_pipeline_
 @pytest.mark.parametrize(
     "report, expected_message",
     [
-        pytest.param("not json", "is not a report that can be replayed", id="not_json"),
-        pytest.param({"iterations": []}, "is not a report that can be replayed", id="no_run"),
-        pytest.param(_recorded_report(), "has no iterations to replay", id="no_iterations"),
+        pytest.param("not json", "is not a valid report", id="not_json"),
+        pytest.param({"iterations": []}, "is not a valid report", id="no_run"),
+        pytest.param(_recorded_report(), "has no iterations", id="no_iterations"),
     ],
 )
 def test_invalid_reports_cannot_be_replayed(tmp_path, report, expected_message):
@@ -225,7 +225,7 @@ def test_invalid_reports_cannot_be_replayed(tmp_path, report, expected_message):
 
 
 def test_missing_report_cannot_be_replayed(tmp_path):
-    with pytest.raises(ReplayError, match="Unable to read the report to replay"):
+    with pytest.raises(ReplayError, match="Unable to replay the report: Unable to read the report"):
         load_replay(tmp_path / "missing.json", REPORT_FILE, [_query("query-1")])
 
 

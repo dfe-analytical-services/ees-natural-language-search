@@ -10,7 +10,7 @@ describing whether its results match the expected results in the gold standard f
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import Field
 
@@ -267,6 +267,102 @@ class IterationReport(StrictCamelModel):
     queries: list[QueryResult] = Field(default_factory=list)
 
 
+class ConsistencyAspect(StrEnum):
+    """What can differ between iterations of a query, or between a run and its baseline."""
+
+    STATUS = "status"
+    ACCURACY = "accuracy"
+    DATASETS = "datasets"
+    FILTERS = "filters"
+    INDICATORS = "indicators"
+    TIME_PERIOD = "time_period"
+    LOCATIONS = "locations"
+
+
+class QueryConsistency(StrictCamelModel):
+    """Whether a query returned the same results in every iteration it ran in."""
+
+    query_id: str
+    iterations: int
+    consistent: bool
+    inconsistent_aspects: list[ConsistencyAspect] = Field(default_factory=list)
+    differences: list[str] = Field(
+        default_factory=list, description="How each iteration differs from the first iteration that completed."
+    )
+
+
+class ConsistencySummary(StrictCamelModel):
+    query_count: int = Field(description="The number of queries that ran in more than one iteration.")
+    consistent_count: int
+    consistency_rate: float | None = None
+    inconsistent_counts: dict[ConsistencyAspect, int] = Field(
+        default_factory=dict, description="The number of inconsistent queries, by what was inconsistent."
+    )
+
+
+class RunConsistency(StrictCamelModel):
+    summary: ConsistencySummary
+    queries: list[QueryConsistency] = Field(default_factory=list)
+
+
+class QueryChange(StrEnum):
+    """How a query's results changed from the baseline."""
+
+    REGRESSED = "regressed"
+    """Something got worse, e.g. its status, its accuracy, or a check that passed now fails, and nothing got better."""
+    IMPROVED = "improved"
+    """Something got better, and nothing got worse."""
+    MIXED = "mixed"
+    """Some things got better, and some got worse."""
+    CHANGED = "changed"
+    """The results changed, e.g. different datasets or selections, but nothing got better or worse."""
+    UNCHANGED = "unchanged"
+    NEW = "new"
+    """The query isn't in the baseline, e.g. because it's new, or its text has changed."""
+
+
+class QueryComparison(StrictCamelModel):
+    query_id: str
+    change: QueryChange
+    baseline_status: ExecutionStatus | None = Field(
+        default=None, description="The worst status of the query in any iteration of the baseline."
+    )
+    current_status: ExecutionStatus | None = None
+    baseline_accuracy: AccuracyResult | None = Field(
+        default=None, description="The worst accuracy of the query in any iteration of the baseline."
+    )
+    current_accuracy: AccuracyResult | None = None
+    differences: list[str] = Field(default_factory=list)
+
+
+class MetricComparison(StrictCamelModel):
+    name: str
+    unit: Literal["rate", "cost", "seconds"]
+    baseline: float | None = None
+    current: float | None = None
+
+
+class BaselineSource(StrictCamelModel):
+    report_file: str
+    environment_name: str
+    started_at: datetime
+
+
+class BaselineComparison(StrictCamelModel):
+    """Compares the run with a previous run.
+
+    The baseline's results are rebuilt from its recorded events and compared with the current expected results, so
+    that differences come from the service, rather than from changes to the expected results or to this script."""
+
+    baseline: BaselineSource
+    change_counts: dict[QueryChange, int]
+    metrics_query_count: int = Field(
+        description="The number of queries in both the run and the baseline, which the metrics are compared over."
+    )
+    metrics: list[MetricComparison] = Field(default_factory=list)
+    queries: list[QueryComparison] = Field(default_factory=list)
+
+
 class ReplaySource(StrictCamelModel):
     """The report whose recorded events were replayed, instead of calling the service."""
 
@@ -305,5 +401,11 @@ class RegressionReport(StrictCamelModel):
     summary: ExecutionSummary
     accuracy_summary: AccuracySummary | None = Field(
         default=None, description="Unset if none of the queries have expected results."
+    )
+    consistency: RunConsistency | None = Field(
+        default=None, description="Unset unless a query ran in more than one iteration."
+    )
+    baseline_comparison: BaselineComparison | None = Field(
+        default=None, description="Unset unless the run was compared with a baseline."
     )
     iterations: list[IterationReport] = Field(default_factory=list)

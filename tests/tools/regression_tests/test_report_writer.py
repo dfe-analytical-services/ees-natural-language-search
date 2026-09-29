@@ -6,14 +6,18 @@ from schemas.responses.final_dataset_response import DatasetValidationError, Dat
 from schemas.shared.token_usage import TokenUsage
 from tools.regression_tests.report_models import (
     AccuracyResult,
+    ConsistencyAspect,
+    ConsistencySummary,
     DatasetResult,
     ExecutionStatus,
     ExpectedDatasetAccuracy,
     IterationReport,
     QueryAccuracy,
+    QueryConsistency,
     QueryResult,
     RegressionReport,
     ReplaySource,
+    RunConsistency,
     RunMetadata,
     SelectionAccuracy,
 )
@@ -182,3 +186,32 @@ def test_markdown_table_cells_escape_pipes():
     report.iterations[0].queries[0].query_id = "query|1"
 
     assert r"[query\|1]" in render_markdown_report(report)
+
+
+def test_markdown_report_describes_inconsistent_queries():
+    report = _report_with_query(None)
+    report.consistency = RunConsistency(
+        summary=ConsistencySummary(
+            query_count=2,
+            consistent_count=1,
+            consistency_rate=0.5,
+            inconsistent_counts={aspect: int(aspect == ConsistencyAspect.INDICATORS) for aspect in ConsistencyAspect},
+        ),
+        queries=[
+            QueryConsistency(query_id="query-1", iterations=3, consistent=True),
+            QueryConsistency(
+                query_id="query-2",
+                iterations=3,
+                consistent=False,
+                inconsistent_aspects=[ConsistencyAspect.INDICATORS],
+                differences=["Iteration 2, compared with iteration 1: Indicators of 'Dataset 1': added 'Rate'"],
+            ),
+        ],
+    )
+
+    markdown = render_markdown_report(report)
+
+    assert "1 of 2 queries returned the same results in every iteration." in markdown
+    assert "| `indicators` | 1 |" in markdown
+    assert "- **query-1**" not in markdown
+    assert "- **query-2**, over 3 iterations:\n  - Iteration 2, compared with iteration 1: Indicators of 'Dataset 1': added 'Rate'" in markdown

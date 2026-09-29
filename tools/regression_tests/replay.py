@@ -8,54 +8,25 @@ classifying each query's status and summarising the results, runs exactly as it 
 import json
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import httpx
-from pydantic import Field, ValidationError
 
-from schemas.shared.base_models import CamelModel
 from tools.regression_tests.environments import Environment
 from tools.regression_tests.input_models import GoldStandardQuery
+from tools.regression_tests.recorded_report import (
+    QueryKey,
+    RecordedReport,
+    RecordedReportError,
+    get_query_key,
+    get_recorded_queries,
+    load_recorded_report,
+)
 from tools.regression_tests.report_models import ReplaySource
 
 REPLAY_ENVIRONMENT_NAME = "replay"
 REPLAY_ENVIRONMENT = Environment(base_url="http://replay")
-
-# The recorded report is read with lenient models, which only require the fields needed to replay it, so that a
-# report still replays after the report models have changed.
-
-
-class _RecordedEvent(CamelModel):
-    data: Any
-
-
-class _RecordedQuery(CamelModel):
-    user_query: str
-    publication_id: str
-    http_status: int | None = None
-    raw_events: list[_RecordedEvent] = Field(default_factory=list)
-
-
-class _RecordedIteration(CamelModel):
-    queries: list[_RecordedQuery] = Field(default_factory=list)
-
-
-class _RecordedRun(CamelModel):
-    started_at: datetime
-    environment_name: str
-    base_url: str
-
-
-class _RecordedReport(CamelModel):
-    run: _RecordedRun
-    iterations: list[_RecordedIteration] = Field(default_factory=list)
-
-
-# Recordings are matched by query text and publication, rather than by query id, so that a query whose text has
-# changed since it was recorded isn't replayed with events that no longer correspond to it.
-_QueryKey = tuple[str, str]
 
 
 class ReplayError(Exception):
@@ -74,14 +45,9 @@ class Replay:
 def load_replay(report_path: Path, report_file: str, queries: list[GoldStandardQuery]) -> Replay:
     """`report_file` is how the report is described in the new report, e.g. relative to the repository root."""
     try:
-        recorded = _RecordedReport.model_validate_json(report_path.read_bytes())
-    except OSError as e:
-        raise ReplayError(f"Unable to read the report to replay: {e}") from e
-    except ValidationError as e:
-        raise ReplayError(f"{report_path} is not a report that can be replayed: {e}") from e
-
-    if not recorded.iterations:
-        raise ReplayError(f"{report_path} has no iterations to replay")
+        recorded = load_recorded_report(report_path)
+    except RecordedReportError as e:
+        raise ReplayError(f"Unable to replay the report: {e}") from e
 
     duplicate_query_ids = _get_duplicate_query_ids(queries)
     if duplicate_query_ids:
@@ -95,42 +61,36 @@ def load_replay(report_path: Path, report_file: str, queries: list[GoldStandardQ
         transport=httpx.MockTransport(_ReplayHandler(recordings, report_file)),
         source=ReplaySource(
             report_file=report_file,
-            environment_name=recorded.run.environment_name,
-            base_url=recorded.run.base_url,
+            # A replay of a replay is described by the environment the results originally came from
+            environment_name=recorded.run.source_environment_name,
+            base_url=recorded.run.source_base_url,
             started_at=recorded.run.started_at,
         ),
         recorded_iterations=len(recorded.iterations),
         unrecorded_query_ids=[
             query.id
             for query in queries
-            if all(events is None for events in recordings.get(_get_query_key(query), []))
+            if all(events is None for events in recordings.get(get_query_key(query), []))
         ],
     )
 
 
-def _get_recordings(recorded: _RecordedReport) -> dict[_QueryKey, list[list[Any] | None]]:
+def _get_recordings(recorded: RecordedReport) -> dict[QueryKey, list[list[Any] | None]]:
     """Keyed by query. The value holds the recorded event data of each iteration, in order, or None for an iteration
     where the query wasn't run, or where it didn't respond with a stream to replay."""
-    recordings: dict[_QueryKey, list[list[Any] | None]] = defaultdict(
-        lambda: [None] * len(recorded.iterations)
-    )
-    for index, iteration in enumerate(recorded.iterations):
-        for query in iteration.queries:
-            if query.http_status == 200:
-                recordings[(query.user_query, query.publication_id)][index] = [
-                    event.data for event in query.raw_events
-                ]
-    return dict(recordings)
-
-
-def _get_query_key(query: GoldStandardQuery) -> _QueryKey:
-    return (query.user_query, query.publication_id)
+    return {
+        key: [
+            [event.data for event in query.raw_events] if query is not None and query.http_status == 200 else None
+            for query in queries
+        ]
+        for key, queries in get_recorded_queries(recorded).items()
+    }
 
 
 def _get_duplicate_query_ids(queries: list[GoldStandardQuery]) -> list[str]:
-    query_ids_by_key: dict[_QueryKey, list[str]] = defaultdict(list)
+    query_ids_by_key: dict[QueryKey, list[str]] = defaultdict(list)
     for query in queries:
-        query_ids_by_key[_get_query_key(query)].append(query.id)
+        query_ids_by_key[get_query_key(query)].append(query.id)
     return sorted(
         query_id
         for query_ids in query_ids_by_key.values()
@@ -145,10 +105,10 @@ class _ReplayHandler:
     Each query is searched once per iteration, and iterations run one after another, so the nth search of a query
     is served the events recorded for it in the nth iteration."""
 
-    def __init__(self, recordings: dict[_QueryKey, list[list[Any] | None]], report_file: str):
+    def __init__(self, recordings: dict[QueryKey, list[list[Any] | None]], report_file: str):
         self._recordings = recordings
         self._report_file = report_file
-        self._search_counts: dict[_QueryKey, int] = defaultdict(int)
+        self._search_counts: dict[QueryKey, int] = defaultdict(int)
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         if request.url.path == "/health_check":

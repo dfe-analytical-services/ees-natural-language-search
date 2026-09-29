@@ -16,6 +16,13 @@ from schemas.responses.final_dataset_response import FinalDatasetResponse
 from schemas.responses.reranker_dataset_response import RerankerDatasetResponse
 from schemas.shared.token_usage import TokenUsage
 from tools.regression_tests.input_models import GoldStandardQuery
+from tools.regression_tests.report_models import (
+    COMPLETED_STATUSES,
+    DatasetResult,
+    ExecutionStatus,
+    QueryAccuracy,
+    QueryResult,
+)
 from tools.regression_tests.sse_client import SearchExecution, SseEvent
 
 DATASET_DEFAULTS = {
@@ -126,6 +133,77 @@ def build_execution() -> Callable[..., SearchExecution]:
                 "events": events,
                 **overrides,
             }
+        )
+
+    return _make
+
+
+@pytest.fixture
+def build_dataset_result() -> Callable[..., DatasetResult]:
+    """Builds a `DatasetResult` with its selections given by label, and its locations by geographic level label."""
+
+    def _make(
+        data_set_file_id: str = "data-set-file-1",
+        title: str = "Dataset 1",
+        rank: int = 1,
+        filters: tuple[str, ...] = ("Total",),
+        indicators: tuple[str, ...] = ("Overall absence rate",),
+        time_period: tuple[str, int, str, int] | None = ("AY", 2024, "AY", 2024),
+        locations: dict[str, list[str]] | None = None,
+    ) -> DatasetResult:
+        return DatasetResult.model_validate(
+            {
+                "rank": rank,
+                "fileId": f"file-{data_set_file_id}",
+                "dataSetFileId": data_set_file_id,
+                "subjectId": "test-subject-id",
+                "title": title,
+                "isValidForTableGeneration": True,
+                "filters": [{"id": f"id-{label}", "label": label} for label in filters],
+                "indicators": [{"id": f"id-{label}", "label": label} for label in indicators],
+                "timePeriod": (
+                    {
+                        "start": {"code": time_period[0], "year": time_period[1]},
+                        "end": {"code": time_period[2], "year": time_period[3]},
+                    }
+                    if time_period
+                    else None
+                ),
+                "geographicLevels": {
+                    level_label: [{"id": code, "label": code, "value": code} for code in codes]
+                    for level_label, codes in (locations or {"National": ["E92000001"]}).items()
+                },
+            }
+        )
+
+    return _make
+
+
+@pytest.fixture
+def build_result() -> Callable[..., QueryResult]:
+    """Builds a `QueryResult` of a query that completed with the given datasets, unless another status is given."""
+
+    def _make(
+        query_id: str = "query-1",
+        status: ExecutionStatus = ExecutionStatus.SUCCESS,
+        datasets: list[DatasetResult] | None = None,
+        accuracy: QueryAccuracy | None = None,
+        cost: float | None = 0.002,
+        duration_seconds: float = 5,
+    ) -> QueryResult:
+        completed = status in COMPLETED_STATUSES
+        datasets = (datasets or []) if completed else []
+        return QueryResult(
+            query_id=query_id,
+            user_query=f"Query {query_id}",
+            publication_id="test-publication-id",
+            status=status,
+            duration_seconds=duration_seconds,
+            dataset_count=len(datasets) if completed else None,
+            cost=cost,
+            cost_is_partial=not completed,
+            datasets=datasets,
+            accuracy=accuracy,
         )
 
     return _make

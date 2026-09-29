@@ -12,6 +12,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from tools.regression_tests.baseline import Baseline, BaselineError, compare_with_baseline, load_baseline
+from tools.regression_tests.consistency import assess_consistency
 from tools.regression_tests.environments import Environment, load_environments
 from tools.regression_tests.evaluator import evaluate_report
 from tools.regression_tests.input_models import GoldStandardFileError, load_gold_standard
@@ -22,7 +24,7 @@ from tools.regression_tests.replay import (
     ReplayError,
     load_replay,
 )
-from tools.regression_tests.report_models import COMPLETED_STATUSES, RegressionReport
+from tools.regression_tests.report_models import COMPLETED_STATUSES, QueryChange, RegressionReport
 from tools.regression_tests.report_writer import write_json_report, write_markdown_report
 from tools.regression_tests.runner import HealthCheckError, RunOptions, run_regression_tests
 from tools.regression_tests.subject_meta import (
@@ -41,6 +43,7 @@ DEFAULT_OUT_DIR = PACKAGE_DIR / "reports"
 EXIT_OK = 0
 EXIT_QUERIES_NOT_COMPLETED = 1
 EXIT_INVALID_ARGUMENTS = 2
+EXIT_REGRESSIONS = 3
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -66,6 +69,16 @@ def main(argv: list[str] | None = None) -> int:
         logger.info("%s is valid, with %d selected queries", args.input, len(queries))
         return EXIT_OK
 
+    # Subject meta sources are shared by environment, so that each subject's meta is only looked up once per run
+    subject_meta_sources: dict[str, SubjectMetaSource] = {}
+
+    def get_subject_meta(environment_name: str) -> SubjectMetaSource:
+        if environment_name not in subject_meta_sources:
+            subject_meta_sources[environment_name] = _get_subject_meta_source(
+                environment_name, environments.get(environment_name)
+            )
+        return subject_meta_sources[environment_name]
+
     replay: Replay | None = None
     if args.replay is not None:
         try:
@@ -89,6 +102,21 @@ def main(argv: list[str] | None = None) -> int:
     else:
         environment_name, environment = args.env, environments[args.env]
         iterations = args.iterations or 1
+
+    # The baseline is loaded before running any queries, so that a baseline that can't be used doesn't waste tokens
+    baseline: Baseline | None = None
+    if args.baseline is not None:
+        try:
+            baseline = load_baseline(args.baseline, _display_path(args.baseline), queries, get_subject_meta)
+        except BaselineError as e:
+            logger.error("%s", e)
+            return EXIT_INVALID_ARGUMENTS
+        logger.info(
+            "Comparing with the baseline recorded against '%s' at %s, in %s",
+            baseline.source.environment_name,
+            baseline.source.started_at.strftime("%Y-%m-%d %H:%M:%S %Z"),
+            baseline.source.report_file,
+        )
 
     options = RunOptions(
         environment_name=environment_name,
@@ -135,16 +163,17 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_QUERIES_NOT_COMPLETED
 
     # Subject meta is looked up in the environment the results came from, which for a replay is the recorded one
-    subject_meta_environment_name = replay.source.environment_name if replay else args.env
-    evaluate_report(
-        report,
-        queries,
-        _get_subject_meta_source(subject_meta_environment_name, environments.get(subject_meta_environment_name)),
-    )
+    evaluate_report(report, queries, get_subject_meta(replay.source.environment_name if replay else args.env))
+    report.consistency = assess_consistency(report)
+    if baseline:
+        report.baseline_comparison = compare_with_baseline(report, baseline)
 
     report_path = write_json_report(report, args.out)
     markdown_report_path = write_markdown_report(report, report_path)
     _log_run_summary(report, report_path, markdown_report_path)
+
+    if _has_regressions(report):
+        return EXIT_REGRESSIONS
     return EXIT_OK if _all_queries_completed(report) else EXIT_QUERIES_NOT_COMPLETED
 
 
@@ -156,6 +185,7 @@ def _parse_args(argv: list[str] | None, environment_names: list[str]) -> argpars
     target = parser.add_mutually_exclusive_group()
     target.add_argument("--env", choices=environment_names, help="The environment to run against, from environments.json.")
     target.add_argument("--replay", type=Path, metavar="REPORT", help="Replay the streams recorded in a previous report instead of calling the service, so that no Azure OpenAI tokens are used.")
+    parser.add_argument("--baseline", type=Path, metavar="REPORT", help="Compare the results with a previous report, to find the queries that got worse or better.")
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT_FILE, help="The gold standard queries file. Default: %(default)s")
     parser.add_argument("--query", action="append", default=[], metavar="QUERY_ID", help="Only run this query. Can be repeated.")
     parser.add_argument("--tag", action="append", default=[], help="Only run queries with this tag. Can be repeated.")
@@ -228,6 +258,13 @@ def _get_subject_meta_source(environment_name: str, environment: Environment | N
     return SubjectMetaLookup(environment.ees_data_api_url)
 
 
+def _has_regressions(report: RegressionReport) -> bool:
+    comparison = report.baseline_comparison
+    return comparison is not None and any(
+        comparison.change_counts[change] for change in (QueryChange.REGRESSED, QueryChange.MIXED)
+    )
+
+
 def _all_queries_completed(report: RegressionReport) -> bool:
     # Reaching the maximum cost only matters if it stopped queries from running
     return (
@@ -264,6 +301,25 @@ def _log_run_summary(report: RegressionReport, report_path: Path, markdown_repor
             ", ".join(f"{result}: {count}" for result, count in accuracy.result_counts.items() if count),
             accuracy.problem_count,
         )
+
+    consistency = report.consistency
+    if consistency:
+        logger.info(
+            "%d of %d queries were consistent across iterations",
+            consistency.summary.consistent_count,
+            consistency.summary.query_count,
+        )
+
+    comparison = report.baseline_comparison
+    if comparison:
+        logger.info(
+            "Compared with the baseline: %s",
+            ", ".join(f"{change}: {count}" for change, count in comparison.change_counts.items() if count),
+        )
+        for query in comparison.queries:
+            if query.change in (QueryChange.REGRESSED, QueryChange.MIXED):
+                logger.warning("%s %s: %s", query.query_id, query.change, "; ".join(query.differences))
+
     logger.info("Report written to %s and %s", report_path, markdown_report_path.name)
 
 
