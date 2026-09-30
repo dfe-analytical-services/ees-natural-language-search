@@ -99,6 +99,9 @@ def main(argv: list[str] | None = None) -> int:
         environment_name, environment = REPLAY_ENVIRONMENT_NAME, REPLAY_ENVIRONMENT
     else:
         environment_name, environment = args.env, environments[args.env]
+        if not environment.is_configured:
+            logger.error("The environment '%s' has no baseUrl in environments.json", environment_name)
+            return EXIT_INVALID_ARGUMENTS
         iterations = args.iterations or 1
 
     # The baseline is loaded before running any queries, so that a baseline that can't be used doesn't waste tokens

@@ -2,10 +2,32 @@ parameters:
   artifactName: 'drop'
 
 steps:
+  # Git metadata, manually-run tools, the test suite and its output aren't needed by the deployed function app
+  - task: CopyFiles@2
+    displayName: 'Copy function app files'
+    inputs:
+      sourceFolder: '$(Build.SourcesDirectory)'
+      contents: |
+        **
+        !.git/**
+        !tools/**
+        !tests/**
+        !.pytest_cache/**
+        !.coverage
+        !coverage.xml
+        !test-results.xml
+      targetFolder: '$(Build.BinariesDirectory)/function-app'
+      cleanTargetFolder: true
+    condition: |
+      and(
+        succeeded(),
+        eq(variables.shouldPublishArtifact, true)
+      )
+
   - task: ArchiveFiles@2
     displayName: 'Create deployment artifact'
     inputs:
-      rootFolderOrFile: '$(Build.SourcesDirectory)'
+      rootFolderOrFile: '$(Build.BinariesDirectory)/function-app'
       includeRootFolder: false
       archiveType: 'zip'
       archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)-$(Build.SourceBranchName)-$(Build.BuildNumber).zip'
