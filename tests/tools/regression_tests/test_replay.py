@@ -62,8 +62,6 @@ def _options(iterations: int = 1, **overrides) -> RunOptions:
             "environment_name": REPLAY_ENVIRONMENT_NAME,
             "environment": REPLAY_ENVIRONMENT,
             "input_file": "queries.json",
-            "input_file_sha256": "test-sha256",
-            "git_commit": "test-commit",
             "iterations": iterations,
             "concurrency": 2,
             "timeout_seconds": 5,

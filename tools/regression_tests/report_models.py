@@ -378,8 +378,6 @@ class RunMetadata(StrictCamelModel):
     environment_name: str
     base_url: str
     input_file: str
-    input_file_sha256: str
-    git_commit: str | None = None
     query_ids: list[str] = Field(description="The queries selected to run.")
     iterations: int = Field(description="The number of iterations requested.")
     concurrency: int

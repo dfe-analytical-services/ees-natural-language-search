@@ -475,7 +475,6 @@ def test_evaluate_report_sets_the_accuracy_of_each_query_and_the_summaries():
             environment_name="dev",
             base_url="https://dev",
             input_file="queries.json",
-            input_file_sha256="test-sha256",
             query_ids=["query-1", "query-2"],
             iterations=2,
             concurrency=1,

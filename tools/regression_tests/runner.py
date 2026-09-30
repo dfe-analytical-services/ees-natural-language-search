@@ -31,8 +31,6 @@ class RunOptions:
     environment_name: str
     environment: Environment
     input_file: str
-    input_file_sha256: str
-    git_commit: str | None
     iterations: int
     concurrency: int
     timeout_seconds: float
@@ -99,8 +97,6 @@ async def run_regression_tests(
             environment_name=options.environment_name,
             base_url=options.environment.base_url,
             input_file=options.input_file,
-            input_file_sha256=options.input_file_sha256,
-            git_commit=options.git_commit,
             query_ids=[query.id for query in queries],
             iterations=options.iterations,
             concurrency=options.concurrency,

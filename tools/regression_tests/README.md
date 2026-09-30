@@ -229,8 +229,8 @@ with `--replay`, e.g. to see how changes to the expected results affect a previo
 Each run writes a JSON report, `reports/regression-report-<env>-<timestamp>.json`, and renders it as Markdown for
 reading, in a `.md` file with the same name. The JSON report is structured as:
 
-- `run` - when the run started and finished, the environment name and URL, the input file and its SHA-256
-  hash, the git commit, and the options it was run with.
+- `run` - when the run started and finished, the environment name and URL, the input file, and the options it
+  was run with.
 - `summary` - aggregates how every query in every iteration was executed.
 - `accuracySummary` - aggregates the accuracy of every query with expected results: the result counts, overall and
   by `author`, the pass rate of each check, the mean reciprocal rank, and the number of problems.
