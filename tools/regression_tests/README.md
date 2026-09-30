@@ -45,6 +45,11 @@ The environments are configured in `environments.json`, keyed by the name given 
 
 The `local` environment is for running against `func start` on http://localhost:7071.
 
+The `test`, `preprod` and `prod` environments are placeholders, with empty values, until they're needed. An empty
+value is treated as unset, so running against an environment without a `baseUrl` fails before running any queries.
+Each environment also needs its own gold standard queries file, as dataset and publication ids differ between
+environments. Keep `--concurrency` low against `prod`, as the service depends on the Content API.
+
 ## Usage
 
 Run from the **repository root**, as the script imports the service's response schemas from `schemas/`:
@@ -122,8 +127,8 @@ meaningless, as the streams are replayed without any delay.
 
 ## Gold standard queries file
 
-`gold_standard/queries.json` currently contains starter queries against publications in dev, without any
-expected results, until the gold standard queries are supplied. Each query has:
+`gold_standard/queries.json` currently contains starter queries against publications in dev, with expected results
+written by a developer, until the gold standard queries are supplied. Each query has:
 
 | Field | Required | Description |
 |---|---|---|
@@ -137,7 +142,7 @@ expected results, until the gold standard queries are supplied. Each query has:
 `expected` can have:
 
 - `author` - who wrote the expected results, either `developer` or `product-owner`, so that the accuracy against
-  each can be reported separately. The starter queries have expected results written by a developer.
+  each can be reported separately.
 - `minDatasets` - the minimum number of datasets the query should return.
 - `datasets` - the datasets the query should return. Each is identified by its `dataSetFileId` and can have:
   - `title` - for readability of the file only, not compared.

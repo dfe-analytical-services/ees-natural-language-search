@@ -81,3 +81,11 @@ Local config: copy `local.settings.example.json` to `local.settings.json` and fi
 
 `tools/data-sync/` is a manually-run notebook that builds the Azure AI Search index documents. It has
 its own README and requirements, and is excluded from the pipeline triggers.
+
+`tools/regression_tests/` is a manually-run script (`python -m tools.regression_tests`, from the repo root)
+that runs the gold standard queries in `gold_standard/queries.json` against a deployed environment and
+reports on their status, cost, accuracy and consistency. It's never run in CI because every query costs
+Azure OpenAI tokens — use `--replay <report>` to exercise it without calling the service. It imports the
+service's `schemas/responses` models, so a change to an SSE event model may need a matching change here.
+Its unit tests (`tests/tools/regression_tests/`) don't call the API and do run in CI. It has its own
+README and requirements.
