@@ -6,9 +6,7 @@ using any Azure OpenAI tokens with `--replay <report>`. See `README.md` for all 
 
 import argparse
 import asyncio
-import hashlib
 import logging
-import subprocess
 import sys
 from pathlib import Path
 
@@ -122,8 +120,6 @@ def main(argv: list[str] | None = None) -> int:
         environment_name=environment_name,
         environment=environment,
         input_file=_display_path(args.input),
-        input_file_sha256=hashlib.sha256(args.input.read_bytes()).hexdigest(),
-        git_commit=_get_git_commit(),
         iterations=iterations,
         concurrency=args.concurrency,
         timeout_seconds=args.timeout,
@@ -232,20 +228,6 @@ def _display_path(path: Path) -> str:
         return path.resolve().relative_to(REPOSITORY_ROOT).as_posix()
     except ValueError:
         return str(path)
-
-
-def _get_git_commit() -> str | None:
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            check=True,
-            cwd=PACKAGE_DIR,
-        )
-    except (OSError, subprocess.CalledProcessError):
-        return None
-    return result.stdout.strip()
 
 
 def _get_subject_meta_source(environment_name: str, environment: Environment | None) -> SubjectMetaSource:

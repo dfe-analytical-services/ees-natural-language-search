@@ -20,8 +20,6 @@ def _options(**overrides) -> RunOptions:
             "environment_name": "test",
             "environment": Environment(base_url=BASE_URL),
             "input_file": "queries.json",
-            "input_file_sha256": "test-sha256",
-            "git_commit": "test-commit",
             "iterations": 1,
             "concurrency": 2,
             "timeout_seconds": 5,

@@ -79,8 +79,7 @@ def _render_run(report: RegressionReport) -> list[str]:
     rows = [
         ("Started", _format_datetime(run.started_at)),
         ("Environment", environment),
-        ("Input file", f"`{run.input_file}` (SHA-256 `{run.input_file_sha256[:12]}`)"),
-        ("Git commit", f"`{run.git_commit}`" if run.git_commit else "unknown"),
+        ("Input file", f"`{run.input_file}`"),
         ("Queries", f"{_plural(len(run.query_ids), 'query', 'queries')} x {_plural(run.iterations, 'iteration')}, {run.concurrency} at a time"),
         ("Maximum cost", max_cost),
     ]

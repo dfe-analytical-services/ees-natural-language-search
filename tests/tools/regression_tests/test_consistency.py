@@ -23,7 +23,6 @@ def _report(*iterations: list) -> RegressionReport:
             environment_name="dev",
             base_url="https://dev",
             input_file="queries.json",
-            input_file_sha256="test-sha256",
             query_ids=[],
             iterations=len(iterations),
             concurrency=1,
