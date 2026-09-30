@@ -3,6 +3,8 @@ local.settings.json
 
 # IDEs
 .idea
+.vs
+.vscode
 
 # Python
 __pycache__/

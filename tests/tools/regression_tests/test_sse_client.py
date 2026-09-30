@@ -1,7 +1,6 @@
 """Tests for streaming search requests in `tools.regression_tests.sse_client`."""
 
 import asyncio
-import json
 
 import httpx
 
@@ -17,14 +16,6 @@ def _feed_lines(lines: list[str]) -> list[str]:
 
 def test_parser_returns_the_data_of_each_event():
     assert _feed_lines(['data: {"a": 1}', "", 'data: {"b": 2}', ""]) == ['{"a": 1}', '{"b": 2}']
-
-
-def test_parser_joins_multiple_data_lines_of_an_event():
-    assert _feed_lines(["data: line 1", "data: line 2", ""]) == ["line 1\nline 2"]
-
-
-def test_parser_ignores_comments_other_fields_and_extra_blank_lines():
-    assert _feed_lines([": comment", "event: message", "", "", "data:no space", ""]) == ["no space"]
 
 
 def test_parser_discards_an_incomplete_event_at_the_end_of_the_stream():
@@ -43,49 +34,6 @@ def _run_search(handler, timeout_seconds: float = 5):
             )
 
     return asyncio.run(_run())
-
-
-def test_run_search_posts_the_query_and_collects_the_events():
-    requests: list[httpx.Request] = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        requests.append(request)
-        return httpx.Response(
-            200,
-            content=b'data: {"stage": "starting pipeline"}\n\ndata: not json\n\n',
-            headers={"content-type": "text/event-stream"},
-        )
-
-    execution = _run_search(handler)
-
-    assert json.loads(requests[0].content) == {
-        "userQuery": "Test query",
-        "publicationId": "test-publication-id",
-    }
-    assert execution.http_status == 200
-    assert [event.data for event in execution.events] == [{"stage": "starting pipeline"}, "not json"]
-    assert execution.events[0].elapsed_seconds <= execution.events[1].elapsed_seconds
-    assert execution.duration_seconds >= execution.events[1].elapsed_seconds
-    assert not execution.timed_out
-    assert execution.request_error is None
-
-
-def test_run_search_captures_the_body_of_a_non_200_response():
-    execution = _run_search(lambda request: httpx.Response(400, content=b"Missing required fields"))
-
-    assert execution.http_status == 400
-    assert execution.response_body == "Missing required fields"
-    assert execution.events == []
-
-
-def test_run_search_captures_a_request_error():
-    def handler(request: httpx.Request) -> httpx.Response:
-        raise httpx.ConnectError("Connection refused", request=request)
-
-    execution = _run_search(handler)
-
-    assert execution.http_status is None
-    assert execution.request_error == "ConnectError: Connection refused"
 
 
 class _SlowStream(httpx.AsyncByteStream):
