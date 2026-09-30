@@ -58,6 +58,7 @@ ees-natural-language-search/
 ├── pipelines/templates/             # Azure Pipelines stage, job and step templates
 │
 ├── tools/data-sync/                 # Manual notebook that builds documents for the Azure AI Search indexes - see its own README
+├── tools/regression_tests/          # Manual script that runs gold standard queries against the API and reports on the results - see its own README
 │
 └── tests/                           # Pytest suite - See section "Running the tests"
     ├── conftest.py                  # Shared Pytest fixtures
