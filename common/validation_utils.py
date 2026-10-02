@@ -76,6 +76,13 @@ def build_filter_fallback_warnings(
     return validation_warnings
 
 
+def build_no_relevant_indicators_warning() -> DatasetValidationWarning:
+    return DatasetValidationWarning(
+        code=DatasetValidationWarningCode.NO_RELEVANT_INDICATORS,
+        message="No relevant indicators were found matching the query, so every indicator was selected instead.",
+    )
+
+
 def build_no_location_requirement_warning() -> DatasetValidationWarning:
     return DatasetValidationWarning(
         code=DatasetValidationWarningCode.NO_LOCATION_REQUIREMENT,
