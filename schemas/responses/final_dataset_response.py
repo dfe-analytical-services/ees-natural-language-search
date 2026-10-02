@@ -57,7 +57,6 @@ class DatasetValidationErrorCode(StrEnum):
     MALFORMED_FILTER_ITEM_REFERENCE = "malformed_filter_item_reference"
     NO_AVAILABLE_TIME_PERIODS = "no_available_time_periods"
     NO_DEFAULT_LOCATION = "no_default_location"
-    NO_INDICATORS = "no_indicators"
     NO_LOCATION = "no_location"
     NO_TIME_PERIOD = "no_time_period"
 
@@ -67,6 +66,7 @@ class DatasetValidationWarningCode(StrEnum):
 
     AUTO_SELECTED_FILTER_ITEMS = "auto_selected_filter_items"
     NO_LOCATION_REQUIREMENT = "no_location_requirement"
+    NO_RELEVANT_INDICATORS = "no_relevant_indicators"
     NO_TIME_PERIOD_REQUIREMENT = "no_time_period_requirement"
     UNFILTERED_FILTERS = "unfiltered_filters"
 

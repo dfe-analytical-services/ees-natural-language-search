@@ -10,6 +10,7 @@ from common.validation_utils import (
     build_filter_fallback_warnings,
     build_no_default_location_error,
     build_no_location_requirement_warning,
+    build_no_relevant_indicators_warning,
     build_no_time_period_requirement_warning,
 )
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
@@ -222,8 +223,9 @@ def parse_selection_responses(
 def _resolve_indicators(
     subject_meta: SubjectMetaResponse,
     indicator_results: dict[str, IndicatorDecision] | None,
-) -> tuple[list[IndicatorSelectionItem], list[DatasetValidationError]]:
-    """Resolve the indicators result for the final dataset response, along with any validation errors."""
+) -> tuple[list[IndicatorSelectionItem], list[DatasetValidationError], list[DatasetValidationWarning]]:
+    """Resolve the indicators result for the final dataset response, along with any validation
+    errors and warnings."""
     validation_errors: list[DatasetValidationError] = []
     indicators: list[IndicatorSelectionItem] = []
 
@@ -240,13 +242,18 @@ def _resolve_indicators(
             continue
         indicators.append(IndicatorSelectionItem(id=indicator.id, label=indicator_label))
 
-    if not indicators:
-        validation_errors.append(DatasetValidationError(
-            code=DatasetValidationErrorCode.NO_INDICATORS,
-            message="No relevant indicators were found for this dataset matching the query.",
-        ))
+    if indicators:
+        return indicators, validation_errors, []
 
-    return indicators, validation_errors
+    # No relevant indicators were selected by the model, so fallback to selecting every indicator
+    # and include a warning. At least one indicator is required for the table query.
+    indicators = [
+        IndicatorSelectionItem(id=indicator.id, label=indicator.label)
+        for indicator_group in subject_meta.indicators.values()
+        for indicator in indicator_group.indicators
+    ]
+    validation_warning = build_no_relevant_indicators_warning()
+    return indicators, validation_errors, [validation_warning]
 
 
 def _resolve_time_period(
@@ -262,14 +269,14 @@ def _resolve_time_period(
         start_valid = (time_period_result.start.code, time_period_result.start.year) in available_time_periods
         end_valid = (time_period_result.end.code, time_period_result.end.year) in available_time_periods
         if not (start_valid and end_valid):
-            error = DatasetValidationError(
+            validation_error = DatasetValidationError(
                 code=DatasetValidationErrorCode.INVALID_TIME_PERIOD,
                 message=(
                     f"No time period (start: {time_period_result.start.year} {time_period_result.start.code}, "
                     f"end: {time_period_result.end.year} {time_period_result.end.code}) was found for this dataset in the subject meta."
                 ),
             )
-            return None, [error], []
+            return None, [validation_error], []
 
         # Convert from the model response shape to the event response shape
         # The two are currently the same but we're allowing them to diverge in future if needed
@@ -282,27 +289,30 @@ def _resolve_time_period(
         if latest_time_period is None:
             # Should never happen because every dataset is expected to have at least one available time period
             # in its subject meta, but handle this gracefully anyway.
-            error = DatasetValidationError(
+            # TODO We could remove this since this should never happen,
+            # and we don't have equivalent errors elsewhere like NO_INDICATORS if
+            # the subject meta indicators are missing.
+            validation_error = DatasetValidationError(
                 code=DatasetValidationErrorCode.NO_AVAILABLE_TIME_PERIODS,
                 message="No available time periods were found for this dataset in the subject meta.",
             )
-            return None, [error], []
+            return None, [validation_error], []
 
         time_period = TimePeriodRange(
             start=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
             end=TimePeriod(code=latest_time_period.code, year=latest_time_period.year),
         )
-        warning = build_no_time_period_requirement_warning(latest_time_period)
-        return time_period, [], [warning]
+        validation_warning = build_no_time_period_requirement_warning(latest_time_period)
+        return time_period, [], [validation_warning]
 
     # A time period requirement was present, but the model couldn't find a relevant time period matching the requirement.
     # Return None to distinguish this case from the 'no requirement' case.
     # Falling back to the dataset's latest available time period would be misleading.
-    error = DatasetValidationError(
+    validation_error = DatasetValidationError(
         code=DatasetValidationErrorCode.NO_TIME_PERIOD,
         message="No relevant time period range was found for this dataset matching the query.",
     )
-    return None, [error], []
+    return None, [validation_error], []
 
 
 def _resolve_locations(
@@ -321,11 +331,11 @@ def _resolve_locations(
     if location_requirements:
         # A location requirement was present, but there were no matching locations in the dataset.
         # Return an error as falling back to a default location would be misleading, since the query asked for somewhere else.
-        error = DatasetValidationError(
+        validation_error = DatasetValidationError(
             code=DatasetValidationErrorCode.NO_LOCATION,
             message="No relevant location was found for this dataset matching the query.",
         )
-        return location_results, [error], []
+        return location_results, [validation_error], []
 
     # No location requirements were extracted from the query, so check if the default location is available
     # in the database to use as a fallback.
@@ -333,13 +343,13 @@ def _resolve_locations(
 
     if default_location is None:
         # The default location is not available in the dataset, so return an error.
-        error = build_no_default_location_error()
-        return location_results, [error], []
+        validation_error = build_no_default_location_error()
+        return location_results, [validation_error], []
 
     # The default location is available, so use it as a fallback but include a warning.
     level_label, location = default_location
-    warning = build_no_location_requirement_warning()
-    return DatasetLocations({level_label: [location]}), [], [warning]
+    validation_warning = build_no_location_requirement_warning()
+    return DatasetLocations({level_label: [location]}), [], [validation_warning]
 
 
 def build_final_dataset_response(
@@ -427,8 +437,9 @@ def build_final_dataset_response(
 
     filters = [FilterSelectionItem(id=filter_item.id, label=filter_item.label) for filter_item in selected_filter_items]
 
-    indicators, indicator_errors = _resolve_indicators(subject_meta, indicator_results)
+    indicators, indicator_errors, indicator_warnings = _resolve_indicators(subject_meta, indicator_results)
     validation_errors.extend(indicator_errors)
+    validation_warnings.extend(indicator_warnings)
 
     time_period, time_period_errors, time_period_warnings = _resolve_time_period(
         subject_meta, time_period_result, time_period_requirement
