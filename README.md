@@ -148,7 +148,19 @@ One LLM call per reranked dataset, all gathered concurrently. Each returns a lis
 - `rrf_to_percentage(score)` scales an RRF score to 0-100
 
 ### `location_utils.py`
-- `hybrid_scorer` only accepts a perfect `token_set_ratio` (100) when >= 2 tokens overlap and the candidate isn't much shorter than they query; otherwise falls back to `WRatio`
+Matches each location requirement against a dataset's locations by ranking every candidate and keeping only the
+closest rank that matched anything, resolved across all geographic levels at once. Names are normalised first,
+dropping the geographic code EES appends to duplicate labels (`Barnsley (E08000016)`) and the inverted
+administrative qualifier it adds to some (`Bristol, City of`).
+- `MatchTier.SAME_PLACE` - the same name, or one differing only in generic administrative wording (`Durham` -> `County Durham`)
+- `MatchTier.MORE_SPECIFIC` - a place named within the requirement (`Hull` -> `Kingston upon Hull, City of`, `Sussex` -> `East Sussex` + `West Sussex`)
+- `MatchTier.LESS_SPECIFIC` - a place the requirement sits inside (`Greater Manchester` -> `Manchester`), preferring whichever accounts for most of the requirement
+- `MatchTier.SIMILAR_NAME` - a last resort `RapidFuzz` similarity for typos, above `threshold` (default 90)
+
+Because a closer rank wins outright, `England` matches only the `England` country and never also the
+`East of England` region, while `London` - which no location is named after - still falls back to
+`Inner London`, `Outer London` and `City of London`.
+
 - `get_default_location(subject_meta)` finds England within a dataset's national level, returned with that level's label. Returns `None` for a dataset that has no national level, or no England option within it.
 
 ### `openai_client.py`
