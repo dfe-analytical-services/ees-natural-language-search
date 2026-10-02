@@ -220,6 +220,94 @@ def parse_selection_responses(
     return filter_results_by_id, indicator_results_by_id, time_period_results_by_id
 
 
+def _resolve_filters(
+    file_id: str,
+    subject_meta: SubjectMetaResponse,
+    filter_item_candidates: DatasetFilterItemCandidates,
+    filter_results: FilterItemDatasetResult | None,
+) -> tuple[
+    list[FilterSelectionItem],
+    dict[str, AutoSelectedFilterItem],
+    list[str],
+    list[DatasetValidationError],
+    list[DatasetValidationWarning],
+]:
+    """Resolve the filters result for the final dataset response, along with the auto-selected
+    filter items, unfiltered filters, and any validation errors and warnings."""
+    validation_errors: list[DatasetValidationError] = []
+
+    # Resolve the model's filter item selections against the filter item candidates it was provided
+    selected_filter_items: list[FilterItem] = []
+    selected_filter_ids: set[str] = set()
+
+    for raw_reference, decision in (filter_results.filter_items if filter_results else {}).items():
+        if not decision.relevant:
+            continue
+
+        reference = DatasetFilterItemCandidates.parse_reference(raw_reference)
+        if reference is None:
+            validation_errors.append(DatasetValidationError(
+                code=DatasetValidationErrorCode.MALFORMED_FILTER_ITEM_REFERENCE,
+                message=f"The filter item reference '{raw_reference}' was not a valid number.",
+            ))
+            continue
+
+        candidate = filter_item_candidates.get(reference)
+        if candidate is None:
+            # There was no candidate for the given reference number, indicating an invalid selection by the model.
+            validation_errors.append(DatasetValidationError(
+                code=DatasetValidationErrorCode.INVALID_FILTER_ITEM,
+                message=f"No filter item was found for the reference number '{reference}' for this dataset.",
+            ))
+            continue
+
+        if decision.filter_item_label is not None and decision.filter_item_label != candidate.filter_item.label:
+            # Log a warning if the label echoed by the model does not match the candidate's label.
+            # This means that the model may have returned an incorrect reference number for the filter item.
+            logger.warning(
+                "The filter item label returned by the filter selection agent did not match the filter item it referenced: file_id=%s, reference=%s, returned_label='%s', candidate_label='%s'",
+                file_id,
+                reference,
+                decision.filter_item_label,
+                candidate.filter_item.label,
+            )
+
+        selected_filter_items.append(candidate.filter_item)
+        selected_filter_ids.add(candidate.filter_id)
+
+    # Every filter needs at least one selected filter item for the table query to work correctly.
+    # If the model didn't select any relevant filter items for a filter, fallback to its auto_select_filter_item_id if set.
+    # In the case of no auto_select_filter_item_id, select every filter item instead.
+    # Selecting all filter items has the same effect as not applying the filter (since nothing is excluded).
+    # Maintain a record of these auto-selected filter items, and unfiltered filters separately,
+    # so they can be returned in the final dataset response. This allows the consumer to differentiate
+    # between model selections and fallback selections.
+    auto_selected_filter_items: dict[str, AutoSelectedFilterItem] = {}
+    unfiltered_filters: list[str] = []
+
+    # Iterate over all filters in the subject meta
+    for filter_ in subject_meta.filters.values():
+        if filter_.id in selected_filter_ids:
+            continue  # the model made a relevant decision for at least one of the filter's filter items
+
+        if filter_.auto_select_filter_item_id:
+            auto_select_filter_item = subject_meta.get_filter_item_by_id(filter_.auto_select_filter_item_id)
+            selected_filter_items.append(auto_select_filter_item)
+            auto_selected_filter_items[filter_.label] = AutoSelectedFilterItem(
+                filter_item_label=auto_select_filter_item.label, filter_item_id=auto_select_filter_item.id,
+            )
+        else:
+            for filter_item_group in filter_.filter_item_groups.values():
+                for filter_item in filter_item_group.filter_items:
+                    selected_filter_items.append(filter_item)
+            unfiltered_filters.append(filter_.label)
+
+    validation_warnings = build_filter_fallback_warnings(auto_selected_filter_items, unfiltered_filters)
+
+    filters = [FilterSelectionItem(id=filter_item.id, label=filter_item.label) for filter_item in selected_filter_items]
+    return filters, auto_selected_filter_items, unfiltered_filters, validation_errors, validation_warnings
+
+
 def _resolve_indicators(
     subject_meta: SubjectMetaResponse,
     indicator_results: dict[str, IndicatorDecision] | None,
@@ -367,75 +455,11 @@ def build_final_dataset_response(
     validation_errors: list[DatasetValidationError] = []
     validation_warnings: list[DatasetValidationWarning] = []
 
-    # Resolve the model's filter item selections against the filter item candidates it was provided
-    selected_filter_items: list[FilterItem] = []
-    selected_filter_ids: set[str] = set()
-
-    for raw_reference, decision in (filter_results.filter_items if filter_results else {}).items():
-        if not decision.relevant:
-            continue
-
-        reference = DatasetFilterItemCandidates.parse_reference(raw_reference)
-        if reference is None:
-            validation_errors.append(DatasetValidationError(
-                code=DatasetValidationErrorCode.MALFORMED_FILTER_ITEM_REFERENCE,
-                message=f"The filter item reference '{raw_reference}' was not a valid number.",
-            ))
-            continue
-
-        candidate = filter_item_candidates.get(reference)
-        if candidate is None:
-            # There was no candidate for the given reference number, indicating an invalid selection by the model.
-            validation_errors.append(DatasetValidationError(
-                code=DatasetValidationErrorCode.INVALID_FILTER_ITEM,
-                message=f"No filter item was found for the reference number '{reference}' for this dataset.",
-            ))
-            continue
-
-        if decision.filter_item_label is not None and decision.filter_item_label != candidate.filter_item.label:
-            # Log a warning if the label echoed by the model does not match the candidate's label.
-            # This means that the model may have returned an incorrect reference number for the filter item.
-            logger.warning(
-                "The filter item label returned by the filter selection agent did not match the filter item it referenced: file_id=%s, reference=%s, returned_label='%s', candidate_label='%s'",
-                dataset.file_id,
-                reference,
-                decision.filter_item_label,
-                candidate.filter_item.label,
-            )
-
-        selected_filter_items.append(candidate.filter_item)
-        selected_filter_ids.add(candidate.filter_id)
-
-    # Every filter needs at least one selected filter item for the table query to work correctly.
-    # If the model didn't select any relevant filter items for a filter, fallback to its auto_select_filter_item_id if set.
-    # In the case of no auto_select_filter_item_id, select every filter item instead.
-    # Selecting all filter items has the same effect as not applying the filter (since nothing is excluded).
-    # Maintain a record of these auto-selected filter items, and unfiltered filters separately,
-    # so they can be returned in the final dataset response. This allows the consumer to differentiate
-    # between model selections and fallback selections.
-    auto_selected_filter_items: dict[str, AutoSelectedFilterItem] = {}
-    unfiltered_filters: list[str] = []
-
-    # Iterate over all filters in the subject meta
-    for filter_ in subject_meta.filters.values():
-        if filter_.id in selected_filter_ids:
-            continue  # the model made a relevant decision for at least one of the filter's filter items
-
-        if filter_.auto_select_filter_item_id:
-            auto_select_filter_item = subject_meta.get_filter_item_by_id(filter_.auto_select_filter_item_id)
-            selected_filter_items.append(auto_select_filter_item)
-            auto_selected_filter_items[filter_.label] = AutoSelectedFilterItem(
-                filter_item_label=auto_select_filter_item.label, filter_item_id=auto_select_filter_item.id,
-            )
-        else:
-            for filter_item_group in filter_.filter_item_groups.values():
-                for filter_item in filter_item_group.filter_items:
-                    selected_filter_items.append(filter_item)
-            unfiltered_filters.append(filter_.label)
-
-    validation_warnings.extend(build_filter_fallback_warnings(auto_selected_filter_items, unfiltered_filters))
-
-    filters = [FilterSelectionItem(id=filter_item.id, label=filter_item.label) for filter_item in selected_filter_items]
+    filters, auto_selected_filter_items, unfiltered_filters, filter_errors, filter_warnings = _resolve_filters(
+        dataset.file_id, subject_meta, filter_item_candidates, filter_results
+    )
+    validation_errors.extend(filter_errors)
+    validation_warnings.extend(filter_warnings)
 
     indicators, indicator_errors, indicator_warnings = _resolve_indicators(subject_meta, indicator_results)
     validation_errors.extend(indicator_errors)
