@@ -68,130 +68,122 @@ def test_no_location_requirements_produce_no_matches(match_location_labels):
     assert match_location_labels() == {}
 
 
-def test_default_location_is_england_keyed_by_its_level_label(
-    build_dataset, load_json_fixture
-):
-    dataset = build_dataset(locations=load_json_fixture("subject_meta_locations.json"))
+class TestDefaultLocation:
+    """`get_default_location` picks England at national level, identified by its geographic code."""
 
-    level_label, location = get_default_location(dataset.subject_meta)
+    def test_is_england_keyed_by_its_level_label(
+        self, build_dataset, load_json_fixture
+    ):
+        dataset = build_dataset(locations=load_json_fixture("subject_meta_locations.json"))
 
-    assert level_label == "National"
-    assert location.id == "376f9a26-dc39-4db3-bb19-0549e59d322a"
-    assert location.label == "England"
-    assert location.value == "E92000001"
+        level_label, location = get_default_location(dataset.subject_meta)
 
+        assert level_label == "National"
+        assert location.id == "376f9a26-dc39-4db3-bb19-0549e59d322a"
+        assert location.label == "England"
+        assert location.value == "E92000001"
 
-def test_default_location_is_none_without_a_national_level(
-    build_dataset, load_json_fixture
-):
-    """When the dataset has no national level, the default location should be None."""
-    locations = load_json_fixture("subject_meta_locations.json")
-    del locations["country"]
-    dataset = build_dataset(locations=locations)
+    def test_is_none_without_a_national_level(self, build_dataset, load_json_fixture):
+        """When the dataset has no national level, the default location should be None."""
+        locations = load_json_fixture("subject_meta_locations.json")
+        del locations["country"]
+        dataset = build_dataset(locations=locations)
 
-    assert get_default_location(dataset.subject_meta) is None
+        assert get_default_location(dataset.subject_meta) is None
 
-
-def test_default_location_is_none_when_england_is_not_in_the_national_level_options(
-    build_dataset,
-):
-    """When the dataset has no option for England at national level, the default location should be None."""
-    dataset = build_dataset(
-        locations={
-            "country": {
-                "legend": "National",
-                "options": [
-                    {"id": "location-1", "label": "Wales", "value": "W92000004"}
-                ],
+    def test_is_none_when_england_is_not_in_the_national_level_options(
+        self, build_dataset
+    ):
+        """When the dataset has no option for England at national level, the default location should be None."""
+        dataset = build_dataset(
+            locations={
+                "country": {
+                    "legend": "National",
+                    "options": [
+                        {"id": "location-1", "label": "Wales", "value": "W92000004"}
+                    ],
+                }
             }
-        }
-    )
+        )
 
-    assert get_default_location(dataset.subject_meta) is None
+        assert get_default_location(dataset.subject_meta) is None
 
-
-def test_default_location_is_none_when_england_is_only_at_a_different_level(
-    build_dataset,
-):
-    """England should only be found at national level, not at any other geographic level."""
-    dataset = build_dataset(
-        locations={
-            "country": {
-                "legend": "National",
-                "options": [
-                    {"id": "location-1", "label": "Wales", "value": "W92000004"}
-                ],
-            },
-            "region": {
-                "legend": "Regional",
-                "options": [
-                    {"id": "location-2", "label": "England", "value": "E92000001"}
-                ],
-            },
-        }
-    )
-
-    assert get_default_location(dataset.subject_meta) is None
-
-
-def test_default_location_is_matched_on_its_geographic_code_not_its_label(
-    build_dataset,
-):
-    """The default location should be identified by code rather than its label."""
-    dataset = build_dataset(
-        locations={
-            "country": {
-                "legend": "National",
-                "options": [
-                    {"id": "location-1", "label": "England", "value": "Other code"},
-                    {
-                        "id": "location-2",
-                        "label": "Other location",
-                        "value": "E92000001",
-                    },
-                ],
+    def test_is_none_when_england_is_only_at_a_different_level(self, build_dataset):
+        """England should only be found at national level, not at any other geographic level."""
+        dataset = build_dataset(
+            locations={
+                "country": {
+                    "legend": "National",
+                    "options": [
+                        {"id": "location-1", "label": "Wales", "value": "W92000004"}
+                    ],
+                },
+                "region": {
+                    "legend": "Regional",
+                    "options": [
+                        {"id": "location-2", "label": "England", "value": "E92000001"}
+                    ],
+                },
             }
-        }
-    )
+        )
 
-    level_label, location = get_default_location(dataset.subject_meta)
+        assert get_default_location(dataset.subject_meta) is None
 
-    assert level_label == "National"
-    assert location.id == "location-2"
-    assert location.label == "Other location"
-
-
-def test_default_location_finds_england_in_nested_location_hierarchy(build_dataset):
-    """Options can be nested as part of a location hierarchy under an id-less grouping options. Check that the whole level is traversed to find England."""
-    dataset = build_dataset(
-        locations={
-            "country": {
-                "legend": "National",
-                "options": [
-                    {
-                        "label": "United Kingdom",
-                        "value": "K02000001",
-                        "level": "country",
-                        "options": [
-                            {
-                                "id": "location-1",
-                                "label": "Wales",
-                                "value": "W92000004",
-                            },
-                            {
-                                "id": "location-2",
-                                "label": "England",
-                                "value": "E92000001",
-                            },
-                        ],
-                    }
-                ],
+    def test_is_matched_on_its_geographic_code_not_its_label(self, build_dataset):
+        """The default location should be identified by code rather than its label."""
+        dataset = build_dataset(
+            locations={
+                "country": {
+                    "legend": "National",
+                    "options": [
+                        {"id": "location-1", "label": "England", "value": "Other code"},
+                        {
+                            "id": "location-2",
+                            "label": "Other location",
+                            "value": "E92000001",
+                        },
+                    ],
+                }
             }
-        }
-    )
+        )
 
-    level_label, location = get_default_location(dataset.subject_meta)
+        level_label, location = get_default_location(dataset.subject_meta)
 
-    assert level_label == "National"
-    assert location.id == "location-2"
-    assert location.label == "England"
+        assert level_label == "National"
+        assert location.id == "location-2"
+        assert location.label == "Other location"
+
+    def test_finds_england_in_nested_location_hierarchy(self, build_dataset):
+        """Options can be nested as part of a location hierarchy under an id-less grouping options. Check that the whole level is traversed to find England."""
+        dataset = build_dataset(
+            locations={
+                "country": {
+                    "legend": "National",
+                    "options": [
+                        {
+                            "label": "United Kingdom",
+                            "value": "K02000001",
+                            "level": "country",
+                            "options": [
+                                {
+                                    "id": "location-1",
+                                    "label": "Wales",
+                                    "value": "W92000004",
+                                },
+                                {
+                                    "id": "location-2",
+                                    "label": "England",
+                                    "value": "E92000001",
+                                },
+                            ],
+                        }
+                    ],
+                }
+            }
+        )
+
+        level_label, location = get_default_location(dataset.subject_meta)
+
+        assert level_label == "National"
+        assert location.id == "location-2"
+        assert location.label == "England"
