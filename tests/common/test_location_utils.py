@@ -6,11 +6,6 @@ import pytest
 
 from common.location_utils import get_default_location, get_location_matches
 
-KNOWN_FAILURE = pytest.mark.xfail(
-    strict=True,
-    reason="Currently failing, waiting on location fuzzy matching improvements (EES-7610)",
-)
-
 
 class TestGetLocationMatches:
     @pytest.fixture
@@ -51,7 +46,6 @@ class TestGetLocationMatches:
 
         return _match
 
-    @KNOWN_FAILURE
     def test_england_matches_the_country(self, match_location_labels):
         assert match_location_labels("England") == {
             "National": ["England"],
@@ -87,18 +81,18 @@ class TestGetLocationMatches:
     @pytest.mark.parametrize(
         "requirement",
         [
-            pytest.param("England", marks=KNOWN_FAILURE),
-            pytest.param("East of England", marks=KNOWN_FAILURE),
-            pytest.param("North East", marks=KNOWN_FAILURE),
+            "England",
+            "East of England",
+            "North East",
             "West Midlands",
-            pytest.param("Yorkshire and The Humber", marks=KNOWN_FAILURE),
+            "Yorkshire and The Humber",
             "Inner London",
-            pytest.param("Bath and North East Somerset", marks=KNOWN_FAILURE),
+            "Bath and North East Somerset",
             "County Durham",
             "Hertfordshire",
             "Isle of Wight",
-            pytest.param("North East Lincolnshire", marks=KNOWN_FAILURE),
-            pytest.param("North Somerset", marks=KNOWN_FAILURE),
+            "North East Lincolnshire",
+            "North Somerset",
             "West Berkshire",
         ],
     )
@@ -143,7 +137,6 @@ class TestGetLocationMatches:
             ("Gloucestershire", ["Gloucestershire"], ["South Gloucestershire"]),
         ],
     )
-    @KNOWN_FAILURE
     def test_an_exact_match_is_preferred_over_other_locations_containing_the_same_name(
         self, match_location_labels_flattened, requirement, expected, not_expected
     ):
@@ -162,7 +155,6 @@ class TestGetLocationMatches:
             ("north east", ["North East"]),
         ],
     )
-    @KNOWN_FAILURE
     def test_case_is_ignored(
         self, match_location_labels_flattened, requirement, expected
     ):
@@ -172,16 +164,12 @@ class TestGetLocationMatches:
         ("requirement", "expected"),
         [
             ("St Helens", ["St. Helens"]),
-            pytest.param("Stockton on Tees", ["Stockton-on-Tees"], marks=KNOWN_FAILURE),
+            ("Stockton on Tees", ["Stockton-on-Tees"]),
             ("Richmond-upon-Thames", ["Richmond upon Thames"]),
-            pytest.param(
-                "the East of England region",
-                ["East of England"],
-                marks=KNOWN_FAILURE,
-            ),
+            ("the East of England region", ["East of England"]),
             ("the North East", ["North East"]),
             # "England" as a filler word is ignored
-            pytest.param("South West England", ["South West"], marks=KNOWN_FAILURE),
+            ("South West England", ["South West"]),
         ],
     )
     def test_punctuation_and_filler_words_are_ignored(
@@ -199,17 +187,12 @@ class TestGetLocationMatches:
                 "Northumberland",
                 ["Northumberland (E06000048)", "Northumberland (E06000057)"],
             ),
-            pytest.param(
+            (
                 "North Yorkshire",
                 ["North Yorkshire (E06000065)", "North Yorkshire (E10000023)"],
-                marks=KNOWN_FAILURE,
             ),
             ("Sheffield", ["Sheffield (E08000019)", "Sheffield (E08000039)"]),
-            pytest.param(
-                "Somerset",
-                ["Somerset (E06000066)", "Somerset (E10000027)"],
-                marks=KNOWN_FAILURE,
-            ),
+            ("Somerset", ["Somerset (E06000066)", "Somerset (E10000027)"]),
         ],
     )
     def test_matches_all_locations_with_the_same_name_regardless_of_code(
@@ -227,9 +210,7 @@ class TestGetLocationMatches:
             ("Durham", ["County Durham"]),
             ("Bristol", ["Bristol, City of"]),
             ("Kingston upon Hull", ["Kingston upon Hull, City of"]),
-            pytest.param(
-                "Herefordshire", ["Herefordshire, County of"], marks=KNOWN_FAILURE
-            ),
+            ("Herefordshire", ["Herefordshire, County of"]),
         ],
     )
     def test_a_name_qualifier_is_optional(
@@ -283,7 +264,7 @@ class TestGetLocationMatches:
             ("Midlands", ["East Midlands", "West Midlands"]),
             ("Tyneside", ["North Tyneside", "South Tyneside"]),
             ("Cheshire", ["Cheshire East", "Cheshire West and Chester"]),
-            pytest.param(
+            (
                 "Yorkshire",
                 [
                     "East Riding of Yorkshire",
@@ -291,7 +272,6 @@ class TestGetLocationMatches:
                     "North Yorkshire (E10000023)",
                     "Yorkshire and The Humber",
                 ],
-                marks=KNOWN_FAILURE,
             ),
         ],
     )
@@ -317,21 +297,14 @@ class TestGetLocationMatches:
     @pytest.mark.parametrize(
         ("requirement", "expected"),
         [
-            pytest.param("Derby", ["Derby"], marks=KNOWN_FAILURE),  # Not "Derbyshire"
-            pytest.param(
-                "Leicester", ["Leicester"], marks=KNOWN_FAILURE
-            ),  # Not "Leicestershire"
-            pytest.param(
-                "Nottingham", ["Nottingham"], marks=KNOWN_FAILURE
-            ),  # Not "Nottinghamshire"
-            pytest.param(
+            ("Derby", ["Derby"]),  # Not "Derbyshire"
+            ("Leicester", ["Leicester"]),  # Not "Leicestershire"
+            ("Nottingham", ["Nottingham"]),  # Not "Nottinghamshire"
+            (
                 "York",
                 ["York"],
-                marks=KNOWN_FAILURE,
             ),  # Not "Yorkshire and The Humber", "East Riding of Yorkshire", or "North Yorkshire"
-            pytest.param(
-                "Herefordshire", ["Herefordshire, County of"], marks=KNOWN_FAILURE
-            ),  # Not "Hertfordshire"
+            ("Herefordshire", ["Herefordshire, County of"]),  # Not "Hertfordshire"
             ("Hertfordshire", ["Hertfordshire"]),  # Not "Herefordshire, County of"
         ],
     )
@@ -363,7 +336,6 @@ class TestGetLocationMatches:
         """Where the requirement is not similar to any location, an empty list is returned."""
         assert match_location_labels_flattened(requirement) == []
 
-    @KNOWN_FAILURE
     def test_matches_are_combined_for_multiple_requirements(
         self, match_location_labels
     ):
@@ -377,7 +349,6 @@ class TestGetLocationMatches:
             "Local authority": ["Manchester"],
         }
 
-    @KNOWN_FAILURE
     def test_locations_matched_by_multiple_requirements_are_deduplicated(
         self, match_location_labels_flattened
     ):
