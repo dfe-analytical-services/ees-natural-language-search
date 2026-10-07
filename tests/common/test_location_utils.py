@@ -4,7 +4,13 @@ import asyncio
 
 import pytest
 
-from common.location_utils import get_default_location, get_location_matches
+from common.location_utils import (
+    MatchTier,
+    get_default_location,
+    get_location_matches,
+    normalise_location_name,
+    rank_match,
+)
 
 
 class TestGetLocationMatches:
@@ -366,6 +372,14 @@ class TestGetLocationMatches:
         """A query with no location requirements should match nothing."""
         assert match_location_labels() == {}
 
+    @pytest.mark.parametrize("requirement", ["the", "of", "upon", "the county of"])
+    def test_a_requirement_of_only_generic_words_matches_nothing(
+        self, match_location_labels_flattened, requirement
+    ):
+        """A requirement made up only of generic qualifier words should match nothing,
+        e.g. "the" should not match "Yorkshire and The Humber"."""
+        assert match_location_labels_flattened(requirement) == []
+
 
 class TestGetDefaultLocation:
     """`get_default_location` picks England at national level, identified by its geographic code."""
@@ -488,3 +502,41 @@ class TestGetDefaultLocation:
         assert level_label == "National"
         assert location.id == "location-2"
         assert location.label == "England"
+
+
+class TestNormaliseLocationName:
+    @pytest.mark.parametrize(
+        ("name", "expected"),
+        [
+            ("Barnsley (E08000016)", "barnsley"),
+            ("North Yorkshire (E06000065)", "north yorkshire"),
+            ("Herefordshire, County of", "herefordshire"),
+            ("Stockton-on-Tees", "stockton on tees"),
+        ],
+    )
+    def test_gss_codes_inverted_qualifiers_and_punctuation_are_removed(
+        self, name, expected
+    ):
+        assert normalise_location_name(name) == expected
+
+
+class TestRankMatch:
+    def test_less_specific_tie_break_ignores_generic_words(self):
+        """The tie break score should only count meaningful words in the requirement that the
+        location lacks, and ignore generic qualifier words."""
+        assert rank_match("the county of greater manchester", "manchester", 90) == (
+            MatchTier.LESS_SPECIFIC,
+            1,  # "greater" is the only meaningful word in the requirement that the location lacks
+        )
+
+    def test_less_specific_location_covering_more_meaningful_words_is_preferred(self):
+        """A location missing mostly generic words from the requirement is preferred over one
+        missing fewer words in total but more meaningful ones."""
+        requirement = "the county of north east lincolnshire"
+        # Missing "the", "county", "of" and "lincolnshire", only one of which is meaningful
+        more_meaningful = rank_match(requirement, "north east", 90)
+        # Missing only "east" and "lincolnshire", but both are meaningful
+        missing_fewer_words = rank_match(requirement, "the county of north", 90)
+        assert more_meaningful == (MatchTier.LESS_SPECIFIC, 1)
+        assert missing_fewer_words == (MatchTier.LESS_SPECIFIC, 2)
+        assert more_meaningful < missing_fewer_words

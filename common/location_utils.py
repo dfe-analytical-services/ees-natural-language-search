@@ -41,7 +41,7 @@ GENERIC_QUALIFIER_WORDS = frozenset(
 # Where multiple locations exist with the same name, EES appends the GSS code to the label to clearly distinguish them.
 # E.g. North Yorkshire (E10000023) and North Yorkshire (E06000065).
 # This regex matches a GSS code suffix, e.g. " (E06000065)" and is used to remove it.
-_GSS_CODE_SUFFIX = re.compile(r"\s*\([^)]*\)\s*$")
+_GSS_CODE_SUFFIX = re.compile(r"\s*\(\s*[A-Za-z]\d{8}\s*\)\s*$")
 
 # This regex matches inverted administrative qualifier suffixes, e.g. ", City of" in "Kingston upon Hull, City of",
 # or ", County of" in "Herefordshire, County of", and is used to remove them.
@@ -83,7 +83,8 @@ class MatchTier(IntEnum):
 
 # A match rank is a tuple of (match tier, tie break) and the return type of `rank_match`.
 # The tie break score distinguishes between matches in the same tier and is used for LESS_SPECIFIC matches.
-# It measures how many extra words in the requirement are not present in the candidate location.
+# It measures how many extra words in the requirement are not present in the candidate location,
+# ignoring generic qualifier words, which don't make the requirement any more specific.
 # A lower score is better, giving preference to the candidate location covering most of the requirement.
 # E.g. for the requirement "South West England", the location "England" has a tie break score of 2,
 # and "South West" has a score of 1, so "South West" is the preferred match.
@@ -152,7 +153,11 @@ def rank_match(
 
     # At least one extra word is meaningful, e.g. "North Yorkshire" for "Yorkshire", so keep
     # the MORE_SPECIFIC or LESS_SPECIFIC tier.
-    tie_break_score = len(extra_words) if tier is MatchTier.LESS_SPECIFIC else 0
+    tie_break_score = (
+        len(extra_words - GENERIC_QUALIFIER_WORDS)
+        if tier is MatchTier.LESS_SPECIFIC
+        else 0
+    )
     return (tier, tie_break_score)
 
 
@@ -216,7 +221,10 @@ def match_location_requirement(
     Ranking is resolved across every geographic level at once because a closer match may be found at any level.
     """
     normalised_query = normalise_location_name(location_requirement)
-    if not normalised_query:
+
+    # Return early if the normalised requirement is empty or the requirement is made up only of generic qualifier words,
+    # e.g. "the" or "county".
+    if set(normalised_query.split()) <= GENERIC_QUALIFIER_WORDS:
         return {}
 
     matches_by_rank: dict[MatchRank, dict[str, list[LocationItem]]] = defaultdict(
