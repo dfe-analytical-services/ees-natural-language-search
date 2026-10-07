@@ -1,0 +1,43 @@
+{
+  "folders": [
+    {
+      "name": "EES Natural Language Search",
+      "path": ".",
+    },
+  ],
+  "settings": {
+    "window.title": "EES Natural Language Search${separator}${activeEditorShort}${dirty}",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.formatOnSaveMode": "modificationsIfAvailable",
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.black-formatter",
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit",
+      },
+    },
+    "search.exclude": {
+      "**/.venv": true,
+      "**/.python_packages": true,
+      "**/__pycache__": true,
+      "**/.pytest_cache": true,
+      "**/.idea": true,
+      "coverage.xml": true,
+      "test-results.xml": true,
+    },
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    "python.analysis.inlayHints.variableTypes": true,
+    "python.analysis.inlayHints.callArgumentNames": "partial",
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "ms-python.isort",
+      "ms-python.flake8",
+      "ms-azure-devops.azure-pipelines",
+      "ms-azuretools.vscode-azurefunctions",
+    ],
+  },
+}
