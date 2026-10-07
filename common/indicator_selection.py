@@ -50,7 +50,7 @@ Return only a valid JSON object in this exact structure:
 Write every "reasoning" explanation as one concise sentence, the way a person would casually explain their thinking.
 
 Use exact input text for all keys (indicator name).
-"""
+"""  # noqa: E501
 
 llm_indicator_user_prompt="""
 # User query

@@ -15,7 +15,8 @@ class LocationItem(StrictCamelModel):
 
 
 class DatasetLocations(RootModel[dict[str, list[LocationItem]]]):
-    """Location matches for a single dataset, keyed by geographic level (e.g. "National", "Regional", "Local authority")."""
+    """Location matches for a single dataset,
+    keyed by geographic level (e.g. "National", "Regional", "Local authority")."""
 
 
 class LocationsResponse(RootModel[dict[str, DatasetLocations]]):

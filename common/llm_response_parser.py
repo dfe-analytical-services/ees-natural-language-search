@@ -1,7 +1,8 @@
 """A graceful parser for the pipeline's structured LLM outputs.
 
-Every LLM call in the pipeline is prompted to return JSON in a fixed shape. The models below describe those shapes, and parse_llm_response validates
-a raw LLM string against a model without raising on malformed output - it logs the problem and returns None so each caller can decide how to degrade.
+Every LLM call in the pipeline is prompted to return JSON in a fixed shape.
+The models below describe those shapes, and parse_llm_response validates a raw LLM string against a model
+without raising on malformed output - it logs the problem and returns None so each caller can decide how to degrade.
 """
 
 import json
@@ -31,7 +32,8 @@ def _strip_code_fences(raw: str) -> str:
 
 def parse_llm_response(raw, model: Type[T], context: str) -> Optional[T]:
     """Validate a raw LLM string against pydantic model.
-    Returns the validated model instance, or None if the response is missing, not valid JSON or does not match the expected structure.
+    Returns the validated model instance, or None if the response is missing, not valid JSON
+    or does not match the expected structure.
     """
 
     if not raw or not isinstance(raw, str):

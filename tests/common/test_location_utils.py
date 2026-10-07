@@ -146,7 +146,8 @@ class TestGetLocationMatches:
     def test_an_exact_match_is_preferred_over_other_locations_containing_the_same_name(
         self, match_location_labels_flattened, requirement, expected, not_expected
     ):
-        """A requirement naming a location should match that location in preference to other locations whose names contain it.
+        """A requirement naming a location should match that location in preference to other locations
+        whose names contain it.
         E.g. England should match "England" rather than "East of England"."""
         matches = match_location_labels_flattened(requirement)
         for label in expected:
@@ -469,7 +470,8 @@ class TestGetDefaultLocation:
         assert location.label == "Other location"
 
     def test_finds_england_in_nested_location_hierarchy(self, build_dataset):
-        """Options can be nested as part of a location hierarchy under an id-less grouping options. Check that the whole level is traversed to find England."""
+        """Options can be nested as part of a location hierarchy under an id-less grouping options.
+        Check that the whole level is traversed to find England."""
         dataset = build_dataset(
             locations={
                 "country": {

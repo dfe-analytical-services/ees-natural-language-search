@@ -92,24 +92,30 @@ def _retrieve_shortlisted_relevant_filter_item_group_ids(
     file_ids: list[str],
     shortlisted_relevant_filters_by_file_id: Mapping[str, list[str]] | None,
 ) -> dict[str, list[str]]:
-    """Reverse engineers the ID's of relevant filter item groups that were retrieved from Azure AI Search based on their names.
+    """Reverse engineers the ID's of relevant filter item groups that were retrieved from Azure AI Search
+    based on their names.
     """
 
     # TODO this additional call to the search index doesn't seem ideal.
     # This seems to be necessary because when the filter names are added to the search index,
     # they can be a filter item group label, or a filter label depending on whether the group label is 'Default'.
-    # Those names are passed in `shortlisted_relevant_filters_by_file_id` to this function, and there's no easy way to distinguish between the two cases.
-    # We need to go back to the search index where the values came from, and get the 'filterGroupId' corresponding with 'filterName' for each name value.
-    # The filter group id's could have been retrieved earlier by changing the way `multi_index_search` builds `relevant_filters_by_file_id`.
+    # Those names are passed in `shortlisted_relevant_filters_by_file_id` to this function,
+    # and there's no easy way to distinguish between the two cases.
+    # We need to go back to the search index where the values came from,
+    # and get the 'filterGroupId' corresponding with 'filterName' for each name value.
+    # The filter group id's could have been retrieved earlier by changing the way `multi_index_search`
+    # builds `relevant_filters_by_file_id`.
 
-    # TODO there might be a bug if multiple filter item groups with the same name exist in a dataset (possible if there are multiple filters each with their own groups)
+    # TODO there might be a bug if multiple filter item groups with the same name exist in a dataset
+    # (possible if there are multiple filters each with their own groups)
 
     filter_expr = "search.in(fileId, '{}', ',')".format(",".join(file_ids))
     results = filter_client.search(
         search_text="*",
         filter=filter_expr,
         # TODO rename fields in the search index to use consistent terminology:
-        # filterName is the filter item group label. When the group label is 'Default', filterName contains the filter label instead.
+        # filterName is the filter item group label.
+        # When the group label is 'Default', filterName contains the filter label instead.
         # Unused fields:
         # filterCategory is the field named used in the index for the filter label
         # filterValues is a list of the filter item labels
@@ -265,7 +271,9 @@ def _resolve_filters(
             # Log a warning if the label echoed by the model does not match the candidate's label.
             # This means that the model may have returned an incorrect reference number for the filter item.
             logger.warning(
-                "The filter item label returned by the filter selection agent did not match the filter item it referenced: file_id=%s, reference=%s, returned_label='%s', candidate_label='%s'",
+                "The filter item label returned by the filter selection agent "
+                "did not match the filter item it referenced: "
+                "file_id=%s, reference=%s, returned_label='%s', candidate_label='%s'",
                 file_id,
                 reference,
                 decision.filter_item_label,
@@ -276,7 +284,8 @@ def _resolve_filters(
         selected_filter_ids.add(candidate.filter_id)
 
     # Every filter needs at least one selected filter item for the table query to work correctly.
-    # If the model didn't select any relevant filter items for a filter, fallback to its auto_select_filter_item_id if set.
+    # If the model didn't select any relevant filter items for a filter,
+    # fallback to its auto_select_filter_item_id if set.
     # In the case of no auto_select_filter_item_id, select every filter item instead.
     # Selecting all filter items has the same effect as not applying the filter (since nothing is excluded).
     # Maintain a record of these auto-selected filter items, and unfiltered filters separately,
@@ -352,7 +361,8 @@ def _resolve_time_period(
     """Resolve the time period result for the final dataset response, along with any validation
     errors and warnings."""
     if time_period_result is not None:
-        # The model returned a time period selection so validate it against the available time periods in the subject meta
+        # The model returned a time period selection,
+        # so validate it against the available time periods in the subject meta
         available_time_periods = {(time_period.code, time_period.year) for time_period in subject_meta.time_period.options}
         start_valid = (time_period_result.start.code, time_period_result.start.year) in available_time_periods
         end_valid = (time_period_result.end.code, time_period_result.end.year) in available_time_periods
@@ -361,7 +371,8 @@ def _resolve_time_period(
                 code=DatasetValidationErrorCode.INVALID_TIME_PERIOD,
                 message=(
                     f"No time period (start: {time_period_result.start.year} {time_period_result.start.code}, "
-                    f"end: {time_period_result.end.year} {time_period_result.end.code}) was found for this dataset in the subject meta."
+                    f"end: {time_period_result.end.year} {time_period_result.end.code}) "
+                    "was found for this dataset in the subject meta."
                 ),
             )
             return None, [validation_error], []
@@ -393,7 +404,8 @@ def _resolve_time_period(
         validation_warning = build_no_time_period_requirement_warning(latest_time_period)
         return time_period, [], [validation_warning]
 
-    # A time period requirement was present, but the model couldn't find a relevant time period matching the requirement.
+    # A time period requirement was present,
+    # but the model couldn't find a relevant time period matching the requirement.
     # Return None to distinguish this case from the 'no requirement' case.
     # Falling back to the dataset's latest available time period would be misleading.
     validation_error = DatasetValidationError(
@@ -418,7 +430,8 @@ def _resolve_locations(
 
     if location_requirements:
         # A location requirement was present, but there were no matching locations in the dataset.
-        # Return an error as falling back to a default location would be misleading, since the query asked for somewhere else.
+        # Return an error as falling back to a default location would be misleading,
+        # since the query asked for somewhere else.
         validation_error = DatasetValidationError(
             code=DatasetValidationErrorCode.NO_LOCATION,
             message="No relevant location was found for this dataset matching the query.",
@@ -502,7 +515,8 @@ def build_final_dataset_response(
 
 def rrf_to_percentage(rrf_score: float):
     RRF_K = 60
-    RRF_MAX = (1.0 / (1 + RRF_K)) + (1.0 / (1 + RRF_K)) #Both components are equal since vector score and BM25 score have same weightage currently
+    # Both components are equal since vector score and BM25 score have same weightage currently
+    RRF_MAX = (1.0 / (1 + RRF_K)) + (1.0 / (1 + RRF_K))
 
     raw = (rrf_score/RRF_MAX) * 100
     return round(min(raw, 100.0), 1)

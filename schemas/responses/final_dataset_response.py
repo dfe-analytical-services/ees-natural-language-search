@@ -12,7 +12,8 @@ from schemas.domain.locations_response import DatasetLocations
 
 class TimePeriod(StrictCamelModel):
     """A time period, e.g. Academic year 2025/26 (code: AY, year: 2025).
-    Duplicated from schemas.llm.time_period_selection_response.TimePeriod so the response shape can diverge from the LLM response shape in future."""
+    Duplicated from schemas.llm.time_period_selection_response.TimePeriod
+    so the response shape can diverge from the LLM response shape in future."""
 
     code: str
     year: int
@@ -20,7 +21,8 @@ class TimePeriod(StrictCamelModel):
 
 class TimePeriodRange(StrictCamelModel):
     """The selected time period range for a dataset.
-    Duplicated from schemas.llm.time_period_selection_response.TimePeriodRange so the response shape can diverge from the LLM response shape in future."""
+    Duplicated from schemas.llm.time_period_selection_response.TimePeriodRange
+    so the response shape can diverge from the LLM response shape in future."""
 
     start: TimePeriod
     end: TimePeriod
@@ -108,11 +110,18 @@ class FinalDatasetResponse(StrictCamelModel):
     relevance_reason: str | None = None
     auto_selected_filter_items: dict[str, AutoSelectedFilterItem] = Field(
         default_factory=dict,
-        description="Keyed by filter label. The value is a filter item that has been auto-selected based on the filter's auto_select_filter_item_id, because there are no relevant selections made for the filter."
+        description=(
+            "Keyed by filter label. The value is a filter item that has been auto-selected "
+            "based on the filter's auto_select_filter_item_id, "
+            "because there are no relevant selections made for the filter."
+        )
     )
     unfiltered_filters: list[str] = Field(
         default_factory=list,
-        description="Labels of filters where every filter item is selected because there are no relevant selections made for the filter, and no auto_select_filter_item_id fallback exists either.",
+        description=(
+            "Labels of filters where every filter item is selected because there are no relevant selections made "
+            "for the filter, and no auto_select_filter_item_id fallback exists either."
+        ),
     )
     validation_errors: list[DatasetValidationError] = Field(default_factory=list)
     validation_warnings: list[DatasetValidationWarning] = Field(default_factory=list)

@@ -69,7 +69,7 @@ Write every "reasoning" and "irrelevantFilters" explanation as one concise sente
 Every key in "filterItems" must be the reference number of a filter item from the input, written as a quoted JSON string, for example "12".
 Use each reference number at most once. Never invent a reference number, and never use anything other than a reference number as a key.
 Every key in "irrelevantFilters" must be a filter label copied exactly from a heading in the input.
-"""
+"""  # noqa: E501
 
 llm_filtering_user_prompt = """
 # User query

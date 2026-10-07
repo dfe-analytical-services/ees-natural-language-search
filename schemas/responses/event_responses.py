@@ -12,7 +12,8 @@ from schemas.shared.token_usage import TokenUsage
 
 class QueryRequirements(StrictCamelModel):
     """The reranker's inferred query requirements.
-    Duplicated from schemas.llm.reranker_response.QueryRequirements so the response shape can diverge from the LLM response shape in future."""
+    Duplicated from schemas.llm.reranker_response.QueryRequirements
+    so the response shape can diverge from the LLM response shape in future."""
 
     filters: list[str] = Field(default_factory=list)
     geography: list[str] = Field(default_factory=list)

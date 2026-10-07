@@ -146,5 +146,6 @@ class SubjectMetaResponse(CamelModel):
         if not self.time_period.options:
             return None
 
-        # Options are returned in the Data API's subject meta response in chronological order, so the last one is the latest.
+        # Options are returned in the Data API's subject meta response in chronological order,
+        # so the last one is the latest.
         return self.time_period.options[-1]

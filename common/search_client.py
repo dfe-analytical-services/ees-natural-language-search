@@ -107,8 +107,10 @@ async def multi_index_search(
 ) -> tuple[str, list[dict], dict, Mapping[str, list[str]]]:
 
     # TODO check how useful this search is at present.
-    # We should check which of the following categories are relevant to search on here, and compare with those which are actually being searched.
-    # Find which are being searched by looking at the search index configuration and check how the search documents are built:
+    # We should check which of the following categories are relevant to search on here,
+    # and compare with those which are actually being searched.
+    # Find which are being searched by looking at the search index configuration
+    # and check how the search documents are built:
     # Filter labels, filter item group labels, filter item labels, indicator labels.
 
     query, results = await hybrid_search(
@@ -119,8 +121,10 @@ async def multi_index_search(
     scores = defaultdict(list)
     for r in results:
         dataset_ids.add(r['fileId'])
-        # Note, `filterName` is the filter item group label. When the group label is 'Default', `filterName` contains the filter label instead.
-        # TODO if multiple filter item groups with the same name exist in a dataset (possible if there are multiple filters each with their own groups),
+        # Note, `filterName` is the filter item group label.
+        # When the group label is 'Default', `filterName` contains the filter label instead.
+        # TODO if multiple filter item groups with the same name exist in a dataset
+        # (possible if there are multiple filters each with their own groups),
         # duplicate entries are added to `relevant_filters_by_file_id`, with no way to distinguish between them.
         relevant_filters_by_file_id[r['fileId']].append(r['filterName'])
         scores[r['fileId']].append(r['@search.score'])

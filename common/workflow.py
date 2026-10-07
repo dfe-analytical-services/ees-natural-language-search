@@ -69,7 +69,8 @@ async def run_workflow(user_query: str, publication_id: str):
                 f"Relevant dataset for file ID '{dataset.fileId}' not found"
             )
 
-        # Use a combination of the relevant dataset data and the shortlisted reranker response data to create a reranker dataset response
+        # Use a combination of the relevant dataset data and the shortlisted reranker response data
+        # to create a reranker dataset response
         reranker_datasets.append(
             RerankerDatasetResponse(
                 data_set_file_id=relevant_dataset.data_set_file_id,
@@ -183,7 +184,8 @@ async def run_workflow(user_query: str, publication_id: str):
     else:
         # No time period requirement was extracted from the query, so skip the time period selection agent
         logger.info(
-            "Running filter and indicator selection agents concurrently. Skipping time period selection agent due to no time period requirement"
+            "Running filter and indicator selection agents concurrently. "
+            "Skipping time period selection agent due to no time period requirement"
         )
         (
             (filter_responses, filter_tokens_used),

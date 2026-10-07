@@ -37,7 +37,7 @@ A dataset is considered usable if it meets ALL of the following:
 - It is not redundant given other already-selected datasets (prefer the more specific or complete one)
 
 A dataset should be EXCLUDED if:
-- It is only tangentially related by topic but lacks the necessary variables or granularity 
+- It is only tangentially related by topic but lacks the necessary variables or granularity
 - Its geography or entity type doesn't match what the query demands
 - There are NO temporal reasons to completely exclude a dataset.
 - It duplicates information already covered by a higher quality selected dataset
@@ -79,7 +79,7 @@ Return only a valid JSON object in this exact structure:
     ],
     "confidence": "high | medium | low"
 }
-"""
+"""  # noqa: E501
 
 llm_reranker_user_prompt = """
 # User query
@@ -166,9 +166,11 @@ async def run_reranking_agent(
         if dataset.file_id in shortlisted_dataset_file_ids
     }
 
-    # Note that `relevantFilters` in the reranker response is for information only to return in the RerankerEventResponse,
+    # Note that `relevantFilters` in the reranker response is for information only
+    # to return in the RerankerEventResponse,
     # to justify the shortlisted datasets along with the relevance reason.
-    # The values don't affect the actual filtering of datasets in the filter selection agent run next in the next pipeline step.
+    # The values don't affect the actual filtering of datasets in the filter selection agent
+    # run next in the next pipeline step.
 
     return RerankingAgentResult(
         shortlisted_relevant_filters_by_file_id=shortlisted_relevant_filters_by_file_id,

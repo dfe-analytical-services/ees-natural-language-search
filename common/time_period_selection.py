@@ -53,7 +53,7 @@ Otherwise, return:
 }
 
 Use the exact input values for the code and year.
-"""
+"""  # noqa: E501
 
 llm_time_period_user_prompt="""
 # User query
