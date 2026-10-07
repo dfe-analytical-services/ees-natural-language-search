@@ -5,9 +5,9 @@ Final dataset response Pydantic models
 from enum import StrEnum
 
 from pydantic import Field, computed_field
-from schemas.shared.base_models import StrictCamelModel
 
 from schemas.domain.locations_response import DatasetLocations
+from schemas.shared.base_models import StrictCamelModel
 
 
 class TimePeriod(StrictCamelModel):
@@ -114,7 +114,7 @@ class FinalDatasetResponse(StrictCamelModel):
             "Keyed by filter label. The value is a filter item that has been auto-selected "
             "based on the filter's auto_select_filter_item_id, "
             "because there are no relevant selections made for the filter."
-        )
+        ),
     )
     unfiltered_filters: list[str] = Field(
         default_factory=list,

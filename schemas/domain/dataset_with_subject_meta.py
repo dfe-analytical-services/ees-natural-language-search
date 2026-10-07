@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict
+
 from schemas.ees_data_api.subject_meta_response import SubjectMetaResponse
 
 

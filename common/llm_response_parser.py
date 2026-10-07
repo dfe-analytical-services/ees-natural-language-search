@@ -24,7 +24,7 @@ def _strip_code_fences(raw: str) -> str:
     if not text.startswith("```"):
         return text
     newline = text.find("\n")
-    text = text[newline+1:] if newline != -1 else ""
+    text = text[newline + 1 :] if newline != -1 else ""
     if text.endswith("```"):
         text = text[:-3]
     return text.strip()

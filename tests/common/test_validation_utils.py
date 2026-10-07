@@ -12,10 +12,10 @@ from common.validation_utils import (
 from schemas.ees_data_api.subject_meta_response import TimePeriod
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
-    DatasetValidationErrorCode as ErrorCode,
-    DatasetValidationWarning,
-    DatasetValidationWarningCode as WarningCode,
 )
+from schemas.responses.final_dataset_response import DatasetValidationErrorCode as ErrorCode
+from schemas.responses.final_dataset_response import DatasetValidationWarning
+from schemas.responses.final_dataset_response import DatasetValidationWarningCode as WarningCode
 
 FILTER_1_LABEL = "Characteristic"
 FILTER_2_LABEL = "School type"
@@ -23,20 +23,14 @@ FILTER_2_LABEL = "School type"
 
 def _auto_selected_filter(*filter_labels: str) -> dict[str, AutoSelectedFilterItem]:
     return {
-        filter_label: AutoSelectedFilterItem(
-            filter_item_label="Total", filter_item_id=f"filter-item-{index}"
-        )
+        filter_label: AutoSelectedFilterItem(filter_item_label="Total", filter_item_id=f"filter-item-{index}")
         for index, filter_label in enumerate(filter_labels, start=1)
     }
 
 
-def _get_validation_warning_message(
-    warnings: list[DatasetValidationWarning], code: WarningCode
-) -> str:
+def _get_validation_warning_message(warnings: list[DatasetValidationWarning], code: WarningCode) -> str:
     messages = [warning.message for warning in warnings if warning.code == code]
-    assert (
-        len(messages) == 1
-    ), f"Expected exactly one validation warning with the code '{code}', found {len(messages)}"
+    assert len(messages) == 1, f"Expected exactly one validation warning with the code '{code}', found {len(messages)}"
     return messages[0]
 
 
@@ -45,21 +39,15 @@ def test_no_fallbacks_produce_no_warnings():
 
 
 def test_auto_selected_and_unfiltered_fallbacks_produce_separate_warnings():
-    validation_warnings = build_filter_fallback_warnings(
-        _auto_selected_filter(FILTER_1_LABEL), [FILTER_2_LABEL]
-    )
+    validation_warnings = build_filter_fallback_warnings(_auto_selected_filter(FILTER_1_LABEL), [FILTER_2_LABEL])
 
     assert len(validation_warnings) == 2
 
-    auto_selected_message = _get_validation_warning_message(
-        validation_warnings, WarningCode.AUTO_SELECTED_FILTER_ITEMS
-    )
+    auto_selected_message = _get_validation_warning_message(validation_warnings, WarningCode.AUTO_SELECTED_FILTER_ITEMS)
     assert f"'{FILTER_1_LABEL}'" in auto_selected_message
     assert f"'{FILTER_2_LABEL}'" not in auto_selected_message
 
-    unfiltered_message = _get_validation_warning_message(
-        validation_warnings, WarningCode.UNFILTERED_FILTERS
-    )
+    unfiltered_message = _get_validation_warning_message(validation_warnings, WarningCode.UNFILTERED_FILTERS)
     assert f"'{FILTER_2_LABEL}'" in unfiltered_message
     assert f"'{FILTER_1_LABEL}'" not in unfiltered_message
 
@@ -101,12 +89,8 @@ UNFILTERED_MESSAGE_CASES = [
 
 
 @pytest.mark.parametrize("labels, expected_message", AUTO_SELECTED_MESSAGE_CASES)
-def test_auto_selected_warning_names_every_filter_and_agrees_in_number(
-    labels: tuple[str, ...], expected_message: str
-):
-    validation_warnings = build_filter_fallback_warnings(
-        _auto_selected_filter(*labels), []
-    )
+def test_auto_selected_warning_names_every_filter_and_agrees_in_number(labels: tuple[str, ...], expected_message: str):
+    validation_warnings = build_filter_fallback_warnings(_auto_selected_filter(*labels), [])
 
     assert len(validation_warnings) == 1
     assert validation_warnings[0].code == WarningCode.AUTO_SELECTED_FILTER_ITEMS
@@ -114,9 +98,7 @@ def test_auto_selected_warning_names_every_filter_and_agrees_in_number(
 
 
 @pytest.mark.parametrize("labels, expected_message", UNFILTERED_MESSAGE_CASES)
-def test_unfiltered_warning_names_every_filter_it_covers(
-    labels: tuple[str, ...], expected_message: str
-):
+def test_unfiltered_warning_names_every_filter_it_covers(labels: tuple[str, ...], expected_message: str):
     validation_warnings = build_filter_fallback_warnings({}, list(labels))
 
     assert len(validation_warnings) == 1
@@ -154,9 +136,7 @@ def test_no_default_location_error_produces_expected_error():
 
 
 def test_no_time_period_requirement_warning_produces_expected_warning():
-    time_period_warning = build_no_time_period_requirement_warning(
-        TimePeriod(code="AY", label="2025/26", year=2025)
-    )
+    time_period_warning = build_no_time_period_requirement_warning(TimePeriod(code="AY", label="2025/26", year=2025))
 
     assert time_period_warning.code == WarningCode.NO_TIME_PERIOD_REQUIREMENT
     assert time_period_warning.message == (

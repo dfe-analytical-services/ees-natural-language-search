@@ -47,9 +47,7 @@ _GSS_CODE_SUFFIX = re.compile(r"\s*\(\s*[A-Za-z]\d{8}\s*\)\s*$")
 # or ", County of" in "Herefordshire, County of", and is used to remove them.
 # Note, it only applies to the inverted comma form, so a leading qualifier that is part of
 # the proper name e.g. "City of London" keeps "City of".
-_INVERTED_QUALIFIER_SUFFIX = re.compile(
-    r",\s*(city|county|borough|district)\s+of\s*$", re.IGNORECASE
-)
+_INVERTED_QUALIFIER_SUFFIX = re.compile(r",\s*(city|county|borough|district)\s+of\s*$", re.IGNORECASE)
 
 # This regex matches any non-alphanumeric characters, used for removing punctuation.
 _NON_ALPHANUMERIC = re.compile(r"[^a-z0-9]+")
@@ -153,11 +151,7 @@ def rank_match(
 
     # At least one extra word is meaningful, e.g. "North Yorkshire" for "Yorkshire", so keep
     # the MORE_SPECIFIC or LESS_SPECIFIC tier.
-    tie_break_score = (
-        len(extra_words - GENERIC_QUALIFIER_WORDS)
-        if tier is MatchTier.LESS_SPECIFIC
-        else 0
-    )
+    tie_break_score = len(extra_words - GENERIC_QUALIFIER_WORDS) if tier is MatchTier.LESS_SPECIFIC else 0
     return (tier, tie_break_score)
 
 
@@ -172,9 +166,7 @@ def flatten_by_legend(
     def walk(options: list[LocationOption], label: str) -> None:
         for option in options:
             if option.id is not None:
-                flattened[label].append(
-                    LocationItem(id=option.id, label=option.label, value=option.value)
-                )
+                flattened[label].append(LocationItem(id=option.id, label=option.label, value=option.value))
 
             walk(option.options or [], label)
 
@@ -227,15 +219,11 @@ def match_location_requirement(
     if set(normalised_query.split()) <= GENERIC_QUALIFIER_WORDS:
         return {}
 
-    matches_by_rank: dict[MatchRank, dict[str, list[LocationItem]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
+    matches_by_rank: dict[MatchRank, dict[str, list[LocationItem]]] = defaultdict(lambda: defaultdict(list))
 
     for level, locations in locations_by_level.items():
         for location in locations:
-            rank = rank_match(
-                normalised_query, normalise_location_name(location.label), threshold
-            )
+            rank = rank_match(normalised_query, normalise_location_name(location.label), threshold)
             if rank is not None:
                 matches_by_rank[rank][level].append(location)
 
@@ -256,32 +244,21 @@ async def get_location_matches(
     locations_by_file_id: dict[str, dict[str, list[LocationItem]]] = {}
 
     for file_id, dataset in datasets_by_id.items():
-        locations_by_geographic_level = flatten_by_legend(
-            dataset.subject_meta.locations
-        )
+        locations_by_geographic_level = flatten_by_legend(dataset.subject_meta.locations)
         # With no location requirements nothing is matched, not even an empty list per
         # level, signalling that the default location fallback should be used.
         geographic_level_results: dict[str, list[LocationItem]] = (
-            {level: [] for level in locations_by_geographic_level}
-            if location_requirements
-            else {}
+            {level: [] for level in locations_by_geographic_level} if location_requirements else {}
         )
         matched_ids_by_geographic_level: dict[str, set[str]] = defaultdict(set)
 
         for location_requirement in location_requirements:
-            matches = match_location_requirement(
-                location_requirement, locations_by_geographic_level, threshold
-            )
+            matches = match_location_requirement(location_requirement, locations_by_geographic_level, threshold)
             for geographic_level, locations in matches.items():
                 for location in locations:
                     # Multiple requirements can match the same location, so make sure not to add duplicates.
-                    if (
-                        location.id
-                        not in matched_ids_by_geographic_level[geographic_level]
-                    ):
-                        matched_ids_by_geographic_level[geographic_level].add(
-                            location.id
-                        )
+                    if location.id not in matched_ids_by_geographic_level[geographic_level]:
+                        matched_ids_by_geographic_level[geographic_level].add(location.id)
                         geographic_level_results[geographic_level].append(location)
 
         locations_by_file_id[file_id] = geographic_level_results

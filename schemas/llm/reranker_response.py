@@ -2,8 +2,9 @@
 LLM Reranker response Pydantic models
 """
 
-from pydantic import Field
 from typing import Optional
+
+from pydantic import Field
 
 from schemas.shared.base_models import StrictModel
 

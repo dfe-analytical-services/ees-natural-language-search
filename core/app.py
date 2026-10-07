@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import FastAPI
+
 from core.config import load_local_settings
 from core.logging_config import configure_logging
 

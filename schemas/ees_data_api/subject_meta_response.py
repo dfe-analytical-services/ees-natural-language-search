@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 from functools import cached_property
+
 from pydantic import Field
 
 from schemas.shared.base_models import CamelModel
@@ -104,7 +105,6 @@ class SubjectMetaResponse(CamelModel):
     locations: dict[GeographicLevel, LocationLevel]
     time_period: TimePeriods
 
-
     @cached_property
     def _filter_item_by_id_lookup(self) -> dict[str, FilterItem]:
         """Keyed by filter item id."""
@@ -115,13 +115,11 @@ class SubjectMetaResponse(CamelModel):
             for filter_item in filter_item_group.filter_items
         }
 
-
     def get_filter_item_by_id(self, filter_item_id: str) -> FilterItem:
         filter_item = self._filter_item_by_id_lookup.get(filter_item_id)
         if filter_item is None:
             raise KeyError(f"Filter item with id '{filter_item_id}' not found")
         return filter_item
-
 
     @cached_property
     def _indicator_lookup(self) -> dict[str, Indicator]:
@@ -134,7 +132,6 @@ class SubjectMetaResponse(CamelModel):
             for indicator_group in self.indicators.values()
             for indicator in indicator_group.indicators
         }
-
 
     def get_indicator(self, indicator_label: str) -> Indicator:
         indicator = self._indicator_lookup.get(indicator_label)

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+
 from clients.openai_client import generate_answer
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.domain.filter_item_candidates import DatasetFilterItemCandidates
@@ -110,13 +111,10 @@ def _format_filter_item_candidates(candidates: DatasetFilterItemCandidates) -> s
 
     for reference, candidate in sorted(candidates.root.items()):
         filter_labels_by_id[candidate.filter_id] = candidate.filter_label
-        lines_by_filter_id.setdefault(candidate.filter_id, []).append(
-            f"{reference}. {candidate.filter_item.label}"
-        )
+        lines_by_filter_id.setdefault(candidate.filter_id, []).append(f"{reference}. {candidate.filter_item.label}")
 
     return "\n\n".join(
-        "\n".join([f"## {filter_labels_by_id[filter_id]}", *lines])
-        for filter_id, lines in lines_by_filter_id.items()
+        "\n".join([f"## {filter_labels_by_id[filter_id]}", *lines]) for filter_id, lines in lines_by_filter_id.items()
     )
 
 
@@ -156,10 +154,7 @@ async def run_filter_selection_agent(
     model_responses = await asyncio.gather(*tasks)
 
     # Pair each response with the file ID of the dataset it was requested for
-    contents = [
-        (file_id, response.choices[0].message.content)
-        for file_id, response in zip(file_ids, model_responses)
-    ]
+    contents = [(file_id, response.choices[0].message.content) for file_id, response in zip(file_ids, model_responses)]
 
     tokens_used = TokenUsage(
         input=sum(response.usage.prompt_tokens for response in model_responses),

@@ -3,27 +3,27 @@ import logging
 import os
 
 from clients.ees_data_api_client import EesDataApiClient
-from common.location_utils import get_location_matches
-from common.reranker import run_reranking_agent
-from common.filter_selection import run_filter_selection_agent
-from common.retrieve_datasets import retrieve_relevant_datasets
-from common.time_period_selection import run_time_period_selection_agent
-from common.indicator_selection import run_indicator_selection_agent
 from common.data_utils import (
     build_filter_item_candidates,
     build_final_dataset_response,
     parse_selection_responses,
 )
+from common.filter_selection import run_filter_selection_agent
+from common.indicator_selection import run_indicator_selection_agent
+from common.location_utils import get_location_matches
 from common.logging_utils import log_dataset_selection_summary
+from common.reranker import run_reranking_agent
+from common.retrieve_datasets import retrieve_relevant_datasets
+from common.time_period_selection import run_time_period_selection_agent
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.domain.filter_item_candidates import DatasetFilterItemCandidates
 from schemas.responses.event_responses import (
     PipelineCompleteEventData,
     PipelineCompleteEventResponse,
     QueryRequirements,
-    RetrievedDatasetsEventData,
-    RerankerEventResponse,
     RerankerEventData,
+    RerankerEventResponse,
+    RetrievedDatasetsEventData,
     RetrievedDatasetsEventResponse,
     StartEventResponse,
 )
@@ -37,10 +37,8 @@ async def run_workflow(user_query: str, publication_id: str):
     yield StartEventResponse().model_dump()
 
     logger.info("Searching to retrieve relevant filters and their datasets")
-    relevant_dataset_responses, relevant_filters_by_file_id = (
-        await retrieve_relevant_datasets(
-            user_query=user_query, publication_id=publication_id
-        )
+    relevant_dataset_responses, relevant_filters_by_file_id = await retrieve_relevant_datasets(
+        user_query=user_query, publication_id=publication_id
     )
 
     retrieved_datasets_event = RetrievedDatasetsEventResponse(
@@ -53,21 +51,16 @@ async def run_workflow(user_query: str, publication_id: str):
     reranker_result = await run_reranking_agent(
         user_query=user_query,
         relevant_datasets=relevant_dataset_responses,
-        relevant_filters_by_file_id=relevant_filters_by_file_id
+        relevant_filters_by_file_id=relevant_filters_by_file_id,
     )
 
-    relevant_datasets_by_id = {
-        dataset.file_id: dataset
-        for dataset in relevant_dataset_responses
-    }
+    relevant_datasets_by_id = {dataset.file_id: dataset for dataset in relevant_dataset_responses}
 
     reranker_datasets: list[RerankerDatasetResponse] = []
     for dataset in reranker_result.reranker_response.shortlistedDatasets:
         relevant_dataset = relevant_datasets_by_id.get(dataset.fileId)
         if relevant_dataset is None:
-            raise KeyError(
-                f"Relevant dataset for file ID '{dataset.fileId}' not found"
-            )
+            raise KeyError(f"Relevant dataset for file ID '{dataset.fileId}' not found")
 
         # Use a combination of the relevant dataset data and the shortlisted reranker response data
         # to create a reranker dataset response
@@ -112,10 +105,7 @@ async def run_workflow(user_query: str, publication_id: str):
         output=reranker_result.total_tokens_used.output,
     )
 
-    relevance_reasons_by_file_id = {
-        dataset.file_id: dataset.relevance_reason
-        for dataset in reranker_datasets
-    }
+    relevance_reasons_by_file_id = {dataset.file_id: dataset.relevance_reason for dataset in reranker_datasets}
 
     logger.info("Getting subject meta for shortlisted datasets")
     ees_data_api_client = EesDataApiClient(base_url=os.environ["EES_URL_API_DATA"])
@@ -124,9 +114,7 @@ async def run_workflow(user_query: str, publication_id: str):
     # and in the filter selection, indicator selection, and time period selection agents
     reranked_datasets_by_file_id: dict[str, DatasetWithSubjectMeta] = {}
     for reranker_dataset in reranker_datasets:
-        subject_meta = ees_data_api_client.get_subject_meta(
-            subject_id=reranker_dataset.subject_id
-        )
+        subject_meta = ees_data_api_client.get_subject_meta(subject_id=reranker_dataset.subject_id)
         reranked_datasets_by_file_id[reranker_dataset.file_id] = DatasetWithSubjectMeta(
             dataset_file_id=reranker_dataset.data_set_file_id,
             file_id=reranker_dataset.file_id,
@@ -144,20 +132,17 @@ async def run_workflow(user_query: str, publication_id: str):
     location_requirements = reranker_result.reranker_response.queryRequirements.locations
 
     logger.info("Getting location matches")
-    location_responses = await get_location_matches(
-        reranked_datasets_by_file_id, location_requirements
-    )
+    location_responses = await get_location_matches(reranked_datasets_by_file_id, location_requirements)
 
     filter_item_candidates_by_file_id = build_filter_item_candidates(
-        datasets_by_file_id=reranked_datasets_by_file_id, shortlisted_relevant_filters_by_file_id=reranker_result.shortlisted_relevant_filters_by_file_id
+        datasets_by_file_id=reranked_datasets_by_file_id,
+        shortlisted_relevant_filters_by_file_id=reranker_result.shortlisted_relevant_filters_by_file_id,
     )
 
     time_period_requirement = reranker_result.reranker_response.queryRequirements.timePeriod
 
     if time_period_requirement is not None:
-        logger.info(
-            "Running filter selection, indicator selection, and time period selection agents concurrently"
-        )
+        logger.info("Running filter selection, indicator selection, and time period selection agents concurrently")
         (
             (filter_responses, filter_tokens_used),
             (indicator_responses, indicator_tokens_used),
@@ -207,15 +192,9 @@ async def run_workflow(user_query: str, publication_id: str):
         time_period_responses = []
         time_period_tokens_used = TokenUsage(input=0, output=0)
 
-    total_tokens_used.input += (
-        filter_tokens_used.input
-        + indicator_tokens_used.input
-        + time_period_tokens_used.input
-    )
+    total_tokens_used.input += filter_tokens_used.input + indicator_tokens_used.input + time_period_tokens_used.input
     total_tokens_used.output += (
-        filter_tokens_used.output
-        + indicator_tokens_used.output
-        + time_period_tokens_used.output
+        filter_tokens_used.output + indicator_tokens_used.output + time_period_tokens_used.output
     )
 
     filter_results_by_file_id, indicator_results_by_file_id, time_period_results_by_file_id = parse_selection_responses(
@@ -268,6 +247,4 @@ async def run_workflow(user_query: str, publication_id: str):
 def calculate_token_cost(tokens: TokenUsage) -> float:
     costPer1kTokensInput = 0.0004
     costPer1kTokensOutput = 0.0014
-    return (costPer1kTokensInput * (tokens.input / 1000)) + (
-        costPer1kTokensOutput * (tokens.output / 1000)
-    )
+    return (costPer1kTokensInput * (tokens.input / 1000)) + (costPer1kTokensOutput * (tokens.output / 1000))

@@ -25,9 +25,7 @@ def _summarise_relevant_filters_for_logging(
 
     relevant_decisions = (
         (raw_reference, decision)
-        for raw_reference, decision in (
-            filter_results.filter_items if filter_results else {}
-        ).items()
+        for raw_reference, decision in (filter_results.filter_items if filter_results else {}).items()
         if decision.relevant
     )
 
@@ -41,9 +39,7 @@ def _summarise_relevant_filters_for_logging(
             # which would replace the whole pipeline result with an error event.
             unresolved_references.append(raw_reference)
         else:
-            relevant_by_label[candidate.filter_label][
-                candidate.filter_item.label
-            ] = decision.reasoning
+            relevant_by_label[candidate.filter_label][candidate.filter_item.label] = decision.reasoning
 
     if unresolved_references:
         logger.warning(
@@ -58,11 +54,7 @@ def _summarise_relevant_indicators_for_logging(
     indicator_results: dict[str, IndicatorDecision] | None,
 ) -> dict[str, str]:
     """Reduces indicators to those that are relevant, and keeps their reasoning."""
-    return {
-        label: decision.reasoning
-        for label, decision in (indicator_results or {}).items()
-        if decision.relevant
-    }
+    return {label: decision.reasoning for label, decision in (indicator_results or {}).items() if decision.relevant}
 
 
 def _summarise_locations_for_logging(
@@ -71,9 +63,7 @@ def _summarise_locations_for_logging(
     """Drops empty geographic levels and reduces each location to a label."""
     return {
         level: [location.label for location in locations]
-        for level, locations in (
-            location_results.root.items() if location_results else []
-        )
+        for level, locations in (location_results.root.items() if location_results else [])
         if locations
     }
 

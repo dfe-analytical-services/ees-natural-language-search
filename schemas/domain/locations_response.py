@@ -3,6 +3,7 @@ Location response Pydantic models
 """
 
 from pydantic import RootModel
+
 from schemas.shared.base_models import StrictCamelModel
 
 

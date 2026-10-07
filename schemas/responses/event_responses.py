@@ -3,10 +3,11 @@ Event response Pydantic models
 """
 
 from pydantic import Field
-from schemas.shared.base_models import StrictCamelModel
+
 from schemas.responses.final_dataset_response import FinalDatasetResponse
 from schemas.responses.relevant_dataset_response import RelevantDatasetResponse
 from schemas.responses.reranker_dataset_response import RerankerDatasetResponse
+from schemas.shared.base_models import StrictCamelModel
 from schemas.shared.token_usage import TokenUsage
 
 

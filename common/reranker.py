@@ -1,12 +1,13 @@
 import logging
 from collections.abc import Mapping
 from datetime import datetime
-from common.llm_response_parser import parse_llm_response
+
 from clients.openai_client import generate_answer
-from schemas.llm.validation_error import LLMValidationError
-from schemas.responses.relevant_dataset_response import RelevantDatasetResponse
+from common.llm_response_parser import parse_llm_response
 from schemas.domain.reranking_agent_result import RerankingAgentResult
 from schemas.llm.reranker_response import RerankerResponse
+from schemas.llm.validation_error import LLMValidationError
+from schemas.responses.relevant_dataset_response import RelevantDatasetResponse
 from schemas.shared.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
@@ -120,7 +121,7 @@ async def run_reranking_agent(
             "title": dataset.title,
             "content": dataset.description,
             "filters": dataset.filters,
-            "timePeriodRange": dataset.time_period_range.model_dump(by_alias=True)
+            "timePeriodRange": dataset.time_period_range.model_dump(by_alias=True),
         }
         for dataset in relevant_datasets
     ]
@@ -130,12 +131,16 @@ async def run_reranking_agent(
         user_query=llm_reranker_user_prompt.format(
             user_query=user_query,
             dataset_metadata_list=reranking_datasets,
-            today_date=datetime.today().strftime('%d-%m-%Y')
+            today_date=datetime.today().strftime("%d-%m-%Y"),
         ),
         system_prompt=llm_reranker_sys_prompt,
     )
 
-    reranker_response, used_input_tokens, used_output_tokens = response.choices[0].message.content, response.usage.prompt_tokens, response.usage.completion_tokens
+    reranker_response, used_input_tokens, used_output_tokens = (
+        response.choices[0].message.content,
+        response.usage.prompt_tokens,
+        response.usage.completion_tokens,
+    )
 
     logger.info("Shortlisted datasets")
 
@@ -145,9 +150,7 @@ async def run_reranking_agent(
     if reranker_parsed is None:
         raise LLMValidationError("The reranking step returned a malformed response, the query could not be processed.")
 
-    shortlisted_dataset_file_ids = [
-        d.fileId for d in reranker_parsed.shortlistedDatasets
-    ]
+    shortlisted_dataset_file_ids = [d.fileId for d in reranker_parsed.shortlistedDatasets]
 
     # Narrow the relevant filter item groups down to only the datasets that were shortlisted
     shortlisted_relevant_filters_by_file_id = {

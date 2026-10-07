@@ -58,8 +58,6 @@ def build_dataset() -> Callable[..., DatasetWithSubjectMeta]:
             }
         )
 
-        return DatasetWithSubjectMeta(
-            **{**DATASET_DEFAULTS, **overrides, "subject_meta": subject_meta}
-        )
+        return DatasetWithSubjectMeta(**{**DATASET_DEFAULTS, **overrides, "subject_meta": subject_meta})
 
     return _make

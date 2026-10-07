@@ -1,7 +1,6 @@
 """Azure Functions health check handler."""
 
-from azurefunctions.extensions.http.fastapi import Request, JSONResponse
-
+from azurefunctions.extensions.http.fastapi import JSONResponse, Request
 
 HEALTH_CHECK_RESPONSE = {"message": "API working"}
 

@@ -6,9 +6,7 @@ from common.default_location import (
     DEFAULT_LOCATION_GEOGRAPHIC_LEVEL_LABEL,
     DEFAULT_LOCATION_NAME,
 )
-from schemas.ees_data_api.subject_meta_response import (
-    TimePeriod as SubjectMetaTimePeriod,
-)
+from schemas.ees_data_api.subject_meta_response import TimePeriod as SubjectMetaTimePeriod
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
     DatasetValidationError,
@@ -40,9 +38,7 @@ def build_filter_fallback_warnings(
 
     if auto_selected_filter_items:
 
-        filter_description, is_plural = _describe_filters(
-            list(auto_selected_filter_items)
-        )
+        filter_description, is_plural = _describe_filters(list(auto_selected_filter_items))
 
         message = (
             f"No relevant filter items were found matching the query for the {filter_description}, so "

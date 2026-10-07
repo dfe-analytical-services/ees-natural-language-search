@@ -2,7 +2,9 @@ import logging
 from collections import defaultdict
 from collections.abc import Mapping
 from typing import TypeVar
+
 from pydantic import BaseModel
+
 from common.llm_response_parser import parse_llm_response
 from common.location_utils import get_default_location
 from common.search_client import filter_client
@@ -18,6 +20,14 @@ from schemas.domain.filter_item_candidates import (
     DatasetFilterItemCandidates,
     FilterItemCandidate,
 )
+from schemas.domain.locations_response import DatasetLocations
+from schemas.ees_data_api.subject_meta_response import FilterItem, SubjectMetaResponse
+from schemas.llm.filter_selection_response import FilterItemDatasetResult
+from schemas.llm.indicator_selection_response import IndicatorDatasetResult, IndicatorDecision
+from schemas.llm.time_period_selection_response import (
+    TimePeriodDatasetResult,
+)
+from schemas.llm.time_period_selection_response import TimePeriodRange as LlmTimePeriodRange
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
     DatasetValidationError,
@@ -29,14 +39,6 @@ from schemas.responses.final_dataset_response import (
     TimePeriod,
     TimePeriodRange,
 )
-from schemas.llm.filter_selection_response import FilterItemDatasetResult
-from schemas.llm.indicator_selection_response import IndicatorDatasetResult, IndicatorDecision
-from schemas.domain.locations_response import DatasetLocations
-from schemas.llm.time_period_selection_response import (
-    TimePeriodDatasetResult,
-    TimePeriodRange as LlmTimePeriodRange,
-)
-from schemas.ees_data_api.subject_meta_response import FilterItem, SubjectMetaResponse
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -119,16 +121,15 @@ def _retrieve_shortlisted_relevant_filter_item_group_ids(
         # Unused fields:
         # filterCategory is the field named used in the index for the filter label
         # filterValues is a list of the filter item labels
-        select=['fileId', 'filterGroupId', 'filterName']
+        select=["fileId", "filterGroupId", "filterName"],
     )
 
     filter_item_group_ids_by_file_id: defaultdict[str, list[str]] = defaultdict(list)
     for result in results:
         file_id = result["fileId"]
-        if (
-            shortlisted_relevant_filters_by_file_id is not None
-            and result["filterName"] not in shortlisted_relevant_filters_by_file_id.get(file_id, [])
-        ):
+        if shortlisted_relevant_filters_by_file_id is not None and result[
+            "filterName"
+        ] not in shortlisted_relevant_filters_by_file_id.get(file_id, []):
             continue
         filter_item_group_ids_by_file_id[file_id].append(result["filterGroupId"])
 
@@ -168,8 +169,8 @@ def _build_filter_item_candidates(
     candidates: dict[int, FilterItemCandidate] = {}
     reference = 1
 
-   # Build the candidate list by iterating over the subject meta rather than the set of ID's,
-   # so that the order is stable for a given release version.
+    # Build the candidate list by iterating over the subject meta rather than the set of ID's,
+    # so that the order is stable for a given release version.
     for filter_ in subject_meta.filters.values():
         for filter_item_group in filter_.filter_item_groups.values():
 
@@ -213,15 +214,23 @@ def parse_selection_responses(
     filter_responses: list[tuple[str, str]],
     indicator_responses: list[tuple[str, str]],
     time_period_responses: list[tuple[str, str]],
-) -> tuple[dict[str, FilterItemDatasetResult], dict[str, dict[str, IndicatorDecision]], dict[str, LlmTimePeriodRange | None]]:
-    filter_results_by_id = _parse_responses_by_file_id(filter_responses, FilterItemDatasetResult, context="filter selection")
+) -> tuple[
+    dict[str, FilterItemDatasetResult], dict[str, dict[str, IndicatorDecision]], dict[str, LlmTimePeriodRange | None]
+]:
+    filter_results_by_id = _parse_responses_by_file_id(
+        filter_responses, FilterItemDatasetResult, context="filter selection"
+    )
     indicator_results_by_id = {
         file_id: result.root
-        for file_id, result in _parse_responses_by_file_id(indicator_responses, IndicatorDatasetResult, context="indicator selection").items()
+        for file_id, result in _parse_responses_by_file_id(
+            indicator_responses, IndicatorDatasetResult, context="indicator selection"
+        ).items()
     }
     time_period_results_by_id = {
         file_id: result.time_period
-        for file_id, result in _parse_responses_by_file_id(time_period_responses, TimePeriodDatasetResult, context="time period selection").items()
+        for file_id, result in _parse_responses_by_file_id(
+            time_period_responses, TimePeriodDatasetResult, context="time period selection"
+        ).items()
     }
     return filter_results_by_id, indicator_results_by_id, time_period_results_by_id
 
@@ -252,19 +261,23 @@ def _resolve_filters(
 
         reference = DatasetFilterItemCandidates.parse_reference(raw_reference)
         if reference is None:
-            validation_errors.append(DatasetValidationError(
-                code=DatasetValidationErrorCode.MALFORMED_FILTER_ITEM_REFERENCE,
-                message=f"The filter item reference '{raw_reference}' was not a valid number.",
-            ))
+            validation_errors.append(
+                DatasetValidationError(
+                    code=DatasetValidationErrorCode.MALFORMED_FILTER_ITEM_REFERENCE,
+                    message=f"The filter item reference '{raw_reference}' was not a valid number.",
+                )
+            )
             continue
 
         candidate = filter_item_candidates.get(reference)
         if candidate is None:
             # There was no candidate for the given reference number, indicating an invalid selection by the model.
-            validation_errors.append(DatasetValidationError(
-                code=DatasetValidationErrorCode.INVALID_FILTER_ITEM,
-                message=f"No filter item was found for the reference number '{reference}' for this dataset.",
-            ))
+            validation_errors.append(
+                DatasetValidationError(
+                    code=DatasetValidationErrorCode.INVALID_FILTER_ITEM,
+                    message=f"No filter item was found for the reference number '{reference}' for this dataset.",
+                )
+            )
             continue
 
         if decision.filter_item_label is not None and decision.filter_item_label != candidate.filter_item.label:
@@ -303,7 +316,8 @@ def _resolve_filters(
             auto_select_filter_item = subject_meta.get_filter_item_by_id(filter_.auto_select_filter_item_id)
             selected_filter_items.append(auto_select_filter_item)
             auto_selected_filter_items[filter_.label] = AutoSelectedFilterItem(
-                filter_item_label=auto_select_filter_item.label, filter_item_id=auto_select_filter_item.id,
+                filter_item_label=auto_select_filter_item.label,
+                filter_item_id=auto_select_filter_item.id,
             )
         else:
             for filter_item_group in filter_.filter_item_groups.values():
@@ -332,10 +346,12 @@ def _resolve_indicators(
         try:
             indicator = subject_meta.get_indicator(indicator_label)
         except KeyError:
-            validation_errors.append(DatasetValidationError(
-                code=DatasetValidationErrorCode.INVALID_INDICATOR,
-                message=f"No indicator '{indicator_label}' was found for this dataset in the subject meta.",
-            ))
+            validation_errors.append(
+                DatasetValidationError(
+                    code=DatasetValidationErrorCode.INVALID_INDICATOR,
+                    message=f"No indicator '{indicator_label}' was found for this dataset in the subject meta.",
+                )
+            )
             continue
         indicators.append(IndicatorSelectionItem(id=indicator.id, label=indicator_label))
 
@@ -363,7 +379,9 @@ def _resolve_time_period(
     if time_period_result is not None:
         # The model returned a time period selection,
         # so validate it against the available time periods in the subject meta
-        available_time_periods = {(time_period.code, time_period.year) for time_period in subject_meta.time_period.options}
+        available_time_periods = {
+            (time_period.code, time_period.year) for time_period in subject_meta.time_period.options
+        }
         start_valid = (time_period_result.start.code, time_period_result.start.year) in available_time_periods
         end_valid = (time_period_result.end.code, time_period_result.end.year) in available_time_periods
         if not (start_valid and end_valid):
@@ -423,7 +441,9 @@ def _resolve_locations(
     """Resolve the location result for the final dataset response, along with any validation
     errors and warnings."""
     # The result must have at least one location selection at any geographic level.
-    has_location = location_results is not None and any(len(locations) > 0 for locations in location_results.root.values())
+    has_location = location_results is not None and any(
+        len(locations) > 0 for locations in location_results.root.values()
+    )
 
     if has_location:
         return location_results, [], []
@@ -518,5 +538,5 @@ def rrf_to_percentage(rrf_score: float):
     # Both components are equal since vector score and BM25 score have same weightage currently
     RRF_MAX = (1.0 / (1 + RRF_K)) + (1.0 / (1 + RRF_K))
 
-    raw = (rrf_score/RRF_MAX) * 100
+    raw = (rrf_score / RRF_MAX) * 100
     return round(min(raw, 100.0), 1)
