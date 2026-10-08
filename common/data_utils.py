@@ -127,9 +127,10 @@ def _retrieve_shortlisted_relevant_filter_item_group_ids(
     filter_item_group_ids_by_file_id: defaultdict[str, list[str]] = defaultdict(list)
     for result in results:
         file_id = result["fileId"]
-        if shortlisted_relevant_filters_by_file_id is not None and result[
-            "filterName"
-        ] not in shortlisted_relevant_filters_by_file_id.get(file_id, []):
+        filter_name = result["filterName"]
+        if shortlisted_relevant_filters_by_file_id is not None and filter_name not in (
+            shortlisted_relevant_filters_by_file_id.get(file_id, [])
+        ):
             continue
         filter_item_group_ids_by_file_id[file_id].append(result["filterGroupId"])
 
