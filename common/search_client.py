@@ -1,15 +1,16 @@
-from collections.abc import Mapping
 import os
 import time
-from openai import AsyncAzureOpenAI
 from collections import defaultdict
-from azure.search.documents import SearchClient
-from azure.identity import DefaultAzureCredential
+from collections.abc import Mapping
+
 from azure.core.credentials import AzureKeyCredential
+from azure.identity import DefaultAzureCredential
+from azure.search.documents import SearchClient
 from azure.search.documents.models import VectorizedQuery
+from openai import AsyncAzureOpenAI
 
 azure_search_key = os.environ.get("AZURE_SEARCH_KEY")
-if azure_search_key and len(azure_search_key)>0:
+if azure_search_key and len(azure_search_key) > 0:
     credential = AzureKeyCredential(azure_search_key)
 else:
     credential = DefaultAzureCredential()
@@ -17,19 +18,19 @@ else:
 filter_client = SearchClient(
     endpoint=os.environ["AZURE_SEARCH_ENDPOINT"],
     index_name=os.environ["AZURE_SEARCH_FILTER_INDEX"],
-    credential=credential
+    credential=credential,
 )
 
 dataset_client = SearchClient(
     endpoint=os.environ["AZURE_SEARCH_ENDPOINT"],
     index_name=os.environ["AZURE_SEARCH_DATASET_INDEX"],
-    credential=credential
+    credential=credential,
 )
 
 
 def batch(items, size=20):
     for i in range(0, len(items), size):
-        yield items[i:i+size]
+        yield items[i : i + size]
 
 
 async def get_embeddings(input_text: str | list[str], model_name: str, dimensions: int = 1536):
@@ -49,9 +50,7 @@ async def get_embeddings(input_text: str | list[str], model_name: str, dimension
             for attempt in range(1, 2 + 1):
                 try:
                     response = await client.embeddings.create(
-                        model=os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"],  
-                        input= chunk,
-                        dimensions=dimensions
+                        model=os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"], input=chunk, dimensions=dimensions
                     )
 
                     all_embeddings.extend(d.embedding for d in response.data)
@@ -67,15 +66,11 @@ async def get_embeddings(input_text: str | list[str], model_name: str, dimension
                         raise RuntimeError(f"Embedding failed after {2} attempts") from e
 
                     # Backoff for transient errors (504s, throttling)
-                    time.sleep(2 ** attempt)
+                    time.sleep(2**attempt)
 
         return all_embeddings, total_tokens
 
-    response = await client.embeddings.create(
-        input = input_text,
-        model = model_name,
-        dimensions = dimensions
-    )
+    response = await client.embeddings.create(input=input_text, model=model_name, dimensions=dimensions)
 
     embeddings = [x.embedding for x in response.data]
 
@@ -83,7 +78,7 @@ async def get_embeddings(input_text: str | list[str], model_name: str, dimension
 
 
 async def hybrid_search(user_query: str, publication_id: str | None = None, top: int = 10, weight: float = 0.5):
-    query_vector, _ = await get_embeddings(user_query, 'text-embedding-3-large')
+    query_vector, _ = await get_embeddings(user_query, "text-embedding-3-large")
 
     vector_query = VectorizedQuery(
         vector=query_vector[0],
@@ -96,7 +91,7 @@ async def hybrid_search(user_query: str, publication_id: str | None = None, top:
         search_text=user_query,
         vector_queries=[vector_query],
         filter=f"publicationId eq '{publication_id}' and latestData eq true" if publication_id else None,
-        top=top
+        top=top,
     )
 
     return user_query, results
@@ -107,25 +102,27 @@ async def multi_index_search(
 ) -> tuple[str, list[dict], dict, Mapping[str, list[str]]]:
 
     # TODO check how useful this search is at present.
-    # We should check which of the following categories are relevant to search on here, and compare with those which are actually being searched.
-    # Find which are being searched by looking at the search index configuration and check how the search documents are built:
+    # We should check which of the following categories are relevant to search on here,
+    # and compare with those which are actually being searched.
+    # Find which are being searched by looking at the search index configuration
+    # and check how the search documents are built:
     # Filter labels, filter item group labels, filter item labels, indicator labels.
 
-    query, results = await hybrid_search(
-        user_query=user_query, publication_id=publication_id, top=top
-    )
+    query, results = await hybrid_search(user_query=user_query, publication_id=publication_id, top=top)
     dataset_ids = set()
     relevant_filters_by_file_id = defaultdict(list[str])
     scores = defaultdict(list)
     for r in results:
-        dataset_ids.add(r['fileId'])
-        # Note, `filterName` is the filter item group label. When the group label is 'Default', `filterName` contains the filter label instead.
-        # TODO if multiple filter item groups with the same name exist in a dataset (possible if there are multiple filters each with their own groups),
+        dataset_ids.add(r["fileId"])
+        # Note, `filterName` is the filter item group label.
+        # When the group label is 'Default', `filterName` contains the filter label instead.
+        # TODO if multiple filter item groups with the same name exist in a dataset
+        # (possible if there are multiple filters each with their own groups),
         # duplicate entries are added to `relevant_filters_by_file_id`, with no way to distinguish between them.
-        relevant_filters_by_file_id[r['fileId']].append(r['filterName'])
-        scores[r['fileId']].append(r['@search.score'])
+        relevant_filters_by_file_id[r["fileId"]].append(r["filterName"])
+        scores[r["fileId"]].append(r["@search.score"])
 
-    max_scores = {k:max(v) for k, v in scores.items()}
+    max_scores = {k: max(v) for k, v in scores.items()}
     datasets = [dataset_client.get_document(dataset_id) for dataset_id in dataset_ids]
 
     return query, datasets, max_scores, relevant_filters_by_file_id

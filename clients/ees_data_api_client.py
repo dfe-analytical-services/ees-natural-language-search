@@ -5,9 +5,7 @@ from schemas.ees_data_api.subject_meta_response import SubjectMetaResponse
 
 class EesDataApiClient(RequestsWebClient):
     def __init__(self, base_url: str):
-        super().__init__(
-            base_url=base_url
-        )
+        super().__init__(base_url=base_url)
 
     @get("api/meta/subject/{subject_id}")
     def get_subject_meta(self, subject_id: str) -> SubjectMetaResponse:

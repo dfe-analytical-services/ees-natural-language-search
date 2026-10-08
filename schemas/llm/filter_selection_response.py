@@ -26,5 +26,8 @@ class FilterItemDatasetResult(BaseModel):
     irrelevant_filters: dict[str, str] = Field(
         alias="irrelevantFilters",
         default_factory=dict,
-        description="Keyed by exact filter label. The value is an explanation of why none of the filter's filter items are relevant",
+        description=(
+            "Keyed by exact filter label. "
+            "The value is an explanation of why none of the filter's filter items are relevant"
+        ),
     )

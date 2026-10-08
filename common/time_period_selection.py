@@ -1,13 +1,14 @@
 import asyncio
 import json
 import logging
+
 from clients.openai_client import generate_answer
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.shared.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 
-llm_time_period_sys_prompt="""
+llm_time_period_sys_prompt = """
 You are a time period selection agent. Your task is to determine which starting and ending time period from a dataset best fit the time period requirement extracted from a user's data query.
 
 # Security
@@ -53,9 +54,9 @@ Otherwise, return:
 }
 
 Use the exact input values for the code and year.
-"""
+"""  # noqa: E501
 
-llm_time_period_user_prompt="""
+llm_time_period_user_prompt = """
 # User query
 <user_query>
 {raw_query}
@@ -104,10 +105,7 @@ async def run_time_period_selection_agent(
     model_responses = await asyncio.gather(*tasks)
 
     # Pair each response with the file ID of the dataset it was requested for
-    contents = [
-        (file_id, response.choices[0].message.content)
-        for file_id, response in zip(file_ids, model_responses)
-    ]
+    contents = [(file_id, response.choices[0].message.content) for file_id, response in zip(file_ids, model_responses)]
 
     tokens_used = TokenUsage(
         input=sum(response.usage.prompt_tokens for response in model_responses),

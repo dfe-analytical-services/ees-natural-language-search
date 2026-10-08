@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import FastAPI
+
 from core.config import load_local_settings
 from core.logging_config import configure_logging
 
@@ -11,8 +12,8 @@ load_local_settings()
 configure_logging()
 logger.info("Logging configured")
 
-from routes.natural_language_search_function import router as natural_language_search_router
-from routes.vectorizer_middleware import router as vectorizer_middleware_router
+from routes.natural_language_search_function import router as natural_language_search_router  # noqa: E402
+from routes.vectorizer_middleware import router as vectorizer_middleware_router  # noqa: E402
 
 fastapi_app = FastAPI()
 

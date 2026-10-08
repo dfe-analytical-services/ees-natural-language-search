@@ -1,5 +1,6 @@
-from collections.abc import Mapping
 import logging
+from collections.abc import Mapping
+
 from common.data_utils import rrf_to_percentage
 from common.search_client import multi_index_search
 from schemas.responses.relevant_dataset_response import RelevantDatasetResponse

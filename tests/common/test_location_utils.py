@@ -22,9 +22,7 @@ class TestGetLocationMatches:
 
         Returns the matched location labels, sorted per geographic level.
         """
-        dataset = build_dataset(
-            locations=load_json_fixture("subject_meta_locations.json")
-        )
+        dataset = build_dataset(locations=load_json_fixture("subject_meta_locations.json"))
 
         def _match(*location_requirements: str) -> dict[str, list[str]]:
             response = asyncio.run(
@@ -73,9 +71,7 @@ class TestGetLocationMatches:
             "Local authority": ["Liverpool"],
         }
 
-    def test_a_requirement_can_match_at_more_than_one_level(
-        self, match_location_labels
-    ):
+    def test_a_requirement_can_match_at_more_than_one_level(self, match_location_labels):
         """No location is called exactly "London", but multiple locations at different geographic levels containing
         "London" should be matched."""
         assert match_location_labels("London") == {
@@ -102,9 +98,7 @@ class TestGetLocationMatches:
             "West Berkshire",
         ],
     )
-    def test_a_requirement_matches_exactly_the_location_named(
-        self, match_location_labels_flattened, requirement
-    ):
+    def test_a_requirement_matches_exactly_the_location_named(self, match_location_labels_flattened, requirement):
         assert match_location_labels_flattened(requirement) == [requirement]
 
     @pytest.mark.parametrize(
@@ -146,7 +140,8 @@ class TestGetLocationMatches:
     def test_an_exact_match_is_preferred_over_other_locations_containing_the_same_name(
         self, match_location_labels_flattened, requirement, expected, not_expected
     ):
-        """A requirement naming a location should match that location in preference to other locations whose names contain it.
+        """A requirement naming a location should match that location in preference to other locations
+        whose names contain it.
         E.g. England should match "England" rather than "East of England"."""
         matches = match_location_labels_flattened(requirement)
         for label in expected:
@@ -161,9 +156,7 @@ class TestGetLocationMatches:
             ("north east", ["North East"]),
         ],
     )
-    def test_case_is_ignored(
-        self, match_location_labels_flattened, requirement, expected
-    ):
+    def test_case_is_ignored(self, match_location_labels_flattened, requirement, expected):
         assert match_location_labels_flattened(requirement) == expected
 
     @pytest.mark.parametrize(
@@ -178,9 +171,7 @@ class TestGetLocationMatches:
             ("South West England", ["South West"]),
         ],
     )
-    def test_punctuation_and_filler_words_are_ignored(
-        self, match_location_labels_flattened, requirement, expected
-    ):
+    def test_punctuation_and_filler_words_are_ignored(self, match_location_labels_flattened, requirement, expected):
         assert match_location_labels_flattened(requirement) == expected
 
     @pytest.mark.parametrize(
@@ -219,9 +210,7 @@ class TestGetLocationMatches:
             ("Herefordshire", ["Herefordshire, County of"]),
         ],
     )
-    def test_a_name_qualifier_is_optional(
-        self, match_location_labels_flattened, requirement, expected
-    ):
+    def test_a_name_qualifier_is_optional(self, match_location_labels_flattened, requirement, expected):
         assert match_location_labels_flattened(requirement) == expected
 
     @pytest.mark.parametrize(
@@ -232,9 +221,7 @@ class TestGetLocationMatches:
             ("County of Herefordshire", ["Herefordshire, County of"]),
         ],
     )
-    def test_an_inverted_name_matches_the_label(
-        self, match_location_labels_flattened, requirement, expected
-    ):
+    def test_an_inverted_name_matches_the_label(self, match_location_labels_flattened, requirement, expected):
         assert match_location_labels_flattened(requirement) == expected
 
     @pytest.mark.parametrize(
@@ -314,9 +301,7 @@ class TestGetLocationMatches:
             ("Hertfordshire", ["Hertfordshire"]),  # Not "Herefordshire, County of"
         ],
     )
-    def test_similarly_named_places_are_not_matched(
-        self, match_location_labels_flattened, requirement, expected
-    ):
+    def test_similarly_named_places_are_not_matched(self, match_location_labels_flattened, requirement, expected):
         assert match_location_labels_flattened(requirement) == expected
 
     @pytest.mark.parametrize(
@@ -333,18 +318,12 @@ class TestGetLocationMatches:
         """Where the requirement is similar to a location, the closest matching location is returned."""
         assert match_location_labels_flattened(requirement) == expected
 
-    @pytest.mark.parametrize(
-        "requirement", ["Wales", "Scotland", "Northern Ireland", "Other location"]
-    )
-    def test_a_location_not_in_the_dataset_matches_nothing(
-        self, match_location_labels_flattened, requirement
-    ):
+    @pytest.mark.parametrize("requirement", ["Wales", "Scotland", "Northern Ireland", "Other location"])
+    def test_a_location_not_in_the_dataset_matches_nothing(self, match_location_labels_flattened, requirement):
         """Where the requirement is not similar to any location, an empty list is returned."""
         assert match_location_labels_flattened(requirement) == []
 
-    def test_matches_are_combined_for_multiple_requirements(
-        self, match_location_labels
-    ):
+    def test_matches_are_combined_for_multiple_requirements(self, match_location_labels):
         """Multiple location requirements should have their matches combined even if they don't overlap.
         E.g. If "England", "North East", and "Manchester" are all requirements,
         "Manchester" is included even though it is part of the "North West" region.
@@ -355,15 +334,11 @@ class TestGetLocationMatches:
             "Local authority": ["Manchester"],
         }
 
-    def test_locations_matched_by_multiple_requirements_are_deduplicated(
-        self, match_location_labels_flattened
-    ):
+    def test_locations_matched_by_multiple_requirements_are_deduplicated(self, match_location_labels_flattened):
         """Locations matched by multiple requirements should only appear once in the flattened list.
         E.g. When "North Yorkshire" and "North Yorkshire (E06000065)" are both specified as requirements,
         "North Yorkshire (E06000065)" should only appear once in the flattened list."""
-        assert match_location_labels_flattened(
-            "North Yorkshire", "North Yorkshire (E06000065)"
-        ) == [
+        assert match_location_labels_flattened("North Yorkshire", "North Yorkshire (E06000065)") == [
             "North Yorkshire (E06000065)",
             "North Yorkshire (E10000023)",
         ]
@@ -373,9 +348,7 @@ class TestGetLocationMatches:
         assert match_location_labels() == {}
 
     @pytest.mark.parametrize("requirement", ["the", "of", "upon", "the county of"])
-    def test_a_requirement_of_only_generic_words_matches_nothing(
-        self, match_location_labels_flattened, requirement
-    ):
+    def test_a_requirement_of_only_generic_words_matches_nothing(self, match_location_labels_flattened, requirement):
         """A requirement made up only of generic qualifier words should match nothing,
         e.g. "the" should not match "Yorkshire and The Humber"."""
         assert match_location_labels_flattened(requirement) == []
@@ -384,12 +357,8 @@ class TestGetLocationMatches:
 class TestGetDefaultLocation:
     """`get_default_location` picks England at national level, identified by its geographic code."""
 
-    def test_is_england_keyed_by_its_level_label(
-        self, build_dataset, load_json_fixture
-    ):
-        dataset = build_dataset(
-            locations=load_json_fixture("subject_meta_locations.json")
-        )
+    def test_is_england_keyed_by_its_level_label(self, build_dataset, load_json_fixture):
+        dataset = build_dataset(locations=load_json_fixture("subject_meta_locations.json"))
 
         level_label, location = get_default_location(dataset.subject_meta)
 
@@ -406,17 +375,13 @@ class TestGetDefaultLocation:
 
         assert get_default_location(dataset.subject_meta) is None
 
-    def test_is_none_when_england_is_not_in_the_national_level_options(
-        self, build_dataset
-    ):
+    def test_is_none_when_england_is_not_in_the_national_level_options(self, build_dataset):
         """When the dataset has no option for England at national level, the default location should be None."""
         dataset = build_dataset(
             locations={
                 "country": {
                     "legend": "National",
-                    "options": [
-                        {"id": "location-1", "label": "Wales", "value": "W92000004"}
-                    ],
+                    "options": [{"id": "location-1", "label": "Wales", "value": "W92000004"}],
                 }
             }
         )
@@ -429,15 +394,11 @@ class TestGetDefaultLocation:
             locations={
                 "country": {
                     "legend": "National",
-                    "options": [
-                        {"id": "location-1", "label": "Wales", "value": "W92000004"}
-                    ],
+                    "options": [{"id": "location-1", "label": "Wales", "value": "W92000004"}],
                 },
                 "region": {
                     "legend": "Regional",
-                    "options": [
-                        {"id": "location-2", "label": "England", "value": "E92000001"}
-                    ],
+                    "options": [{"id": "location-2", "label": "England", "value": "E92000001"}],
                 },
             }
         )
@@ -469,7 +430,8 @@ class TestGetDefaultLocation:
         assert location.label == "Other location"
 
     def test_finds_england_in_nested_location_hierarchy(self, build_dataset):
-        """Options can be nested as part of a location hierarchy under an id-less grouping options. Check that the whole level is traversed to find England."""
+        """Options can be nested as part of a location hierarchy under an id-less grouping options.
+        Check that the whole level is traversed to find England."""
         dataset = build_dataset(
             locations={
                 "country": {
@@ -514,9 +476,7 @@ class TestNormaliseLocationName:
             ("Stockton-on-Tees", "stockton on tees"),
         ],
     )
-    def test_gss_codes_inverted_qualifiers_and_punctuation_are_removed(
-        self, name, expected
-    ):
+    def test_gss_codes_inverted_qualifiers_and_punctuation_are_removed(self, name, expected):
         assert normalise_location_name(name) == expected
 
 

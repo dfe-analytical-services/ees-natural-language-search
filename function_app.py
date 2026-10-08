@@ -1,4 +1,5 @@
 import asyncio
+
 import azure.functions as func
 from azurefunctions.extensions.http.fastapi import (
     Request,
@@ -20,9 +21,7 @@ app.function_name(name="health_check")(
 
 
 @app.function_name(name="ees_fa_nlsearch_proxy")
-@app.route(
-    route="api/{*route}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
-)
+@app.route(route="api/{*route}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
 async def fastapi_proxy(req: Request) -> StreamingResponse:
     queue: asyncio.Queue[bytes | None] = asyncio.Queue()
     response_started = asyncio.Event()

@@ -1,12 +1,13 @@
 import asyncio
 import logging
+
 from clients.openai_client import generate_answer
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.shared.token_usage import TokenUsage
 
 logger = logging.getLogger(__name__)
 
-llm_indicator_sys_prompt="""
+llm_indicator_sys_prompt = """
 You are an indicator selection agent. Your task is to determine which indicators from a dataset are semantically relevant to a user's data query.
 
 # Security
@@ -50,9 +51,9 @@ Return only a valid JSON object in this exact structure:
 Write every "reasoning" explanation as one concise sentence, the way a person would casually explain their thinking.
 
 Use exact input text for all keys (indicator name).
-"""
+"""  # noqa: E501
 
-llm_indicator_user_prompt="""
+llm_indicator_user_prompt = """
 # User query
 <user_query>
 {raw_query}
@@ -71,12 +72,14 @@ Description: {dataset_description}
 {indicator_list}
 """
 
+
 async def run_indicator_selection_agent(
     relevant_indicators_by_file_id,
     datasets_by_id: dict[str, DatasetWithSubjectMeta],
     user_query: str,
-    query_requirements: list[str]):
-    
+    query_requirements: list[str],
+):
+
     logger.info("Indicator selection model running...")
     file_ids: list[str] = []
     tasks: list[asyncio.Task] = []
@@ -105,10 +108,7 @@ async def run_indicator_selection_agent(
     model_responses = await asyncio.gather(*tasks)
 
     # Pair each response with the file ID of the dataset it was requested for
-    contents = [
-        (file_id, response.choices[0].message.content)
-        for file_id, response in zip(file_ids, model_responses)
-    ]
+    contents = [(file_id, response.choices[0].message.content) for file_id, response in zip(file_ids, model_responses)]
 
     tokens_used = TokenUsage(
         input=sum(response.usage.prompt_tokens for response in model_responses),

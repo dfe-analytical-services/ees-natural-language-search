@@ -17,7 +17,11 @@ ees-natural-language-search/
 ├── host.json                        # Functions runtime config
 ├── requirements.txt
 ├── requirements-test.txt            # Test dependencies - also installs requirements.txt
+├── requirements-dev.txt             # Development tools (black, isort, flake8, pre-commit) - also installs requirements-test.txt
 ├── pytest.ini                       # Pytest config, so `pytest` runs with no arguments
+├── pyproject.toml                   # black and isort config
+├── .flake8                          # flake8 config
+├── .pre-commit-config.yaml          # Pre-commit hooks: isort, black and flake8
 ├── local.settings.example.json      # Template for local env vars
 ├── azure-pipelines.yml              # CI/CD
 │
@@ -207,6 +211,23 @@ curl -X POST https://localhost:7071/api/natural_language_search_function `
 ```
 
 `core/config.py` loads `local.settings.json` into environment locally if you plan on running it with uvicorn
+
+### Pre-commit hooks
+
+The project uses [pre-commit](https://pre-commit.com/) to run isort, black and flake8 on staged files before each commit.
+
+Install the development dependencies (this also installs `requirements-test.txt` and `requirements.txt`) and the git hook:
+
+```bash
+pip install -r requirements-dev.txt
+pre-commit install
+```
+
+To run the hooks against every file in the repository:
+
+```bash
+pre-commit run --all-files
+```
 
 ---
 

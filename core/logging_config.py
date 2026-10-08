@@ -37,7 +37,7 @@ LOGGING_CONFIG = {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
-        }
+        },
     },
     "root": {
         "handlers": ["console"],

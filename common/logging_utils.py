@@ -25,23 +25,21 @@ def _summarise_relevant_filters_for_logging(
 
     relevant_decisions = (
         (raw_reference, decision)
-        for raw_reference, decision in (
-            filter_results.filter_items if filter_results else {}
-        ).items()
+        for raw_reference, decision in (filter_results.filter_items if filter_results else {}).items()
         if decision.relevant
     )
 
     for raw_reference, decision in relevant_decisions:
         candidate = filter_item_candidates.resolve(raw_reference)
         if candidate is None:
-            # This is possible because there can be unresolvable or corrupt filter item references in the model response.
+            # This is possible because there can be unresolvable or corrupt filter item references
+            # in the model response.
             # The logging of the dataset selection runs before `build_final_dataset_response` validates the selections.
-            # Store them to warn about them, rather than raising an exception which would replace the whole pipeline result with an error event.
+            # Store them to warn about them, rather than raising an exception
+            # which would replace the whole pipeline result with an error event.
             unresolved_references.append(raw_reference)
         else:
-            relevant_by_label[candidate.filter_label][
-                candidate.filter_item.label
-            ] = decision.reasoning
+            relevant_by_label[candidate.filter_label][candidate.filter_item.label] = decision.reasoning
 
     if unresolved_references:
         logger.warning(
@@ -56,11 +54,7 @@ def _summarise_relevant_indicators_for_logging(
     indicator_results: dict[str, IndicatorDecision] | None,
 ) -> dict[str, str]:
     """Reduces indicators to those that are relevant, and keeps their reasoning."""
-    return {
-        label: decision.reasoning
-        for label, decision in (indicator_results or {}).items()
-        if decision.relevant
-    }
+    return {label: decision.reasoning for label, decision in (indicator_results or {}).items() if decision.relevant}
 
 
 def _summarise_locations_for_logging(
@@ -69,9 +63,7 @@ def _summarise_locations_for_logging(
     """Drops empty geographic levels and reduces each location to a label."""
     return {
         level: [location.label for location in locations]
-        for level, locations in (
-            location_results.root.items() if location_results else []
-        )
+        for level, locations in (location_results.root.items() if location_results else [])
         if locations
     }
 
@@ -86,7 +78,8 @@ def log_dataset_selection_summary(
 ) -> None:
     """Logs a summary of the filter, indicator, time period, and location selections made for a dataset."""
     logger.info(
-        "Combined response summary: dataset=%s, relevant_filters=%s, irrelevant_filters=%s, relevant_indicators=%s, time_period=%s, locations=%s",
+        "Combined response summary: dataset=%s, relevant_filters=%s, irrelevant_filters=%s, "
+        "relevant_indicators=%s, time_period=%s, locations=%s",
         {
             "title": dataset.title,
             "dataset_file_id": dataset.dataset_file_id,
