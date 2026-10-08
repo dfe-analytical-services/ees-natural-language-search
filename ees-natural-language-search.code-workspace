@@ -16,6 +16,11 @@
         "source.organizeImports": "explicit",
       },
     },
+    // Use isort, black and flake8 from the selected Python environment rather than the versions bundled
+    // with the VS Code extensions, so the versions pinned in requirements-dev.txt are used.
+    "black-formatter.importStrategy": "fromEnvironment",
+    "isort.importStrategy": "fromEnvironment",
+    "flake8.importStrategy": "fromEnvironment",
     "search.exclude": {
       "**/.venv": true,
       "**/.python_packages": true,
