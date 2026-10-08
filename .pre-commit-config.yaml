@@ -1,3 +1,4 @@
+# Keep the isort, black and flake8 revs in sync with the versions pinned in requirements-dev.txt.
 repos:
   - repo: https://github.com/PyCQA/isort
     rev: 9.0.2
