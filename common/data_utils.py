@@ -26,8 +26,8 @@ from schemas.llm.filter_selection_response import FilterItemDatasetResult
 from schemas.llm.indicator_selection_response import IndicatorDatasetResult, IndicatorDecision
 from schemas.llm.time_period_selection_response import (
     TimePeriodDatasetResult,
+    TimePeriodRange as LlmTimePeriodRange,
 )
-from schemas.llm.time_period_selection_response import TimePeriodRange as LlmTimePeriodRange
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
     DatasetValidationError,
