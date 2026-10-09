@@ -1,0 +1,21 @@
+{
+  "dev": {
+    "baseUrl": "https://s101d01-ees-fa-nlsearch.azurewebsites.net",
+    "eesDataApiUrl": "https://data.dev.explore-education-statistics.service.gov.uk"
+  },
+  "test": {
+    "baseUrl": "",
+    "eesDataApiUrl": ""
+  },
+  "preprod": {
+    "baseUrl": "",
+    "eesDataApiUrl": ""
+  },
+  "prod": {
+    "baseUrl": "",
+    "eesDataApiUrl": ""
+  },
+  "local": {
+    "baseUrl": "http://localhost:7071"
+  }
+}

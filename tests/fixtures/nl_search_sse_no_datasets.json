@@ -1,0 +1,42 @@
+[
+  {
+    "stage": "starting pipeline"
+  },
+  {
+    "stage": "retrieved datasets",
+    "data": {
+      "datasets": []
+    }
+  },
+  {
+    "stage": "reranker complete",
+    "data": {
+      "confidence": "low",
+      "datasets": [],
+      "queryRequirements": {
+        "filters": [
+          "sustained employment rates",
+          "further education learners"
+        ],
+        "geography": [],
+        "timePeriod": null
+      },
+      "tokenUsage": {
+        "input": 760,
+        "output": 59
+      },
+      "cost": 0.0003866
+    }
+  },
+  {
+    "stage": "pipeline complete",
+    "data": {
+      "datasets": [],
+      "tokenUsage": {
+        "input": 760,
+        "output": 59
+      },
+      "cost": 0.0003866
+    }
+  }
+]
