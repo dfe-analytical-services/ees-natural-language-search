@@ -12,10 +12,10 @@ from common.validation_utils import (
 from schemas.ees_data_api.subject_meta_response import TimePeriod
 from schemas.responses.final_dataset_response import (
     AutoSelectedFilterItem,
+    DatasetValidationErrorCode as ErrorCode,
+    DatasetValidationWarning,
+    DatasetValidationWarningCode as WarningCode,
 )
-from schemas.responses.final_dataset_response import DatasetValidationErrorCode as ErrorCode
-from schemas.responses.final_dataset_response import DatasetValidationWarning
-from schemas.responses.final_dataset_response import DatasetValidationWarningCode as WarningCode
 
 FILTER_1_LABEL = "Characteristic"
 FILTER_2_LABEL = "School type"

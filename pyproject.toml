@@ -3,4 +3,6 @@ line-length = 120
 
 [tool.isort]
 profile = "black"
+combine_as_imports = true
 line_length = 120
+

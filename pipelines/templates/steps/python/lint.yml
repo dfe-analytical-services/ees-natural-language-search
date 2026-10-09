@@ -1,0 +1,21 @@
+steps:
+  - script: |
+      echo "##vso[task.setvariable variable=PRE_COMMIT_HOME]$(Pipeline.Workspace)/pre-commit-cache"
+      echo "##vso[task.setvariable variable=PY]$(python -VV)"
+    displayName: "Set pre-commit cache variables"
+
+  - task: Cache@2
+    inputs:
+      key: 'pre-commit | "$(Agent.OS)" | "$(PY)" | .pre-commit-config.yaml'
+      path: $(PRE_COMMIT_HOME)
+    displayName: "Cache pre-commit hook environments"
+
+  # Only pre-commit needs installing here, since it installs isort, black and flake8 into its own hook environments.
+  # Keep the pre-commit version in sync with requirements-dev.txt.
+  - script: |
+      pip install pre-commit==4.6.2
+    displayName: "Install pre-commit"
+
+  - script: |
+      pre-commit run --all-files --show-diff-on-failure
+    displayName: "Run isort, black and flake8"

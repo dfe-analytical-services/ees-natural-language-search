@@ -1,3 +1,5 @@
+# Keep black, flake8 and isort in sync with the hook revs in .pre-commit-config.yaml.
+# Keep pre-commit in sync with the version installed in pipelines/templates/steps/python/lint.yml.
 -r requirements-test.txt
 black==26.10.0
 flake8==7.4.1

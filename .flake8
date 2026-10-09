@@ -3,11 +3,11 @@ max-line-length = 120
 # E203 and E701 conflict with Black's formatting
 extend-ignore = E203, E701
 exclude =
-        .git,
-        .venv,
-        .python_packages,
-        __pycache__,
-        .pytest_cache,
-        .idea,
-        build,
-        dist
+    .git,
+    .venv,
+    .python_packages,
+    __pycache__,
+    .pytest_cache,
+    .idea,
+    build,
+    dist
