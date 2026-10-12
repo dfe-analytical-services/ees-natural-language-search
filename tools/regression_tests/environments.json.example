@@ -16,6 +16,7 @@
     "eesDataApiUrl": ""
   },
   "local": {
-    "baseUrl": "http://localhost:7071"
+    "baseUrl": "http://localhost:7071",
+    "eesDataApiUrl": ""
   }
 }

@@ -50,7 +50,8 @@ that server URLs aren't committed. Create it by copying `environments.json.examp
   must match the setting of the function app. Without it, filters aren't compared, and the expected labels aren't
   checked. Looking up subject meta doesn't use any Azure OpenAI tokens.
 
-The `local` environment is for running against `func start` on http://localhost:7071.
+The `local` environment is for running against `func start` on http://localhost:7071. Its `eesDataApiUrl` should
+match the `EES_URL_API_DATA` setting in your `local.settings.json`.
 
 The other environments in the example have empty values to be filled in. An empty value is treated as unset, so running against an environment without a `baseUrl` fails before running any queries.
 Each environment also needs its own gold standard queries file, as dataset and publication ids differ between
