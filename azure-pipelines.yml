@@ -54,6 +54,18 @@ stages:
   - template: pipelines/templates/stages/ci.yml
     parameters:
       artifactName: $(artifactName)
+      # Only the function app code and its dependencies (.python_packages) are packaged.
+      # New top-level packages must be added to this list.
+      artifactContents: |
+        .python_packages/**
+        function_app.py
+        host.json
+        clients/**
+        common/**
+        core/**
+        routes/**
+        schemas/**
+        !**/__pycache__/**
 
   - template: pipelines/templates/stages/deploy.yml
     parameters:

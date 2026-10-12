@@ -1,23 +1,17 @@
 parameters:
-  artifactName: 'drop'
+  - name: artifactName
+    type: string
+    default: 'drop'
+  # List of newline-separated match patterns, relative to the repository root, selecting the file paths to include as part of the package.
+  - name: artifactContents
+    type: string
 
 steps:
-  # Only the function app code and its dependencies (.python_packages) are packaged.
-  # New top-level packages must be added to the `contents` list below.
   - task: CopyFiles@2
     displayName: 'Copy function app files'
     inputs:
       sourceFolder: '$(Build.SourcesDirectory)'
-      contents: |
-        .python_packages/**
-        function_app.py
-        host.json
-        clients/**
-        common/**
-        core/**
-        routes/**
-        schemas/**
-        !**/__pycache__/**
+      contents: ${{ parameters.artifactContents }}
       targetFolder: '$(Build.ArtifactStagingDirectory)/function-app'
       cleanTargetFolder: true
     condition: |

@@ -2,6 +2,8 @@ parameters:
   - name: artifactName
     type: string
     default: 'drop'
+  - name: artifactContents
+    type: string
 
 jobs:
   - job: PythonBuild
@@ -18,3 +20,4 @@ jobs:
       - template: ../steps/python/publish.yml
         parameters:
           artifactName: ${{ parameters.artifactName }}
+          artifactContents: ${{ parameters.artifactContents }}
