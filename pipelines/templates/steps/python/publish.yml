@@ -2,10 +2,34 @@ parameters:
   artifactName: 'drop'
 
 steps:
+  # Only the function app code and its dependencies (.python_packages) are packaged.
+  # New top-level packages must be added to the `contents` list below.
+  - task: CopyFiles@2
+    displayName: 'Copy function app files'
+    inputs:
+      sourceFolder: '$(Build.SourcesDirectory)'
+      contents: |
+        .python_packages/**
+        function_app.py
+        host.json
+        clients/**
+        common/**
+        core/**
+        routes/**
+        schemas/**
+        !**/__pycache__/**
+      targetFolder: '$(Build.ArtifactStagingDirectory)/function-app'
+      cleanTargetFolder: true
+    condition: |
+      and(
+        succeeded(),
+        eq(variables.shouldPublishArtifact, true)
+      )
+
   - task: ArchiveFiles@2
     displayName: 'Create deployment artifact'
     inputs:
-      rootFolderOrFile: '$(Build.SourcesDirectory)'
+      rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/function-app'
       includeRootFolder: false
       archiveType: 'zip'
       archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)-$(Build.SourceBranchName)-$(Build.BuildNumber).zip'
@@ -20,7 +44,7 @@ steps:
     displayName: 'Publish pipeline artifact'
     inputs:
       artifactName: '${{ parameters.artifactName }}'
-      targetPath: '$(Build.ArtifactStagingDirectory)'
+      targetPath: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)-$(Build.SourceBranchName)-$(Build.BuildNumber).zip'
       publishLocation: 'pipeline'
     condition: |
       and(
