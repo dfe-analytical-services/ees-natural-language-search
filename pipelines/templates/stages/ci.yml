@@ -2,6 +2,8 @@ parameters:
   - name: artifactName
     type: string
     default: 'drop'
+  - name: artifactContents
+    type: string
 
 stages:
   - stage: 'CI'
@@ -11,3 +13,4 @@ stages:
       - template: ../jobs/python-build.yml
         parameters:
           artifactName: ${{ parameters.artifactName }}
+          artifactContents: ${{ parameters.artifactContents }}

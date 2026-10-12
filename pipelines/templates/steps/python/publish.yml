@@ -1,11 +1,29 @@
 parameters:
-  artifactName: 'drop'
+  - name: artifactName
+    type: string
+    default: 'drop'
+  # List of newline-separated match patterns, relative to the repository root, selecting the file paths to include as part of the package.
+  - name: artifactContents
+    type: string
 
 steps:
+  - task: CopyFiles@2
+    displayName: 'Copy function app files'
+    inputs:
+      sourceFolder: '$(Build.SourcesDirectory)'
+      contents: ${{ parameters.artifactContents }}
+      targetFolder: '$(Build.ArtifactStagingDirectory)/function-app'
+      cleanTargetFolder: true
+    condition: |
+      and(
+        succeeded(),
+        eq(variables.shouldPublishArtifact, true)
+      )
+
   - task: ArchiveFiles@2
     displayName: 'Create deployment artifact'
     inputs:
-      rootFolderOrFile: '$(Build.SourcesDirectory)'
+      rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/function-app'
       includeRootFolder: false
       archiveType: 'zip'
       archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)-$(Build.SourceBranchName)-$(Build.BuildNumber).zip'
@@ -20,7 +38,7 @@ steps:
     displayName: 'Publish pipeline artifact'
     inputs:
       artifactName: '${{ parameters.artifactName }}'
-      targetPath: '$(Build.ArtifactStagingDirectory)'
+      targetPath: '$(Build.ArtifactStagingDirectory)/$(Build.Repository.Name)-$(Build.SourceBranchName)-$(Build.BuildNumber).zip'
       publishLocation: 'pipeline'
     condition: |
       and(
