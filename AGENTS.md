@@ -42,3 +42,7 @@ behaviour.** This file only covers what isn't in there.
 `tools/regression_tests/` imports the service's `schemas/responses` models, so a change to an SSE event model
 may need a matching change there. Never run it against a deployed environment without being asked, as every
 query costs Azure OpenAI tokens. Use `--replay <report>` instead.
+
+It has its own `requirements.txt` and venv, separate from the service's, listing only the third-party
+dependencies of the `schemas` and `clients` modules it imports. A new third-party import in those modules,
+or a new service module imported by the tool, may need a matching entry adding there.

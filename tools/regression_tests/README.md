@@ -18,11 +18,17 @@ Azure credentials.
 - Python (the CI pipeline targets **3.14**)
 - Network access to the environment's function app, and to its EES Data API
 
-Install the dependencies from the **repository root**:
+The script imports the service's `schemas` and `clients` packages, so it's run from the **repository root**,
+but it doesn't need the service's dependencies. It has its own `requirements.txt` listing only what it uses, so
+create a separate virtual environment for it rather than using the service's:
 
 ```bash
+python -m venv tools/regression_tests/.venv
+source tools/regression_tests/.venv/Scripts/activate
 pip install -r tools/regression_tests/requirements.txt
 ```
+
+Any service module the script imports must only depend on packages listed in this requirements file.
 
 ## Environments
 
