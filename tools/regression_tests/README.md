@@ -26,13 +26,14 @@ pip install -r tools/regression_tests/requirements.txt
 
 ## Environments
 
-The environments are configured in `environments.json`, keyed by the name given to `--env`:
+The environments are configured in `environments.json`, keyed by the name given to `--env`. It's git ignored so
+that server URLs aren't committed. Create it by copying `environments.json.example` and filling in the URLs of the environments you need:
 
 ```json
 {
   "dev": {
-    "baseUrl": "https://s101d01-ees-fa-nlsearch.azurewebsites.net",
-    "eesDataApiUrl": "https://data.dev.explore-education-statistics.service.gov.uk"
+    "baseUrl": "https://<function app name>.azurewebsites.net",
+    "eesDataApiUrl": "https://<EES Data API URL>"
   }
 }
 ```
@@ -45,8 +46,7 @@ The environments are configured in `environments.json`, keyed by the name given 
 
 The `local` environment is for running against `func start` on http://localhost:7071.
 
-The `test`, `preprod` and `prod` environments are placeholders, with empty values, until they're needed. An empty
-value is treated as unset, so running against an environment without a `baseUrl` fails before running any queries.
+The other environments in the example have empty values to be filled in. An empty value is treated as unset, so running against an environment without a `baseUrl` fails before running any queries.
 Each environment also needs its own gold standard queries file, as dataset and publication ids differ between
 environments. Keep `--concurrency` low against `prod`, as the service depends on the Content API.
 

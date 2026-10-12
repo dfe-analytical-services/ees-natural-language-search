@@ -37,6 +37,8 @@ class Environment(StrictCamelModel):
 
 
 def load_environments(path: Path = ENVIRONMENTS_FILE) -> dict[str, Environment]:
-    """Keyed by environment name."""
+    """Keyed by environment name. Empty if the file hasn't been created from `environments.json.example` yet."""
+    if not path.exists():
+        return {}
     raw = json.loads(path.read_text(encoding="utf-8"))
     return {name: Environment.model_validate(value) for name, value in raw.items()}

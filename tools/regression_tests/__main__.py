@@ -181,7 +181,9 @@ def _parse_args(argv: list[str] | None, environment_names: list[str]) -> argpars
     )
     target = parser.add_mutually_exclusive_group()
     target.add_argument(
-        "--env", choices=environment_names, help="The environment to run against, from environments.json."
+        "--env",
+        choices=environment_names,
+        help="The environment to run against, from environments.json (copied from the environments.json.example file).",
     )
     target.add_argument(
         "--replay",
