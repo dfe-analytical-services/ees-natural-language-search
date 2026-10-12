@@ -27,9 +27,7 @@ def assess_consistency(report: RegressionReport) -> RunConsistency | None:
         for result in iteration.queries:
             runs_by_query_id[result.query_id].append((iteration.iteration, result))
 
-    queries = [
-        assess_query_consistency(query_id, runs) for query_id, runs in runs_by_query_id.items() if len(runs) > 1
-    ]
+    queries = [assess_query_consistency(query_id, runs) for query_id, runs in runs_by_query_id.items() if len(runs) > 1]
     if not queries:
         return None
 
@@ -40,8 +38,7 @@ def assess_consistency(report: RegressionReport) -> RunConsistency | None:
             consistent_count=consistent_count,
             consistency_rate=round(consistent_count / len(queries), RATIO_DECIMAL_PLACES),
             inconsistent_counts={
-                aspect: sum(aspect in query.inconsistent_aspects for query in queries)
-                for aspect in ConsistencyAspect
+                aspect: sum(aspect in query.inconsistent_aspects for query in queries) for aspect in ConsistencyAspect
             },
         ),
         queries=queries,

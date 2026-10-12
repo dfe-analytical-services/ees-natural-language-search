@@ -71,9 +71,7 @@ def test_query_not_in_the_baseline_is_new(build_result):
     ],
 )
 def test_status_changes(build_result, baseline_status, current_status, expected_change):
-    comparison = compare_query(
-        "query-1", [build_result(status=baseline_status)], [build_result(status=current_status)]
-    )
+    comparison = compare_query("query-1", [build_result(status=baseline_status)], [build_result(status=current_status)])
 
     assert comparison.change == expected_change
     assert comparison.differences[0] == f"Status: {baseline_status} -> {current_status}"
@@ -93,7 +91,11 @@ def test_the_worst_status_of_any_iteration_is_compared(build_result):
 def test_a_check_that_now_fails_is_a_regression(build_result, build_dataset_result):
     comparison = compare_query(
         "query-1",
-        [build_result(datasets=[build_dataset_result()], accuracy=_accuracy(AccuracyResult.PASS, indicators_passed=True))],
+        [
+            build_result(
+                datasets=[build_dataset_result()], accuracy=_accuracy(AccuracyResult.PASS, indicators_passed=True)
+            )
+        ],
         [
             build_result(
                 datasets=[build_dataset_result(indicators=("Number of sessions",))],
@@ -152,7 +154,9 @@ def _gold_standard_query(query_id: str = "query-1", user_query: str | None = Non
     )
 
 
-def _recorded_query(query: GoldStandardQuery, events: list, status: str = "success", http_status: int | None = 200, **fields) -> dict:
+def _recorded_query(
+    query: GoldStandardQuery, events: list, status: str = "success", http_status: int | None = 200, **fields
+) -> dict:
     return {
         "queryId": query.id,
         "userQuery": query.user_query,
@@ -202,7 +206,9 @@ def test_baseline_results_are_rebuilt_and_compared_with_the_current_expected_res
 
 
 def test_baseline_of_a_query_whose_text_changed_is_empty(tmp_path, load_json_fixture):
-    recorded = _recorded_query(_gold_standard_query(user_query="Old text"), load_json_fixture("nl_search_sse_success.json"))
+    recorded = _recorded_query(
+        _gold_standard_query(user_query="Old text"), load_json_fixture("nl_search_sse_success.json")
+    )
 
     baseline = load_baseline(
         _write_report(tmp_path, [recorded]),
@@ -278,10 +284,14 @@ def test_cli_exits_with_regressions_when_a_query_got_worse(tmp_path, build_pipel
 
     exit_code = main(
         [
-            "--replay", str(replay_path),
-            "--baseline", str(baseline_path),
-            "--input", str(_write_gold_standard(tmp_path, [query])),
-            "--out", str(out_dir),
+            "--replay",
+            str(replay_path),
+            "--baseline",
+            str(baseline_path),
+            "--input",
+            str(_write_gold_standard(tmp_path, [query])),
+            "--out",
+            str(out_dir),
         ]
     )
 
@@ -302,10 +312,14 @@ def test_cli_rejects_an_invalid_baseline_before_running_any_queries(tmp_path, bu
 
     exit_code = main(
         [
-            "--replay", str(replay_path),
-            "--baseline", str(baseline_path),
-            "--input", str(_write_gold_standard(tmp_path, [query])),
-            "--out", str(tmp_path / "out"),
+            "--replay",
+            str(replay_path),
+            "--baseline",
+            str(baseline_path),
+            "--input",
+            str(_write_gold_standard(tmp_path, [query])),
+            "--out",
+            str(tmp_path / "out"),
         ]
     )
 
@@ -327,10 +341,14 @@ def test_metrics_are_only_compared_over_the_queries_in_both(tmp_path, build_pipe
 
     exit_code = main(
         [
-            "--replay", str(replay_path),
-            "--baseline", str(baseline_path),
-            "--input", str(_write_gold_standard(tmp_path, queries)),
-            "--out", str(out_dir),
+            "--replay",
+            str(replay_path),
+            "--baseline",
+            str(baseline_path),
+            "--input",
+            str(_write_gold_standard(tmp_path, queries)),
+            "--out",
+            str(out_dir),
         ]
     )
 

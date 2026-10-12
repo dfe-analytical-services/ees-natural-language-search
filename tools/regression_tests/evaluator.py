@@ -67,9 +67,7 @@ def evaluate_query(
             min_datasets=expected.min_datasets,
         )
 
-    min_datasets_passed = (
-        None if expected.min_datasets is None else len(result.datasets) >= expected.min_datasets
-    )
+    min_datasets_passed = None if expected.min_datasets is None else len(result.datasets) >= expected.min_datasets
 
     datasets_by_data_set_file_id: dict[str, DatasetResult] = {}
     for dataset in result.datasets:
@@ -93,9 +91,7 @@ def evaluate_query(
     )
 
 
-def _get_query_result(
-    min_datasets_passed: bool | None, datasets: list[ExpectedDatasetAccuracy]
-) -> AccuracyResult:
+def _get_query_result(min_datasets_passed: bool | None, datasets: list[ExpectedDatasetAccuracy]) -> AccuracyResult:
     if any(dataset.required and not dataset.found for dataset in datasets):
         return AccuracyResult.FAIL
     if min_datasets_passed is False and not any(dataset.found for dataset in datasets):
@@ -103,9 +99,7 @@ def _get_query_result(
 
     # A dataset that isn't required only counts if it was found
     counted = [dataset for dataset in datasets if dataset.required or dataset.found]
-    if min_datasets_passed is not False and all(
-        dataset.result == AccuracyResult.PASS for dataset in counted
-    ):
+    if min_datasets_passed is not False and all(dataset.result == AccuracyResult.PASS for dataset in counted):
         return AccuracyResult.PASS
     return AccuracyResult.PARTIAL
 
@@ -299,7 +293,9 @@ def find_unknown_expected_values(expected: ExpectedDataset, meta: SubjectMetaRes
         elif filter_item_labels != ANY_FILTER_ITEMS:
             unknown = _unknown(filter_item_labels, filter_item_labels_by_filter[filter_label])
             if unknown:
-                problems.append(f"The expected filter items {_quote(unknown)} don't exist in the filter '{filter_label}'")
+                problems.append(
+                    f"The expected filter items {_quote(unknown)} don't exist in the filter '{filter_label}'"
+                )
 
     indicator_labels = {
         indicator.label for indicator_group in meta.indicators.values() for indicator in indicator_group.indicators
@@ -317,8 +313,7 @@ def find_unknown_expected_values(expected: ExpectedDataset, meta: SubjectMetaRes
                 )
 
     location_codes_by_level = {
-        location_level.label: _get_location_codes(location_level.options)
-        for location_level in meta.locations.values()
+        location_level.label: _get_location_codes(location_level.options) for location_level in meta.locations.values()
     }
     for level_label, location_codes in expected.locations.items():
         if level_label not in location_codes_by_level:

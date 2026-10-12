@@ -78,9 +78,7 @@ async def run_regression_tests(
         await _check_health(client, options.environment.health_check_url)
 
         for iteration in range(1, options.iterations + 1):
-            iteration_reports.append(
-                await _run_iteration(client, queries, iteration, options, budget)
-            )
+            iteration_reports.append(await _run_iteration(client, queries, iteration, options, budget))
             if budget.is_exceeded:
                 logger.warning(
                     "Stopping after iteration %d, as the maximum cost of %s has been reached (spent %.6f)",
@@ -105,9 +103,7 @@ async def run_regression_tests(
             budget_exceeded=budget.is_exceeded,
             replayed_from=options.replayed_from,
         ),
-        summary=summarise_queries(
-            [result for report in iteration_reports for result in report.queries]
-        ),
+        summary=summarise_queries([result for report in iteration_reports for result in report.queries]),
         iterations=iteration_reports,
     )
 
@@ -117,14 +113,10 @@ async def _check_health(client: httpx.AsyncClient, url: str) -> None:
     try:
         response = await client.get(url)
     except httpx.HTTPError as e:
-        raise HealthCheckError(
-            f"The health check request to {url} failed: {type(e).__name__}: {e}"
-        ) from e
+        raise HealthCheckError(f"The health check request to {url} failed: {type(e).__name__}: {e}") from e
 
     if response.status_code != 200:
-        raise HealthCheckError(
-            f"The health check at {url} returned HTTP {response.status_code}"
-        )
+        raise HealthCheckError(f"The health check at {url} returned HTTP {response.status_code}")
 
 
 async def _run_iteration(
@@ -158,9 +150,7 @@ async def _run_iteration(
     # Results are kept in the order of the input file, whatever order the queries complete in
     outcomes = await asyncio.gather(*(run_query(query) for query in queries))
     results = [outcome for outcome in outcomes if outcome is not None]
-    skipped_query_ids = [
-        query.id for query, outcome in zip(queries, outcomes) if outcome is None
-    ]
+    skipped_query_ids = [query.id for query, outcome in zip(queries, outcomes) if outcome is None]
     if skipped_query_ids:
         logger.warning(
             "Skipped %d queries in iteration %d, as the maximum cost has been reached",

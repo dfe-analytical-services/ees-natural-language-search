@@ -39,7 +39,6 @@ DATASET_DEFAULTS = {
 }
 
 
-
 @pytest.fixture
 def query() -> GoldStandardQuery:
     return GoldStandardQuery(
@@ -88,9 +87,7 @@ def build_pipeline_events() -> Callable[..., list[dict]]:
 
         events = [
             StartEventResponse().model_dump(),
-            RetrievedDatasetsEventResponse(
-                data=RetrievedDatasetsEventData(datasets=[])
-            ).model_dump(by_alias=True),
+            RetrievedDatasetsEventResponse(data=RetrievedDatasetsEventData(datasets=[])).model_dump(by_alias=True),
             RerankerEventResponse(
                 data=RerankerEventData(
                     confidence="high",
@@ -122,10 +119,7 @@ def build_execution() -> Callable[..., SearchExecution]:
     """Builds a `SearchExecution` of a 200 response, with the given event data received one second apart."""
 
     def _make(events_data: list[Any], **overrides: Any) -> SearchExecution:
-        events = [
-            SseEvent(elapsed_seconds=float(index), data=data)
-            for index, data in enumerate(events_data, start=1)
-        ]
+        events = [SseEvent(elapsed_seconds=float(index), data=data) for index, data in enumerate(events_data, start=1)]
         return SearchExecution(
             **{
                 "duration_seconds": float(len(events)),

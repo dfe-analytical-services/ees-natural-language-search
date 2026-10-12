@@ -49,7 +49,9 @@ def _get_dataset_output(dataset: DatasetResult) -> DatasetOutput:
         locations=tuple(
             sorted(
                 f"{level_label}: {location.value}"
-                for level_label, locations in (dataset.geographic_levels.root if dataset.geographic_levels else {}).items()
+                for level_label, locations in (
+                    dataset.geographic_levels.root if dataset.geographic_levels else {}
+                ).items()
                 for location in locations
             )
         ),

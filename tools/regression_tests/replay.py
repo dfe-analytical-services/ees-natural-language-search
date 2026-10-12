@@ -68,9 +68,7 @@ def load_replay(report_path: Path, report_file: str, queries: list[GoldStandardQ
         ),
         recorded_iterations=len(recorded.iterations),
         unrecorded_query_ids=[
-            query.id
-            for query in queries
-            if all(events is None for events in recordings.get(get_query_key(query), []))
+            query.id for query in queries if all(events is None for events in recordings.get(get_query_key(query), []))
         ],
     )
 
@@ -91,12 +89,7 @@ def _get_duplicate_query_ids(queries: list[GoldStandardQuery]) -> list[str]:
     query_ids_by_key: dict[QueryKey, list[str]] = defaultdict(list)
     for query in queries:
         query_ids_by_key[get_query_key(query)].append(query.id)
-    return sorted(
-        query_id
-        for query_ids in query_ids_by_key.values()
-        if len(query_ids) > 1
-        for query_id in query_ids
-    )
+    return sorted(query_id for query_ids in query_ids_by_key.values() if len(query_ids) > 1 for query_id in query_ids)
 
 
 class _ReplayHandler:

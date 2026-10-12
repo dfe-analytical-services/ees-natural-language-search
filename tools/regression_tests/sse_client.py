@@ -83,9 +83,7 @@ async def run_search(
 
                 if response.status_code != 200:
                     body = await response.aread()
-                    execution.response_body = body.decode(errors="replace")[
-                        :MAX_ERROR_RESPONSE_BODY_LENGTH
-                    ]
+                    execution.response_body = body.decode(errors="replace")[:MAX_ERROR_RESPONSE_BODY_LENGTH]
                 else:
                     async for line in response.aiter_lines():
                         data = parser.feed(line)

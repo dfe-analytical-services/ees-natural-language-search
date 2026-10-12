@@ -13,9 +13,7 @@ from schemas.responses.final_dataset_response import (
 from tools.regression_tests.report_models import ExecutionStatus
 from tools.regression_tests.run_result import build_query_result
 
-NO_INDICATORS_ERROR = DatasetValidationError(
-    code=DatasetValidationErrorCode.NO_INDICATORS, message="No indicators"
-)
+NO_INDICATORS_ERROR = DatasetValidationError(code=DatasetValidationErrorCode.NO_INDICATORS, message="No indicators")
 NO_TIME_PERIOD_REQUIREMENT_WARNING = DatasetValidationWarning(
     code=DatasetValidationWarningCode.NO_TIME_PERIOD_REQUIREMENT,
     message="No time period requirement",
@@ -27,9 +25,7 @@ def _event_data(events: list[dict], stage: str) -> dict:
 
 
 def test_completed_pipeline_is_a_success(query, build_final_dataset, build_pipeline_events, build_execution):
-    events = build_pipeline_events(
-        [build_final_dataset(file_id="file-1"), build_final_dataset(file_id="file-2")]
-    )
+    events = build_pipeline_events([build_final_dataset(file_id="file-1"), build_final_dataset(file_id="file-2")])
 
     result = build_query_result(query, build_execution(events))
 
@@ -55,9 +51,7 @@ def test_completed_pipeline_is_a_success(query, build_final_dataset, build_pipel
 def test_datasets_are_ranked_in_order_with_relevance_scores_from_the_reranker(
     query, build_final_dataset, build_pipeline_events, build_execution
 ):
-    events = build_pipeline_events(
-        [build_final_dataset(file_id="file-1"), build_final_dataset(file_id="file-2")]
-    )
+    events = build_pipeline_events([build_final_dataset(file_id="file-1"), build_final_dataset(file_id="file-2")])
 
     result = build_query_result(query, build_execution(events))
 
@@ -84,12 +78,8 @@ def test_validation_errors_make_a_success_with_validation_errors(
     assert result.datasets[1].validation_errors == [NO_INDICATORS_ERROR]
 
 
-def test_validation_warnings_alone_are_a_success(
-    query, build_final_dataset, build_pipeline_events, build_execution
-):
-    events = build_pipeline_events(
-        [build_final_dataset(validation_warnings=[NO_TIME_PERIOD_REQUIREMENT_WARNING])]
-    )
+def test_validation_warnings_alone_are_a_success(query, build_final_dataset, build_pipeline_events, build_execution):
+    events = build_pipeline_events([build_final_dataset(validation_warnings=[NO_TIME_PERIOD_REQUIREMENT_WARNING])])
 
     result = build_query_result(query, build_execution(events))
 
@@ -97,9 +87,7 @@ def test_validation_warnings_alone_are_a_success(
     assert result.datasets[0].validation_warnings == [NO_TIME_PERIOD_REQUIREMENT_WARNING]
 
 
-def test_error_event_is_an_sse_error_with_partial_cost_from_the_reranker(
-    query, build_pipeline_events, build_execution
-):
+def test_error_event_is_an_sse_error_with_partial_cost_from_the_reranker(query, build_pipeline_events, build_execution):
     events = build_pipeline_events(include_pipeline_complete=False) + [
         {"error": "Relevant dataset for file ID 'x' not found"}
     ]
@@ -118,9 +106,7 @@ def test_error_event_is_an_sse_error_with_partial_cost_from_the_reranker(
 
 
 def test_error_event_before_the_reranker_has_no_cost(query, build_execution):
-    result = build_query_result(
-        query, build_execution([{"stage": "starting pipeline"}, {"error": "Search failed"}])
-    )
+    result = build_query_result(query, build_execution([{"stage": "starting pipeline"}, {"error": "Search failed"}]))
 
     assert result.status == ExecutionStatus.SSE_ERROR
     assert result.last_stage == "starting pipeline"
@@ -159,9 +145,7 @@ def test_timeout_keeps_the_stages_received_before_it(query, build_pipeline_event
 
 
 def test_non_200_response_is_an_http_error(query, build_execution):
-    result = build_query_result(
-        query, build_execution([], http_status=400, response_body="Missing required fields")
-    )
+    result = build_query_result(query, build_execution([], http_status=400, response_body="Missing required fields"))
 
     assert result.status == ExecutionStatus.HTTP_ERROR
     assert result.http_status == 400
@@ -169,9 +153,7 @@ def test_non_200_response_is_an_http_error(query, build_execution):
 
 
 def test_request_error_is_an_http_error(query, build_execution):
-    result = build_query_result(
-        query, build_execution([], http_status=None, request_error="ConnectError: refused")
-    )
+    result = build_query_result(query, build_execution([], http_status=None, request_error="ConnectError: refused"))
 
     assert result.status == ExecutionStatus.HTTP_ERROR
     assert result.error_message == "ConnectError: refused"
@@ -190,9 +172,7 @@ def test_request_error_is_an_http_error(query, build_execution):
         ),
     ],
 )
-def test_events_not_matching_the_schemas_are_a_contract_mismatch(
-    query, build_execution, event_data, expected_message
-):
+def test_events_not_matching_the_schemas_are_a_contract_mismatch(query, build_execution, event_data, expected_message):
     result = build_query_result(query, build_execution([{"stage": "starting pipeline"}, event_data]))
 
     assert result.status == ExecutionStatus.CONTRACT_MISMATCH
@@ -261,7 +241,9 @@ def test_real_streams(
     assert result.last_stage == "pipeline complete"
     assert result.dataset_count == len(expected_error_codes)
     assert [[error.code for error in dataset.validation_errors] for dataset in result.datasets] == expected_error_codes
-    assert [[warning.code for warning in dataset.validation_warnings] for dataset in result.datasets] == expected_warning_codes
+    assert [
+        [warning.code for warning in dataset.validation_warnings] for dataset in result.datasets
+    ] == expected_warning_codes
 
     pipeline_complete = _event_data(events, "pipeline complete")
     assert result.token_usage.model_dump() == pipeline_complete["tokenUsage"]

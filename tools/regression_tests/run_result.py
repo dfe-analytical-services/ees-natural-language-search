@@ -90,25 +90,18 @@ def build_query_result(query: GoldStandardQuery, execution: SearchExecution) -> 
         dataset_summary=summarise_datasets(datasets) if is_completed else None,
         datasets=datasets,
         raw_events=[
-            RawEvent(elapsed_seconds=round(event.elapsed_seconds, 3), data=event.data)
-            for event in execution.events
+            RawEvent(elapsed_seconds=round(event.elapsed_seconds, 3), data=event.data) for event in execution.events
         ],
     )
 
 
-def _classify(
-    execution: SearchExecution, parsed: _ParsedEvents
-) -> tuple[ExecutionStatus, str | None]:
+def _classify(execution: SearchExecution, parsed: _ParsedEvents) -> tuple[ExecutionStatus, str | None]:
     if execution.timed_out:
-        return ExecutionStatus.TIMEOUT, (
-            f"Timed out after {execution.duration_seconds:.1f}s"
-        )
+        return ExecutionStatus.TIMEOUT, (f"Timed out after {execution.duration_seconds:.1f}s")
     if execution.request_error is not None:
         return ExecutionStatus.HTTP_ERROR, execution.request_error
     if execution.http_status != 200:
-        return ExecutionStatus.HTTP_ERROR, (
-            f"HTTP {execution.http_status}: {execution.response_body or ''}".strip()
-        )
+        return ExecutionStatus.HTTP_ERROR, (f"HTTP {execution.http_status}: {execution.response_body or ''}".strip())
     if parsed.contract_mismatch is not None:
         return ExecutionStatus.CONTRACT_MISMATCH, parsed.contract_mismatch
     if parsed.error_message is not None:
@@ -150,9 +143,7 @@ def _get_stage(event: SseEvent) -> str | None:
 def _parse_event(event: SseEvent, parsed: _ParsedEvents) -> None:
     data = event.data
     if not isinstance(data, dict):
-        raise ContractMismatchError(
-            _truncate(f"An event's data is not a JSON object: {data}")
-        )
+        raise ContractMismatchError(_truncate(f"An event's data is not a JSON object: {data}"))
 
     # The route streams `{"error": <message>}` when the workflow raises, instead of a stage event
     if "error" in data:
@@ -180,9 +171,7 @@ def _parse_pipeline_complete_event(data: dict[str, Any]) -> PipelineCompleteEven
     data = copy.deepcopy(data)
     datasets = data.get("data", {}).get("datasets", [])
     reported_validity = [
-        dataset.pop(IS_VALID_FOR_TABLE_GENERATION_KEY, None)
-        for dataset in datasets
-        if isinstance(dataset, dict)
+        dataset.pop(IS_VALID_FOR_TABLE_GENERATION_KEY, None) for dataset in datasets if isinstance(dataset, dict)
     ]
 
     event_data = PipelineCompleteEventResponse.model_validate(data).data
@@ -198,9 +187,7 @@ def _parse_pipeline_complete_event(data: dict[str, Any]) -> PipelineCompleteEven
 
 def _build_dataset_results(parsed: _ParsedEvents) -> list[DatasetResult]:
     relevance_scores_by_file_id = (
-        {dataset.file_id: dataset.relevance_score for dataset in parsed.reranker.datasets}
-        if parsed.reranker
-        else {}
+        {dataset.file_id: dataset.relevance_score for dataset in parsed.reranker.datasets} if parsed.reranker else {}
     )
 
     return [

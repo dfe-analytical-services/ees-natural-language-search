@@ -39,9 +39,7 @@ class ExpectedDataset(StrictCamelModel):
     Any selection left unset is not compared."""
 
     data_set_file_id: str = Field(min_length=1)
-    title: str | None = Field(
-        default=None, description="For readability of the file only, not compared."
-    )
+    title: str | None = Field(default=None, description="For readability of the file only, not compared.")
     max_rank: int | None = Field(
         default=None,
         ge=1,
@@ -55,9 +53,7 @@ class ExpectedDataset(StrictCamelModel):
         default_factory=dict,
         description="Keyed by filter label. The value is the expected filter item labels, or '*' if any selection is acceptable.",
     )
-    indicators: list[str] = Field(
-        default_factory=list, description="Expected indicator labels."
-    )
+    indicators: list[str] = Field(default_factory=list, description="Expected indicator labels.")
     time_period: ExpectedTimePeriodRange | None = None
     locations: dict[str, list[str]] = Field(
         default_factory=dict,
@@ -77,9 +73,7 @@ class ExpectedResults(StrictCamelModel):
     def _check_data_set_file_ids_are_unique(self):
         duplicates = _duplicates(dataset.data_set_file_id for dataset in self.datasets)
         if duplicates:
-            raise ValueError(
-                f"Expected datasets must be unique, duplicated data set file ids: {', '.join(duplicates)}"
-            )
+            raise ValueError(f"Expected datasets must be unique, duplicated data set file ids: {', '.join(duplicates)}")
         return self
 
 
@@ -102,9 +96,7 @@ class GoldStandard(StrictCamelModel):
     def _check_query_ids_are_unique(self):
         duplicates = _duplicates(query.id for query in self.queries)
         if duplicates:
-            raise ValueError(
-                f"Query ids must be unique, duplicated query ids: {', '.join(duplicates)}"
-            )
+            raise ValueError(f"Query ids must be unique, duplicated query ids: {', '.join(duplicates)}")
         return self
 
     def select(self, query_ids: list[str], tags: list[str]) -> list[GoldStandardQuery]:
@@ -116,11 +108,7 @@ class GoldStandard(StrictCamelModel):
         if not query_ids and not tags:
             return list(self.queries)
 
-        selected = [
-            query
-            for query in self.queries
-            if query.id in query_ids or not set(query.tags).isdisjoint(tags)
-        ]
+        selected = [query for query in self.queries if query.id in query_ids or not set(query.tags).isdisjoint(tags)]
         if not selected:
             raise ValueError("No queries match the given query ids or tags")
         return selected
@@ -130,8 +118,7 @@ class GoldStandardFileError(Exception):
     def __init__(self, path: Path, problems: list[str]):
         self.problems = problems
         super().__init__(
-            f"{path} is not a valid gold standard file:\n"
-            + "\n".join(f"  - {problem}" for problem in problems)
+            f"{path} is not a valid gold standard file:\n" + "\n".join(f"  - {problem}" for problem in problems)
         )
 
 
@@ -139,9 +126,7 @@ def load_gold_standard(path: Path) -> GoldStandard:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
-        raise GoldStandardFileError(
-            path, [f"Invalid JSON at line {e.lineno}, column {e.colno}: {e.msg}"]
-        ) from e
+        raise GoldStandardFileError(path, [f"Invalid JSON at line {e.lineno}, column {e.colno}: {e.msg}"]) from e
 
     try:
         return GoldStandard.model_validate(raw)

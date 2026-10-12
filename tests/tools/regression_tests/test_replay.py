@@ -52,7 +52,9 @@ def _write_report(tmp_path: Path, report: dict | str) -> Path:
     return path
 
 
-def _run(queries: list[GoldStandardQuery], options: RunOptions, transport: httpx.AsyncBaseTransport) -> RegressionReport:
+def _run(
+    queries: list[GoldStandardQuery], options: RunOptions, transport: httpx.AsyncBaseTransport
+) -> RegressionReport:
     return asyncio.run(run_regression_tests(queries, options, transport=transport))
 
 
@@ -94,9 +96,7 @@ def test_replaying_a_report_reproduces_its_results(tmp_path, build_final_dataset
         return httpx.Response(200, content="".join(f"data: {json.dumps(data)}\n\n" for data in events).encode())
 
     recorded = _run(queries, _options(iterations=2), httpx.MockTransport(service))
-    replayed = _replay(
-        tmp_path, json.loads(recorded.model_dump_json(by_alias=True)), queries, iterations=2
-    )
+    replayed = _replay(tmp_path, json.loads(recorded.model_dump_json(by_alias=True)), queries, iterations=2)
 
     assert _statuses(replayed) == [[ExecutionStatus.SUCCESS, ExecutionStatus.SSE_ERROR]] * 2
     for recorded_iteration, replayed_iteration in zip(recorded.iterations, replayed.iterations):
@@ -109,9 +109,7 @@ def test_replaying_a_report_reproduces_its_results(tmp_path, build_final_dataset
             ]
 
 
-def test_replaying_a_real_stream_matches_classifying_it_directly(
-    tmp_path, load_json_fixture, build_execution, query
-):
+def test_replaying_a_real_stream_matches_classifying_it_directly(tmp_path, load_json_fixture, build_execution, query):
     events = load_json_fixture("nl_search_sse_success.json")
 
     replayed = _replay(tmp_path, _recorded_report([_recorded_query(query, events)]), [query])
@@ -242,7 +240,9 @@ def test_cli_replays_every_recorded_iteration_by_default(tmp_path, build_pipelin
     report_path = _write_report(tmp_path, _recorded_report(recorded, recorded))
     out_dir = tmp_path / "out"
 
-    exit_code = main(["--replay", str(report_path), "--input", str(_write_gold_standard(tmp_path, [query])), "--out", str(out_dir)])
+    exit_code = main(
+        ["--replay", str(report_path), "--input", str(_write_gold_standard(tmp_path, [query])), "--out", str(out_dir)]
+    )
 
     assert exit_code == 0
     [written] = out_dir.glob("regression-report-replay-*.json")
@@ -257,10 +257,14 @@ def test_cli_cannot_replay_more_iterations_than_were_recorded(tmp_path, build_pi
 
     exit_code = main(
         [
-            "--replay", str(report_path),
-            "--input", str(_write_gold_standard(tmp_path, [query])),
-            "--iterations", "2",
-            "--out", str(tmp_path / "out"),
+            "--replay",
+            str(report_path),
+            "--input",
+            str(_write_gold_standard(tmp_path, [query])),
+            "--iterations",
+            "2",
+            "--out",
+            str(tmp_path / "out"),
         ]
     )
 
@@ -273,13 +277,18 @@ def test_cli_does_not_allow_env_and_replay_together(tmp_path):
         main(["--env", "dev", "--replay", str(tmp_path / "recorded.json")])
 
 
-def _run_cli_replay(tmp_path: Path, report: dict, queries: list[GoldStandardQuery], *args: str) -> tuple[int, RegressionReport | None]:
+def _run_cli_replay(
+    tmp_path: Path, report: dict, queries: list[GoldStandardQuery], *args: str
+) -> tuple[int, RegressionReport | None]:
     out_dir = tmp_path / "out"
     exit_code = main(
         [
-            "--replay", str(_write_report(tmp_path, report)),
-            "--input", str(_write_gold_standard(tmp_path, queries)),
-            "--out", str(out_dir),
+            "--replay",
+            str(_write_report(tmp_path, report)),
+            "--input",
+            str(_write_gold_standard(tmp_path, queries)),
+            "--out",
+            str(out_dir),
             *args,
         ]
     )

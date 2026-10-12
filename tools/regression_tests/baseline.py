@@ -166,7 +166,11 @@ def compare_query(
         worse |= _get_status_level(current_status) > _get_status_level(baseline_status)
         better |= _get_status_level(current_status) < _get_status_level(baseline_status)
 
-    if baseline_accuracy in _ACCURACY_LEVELS and current_accuracy in _ACCURACY_LEVELS and baseline_accuracy != current_accuracy:
+    if (
+        baseline_accuracy in _ACCURACY_LEVELS
+        and current_accuracy in _ACCURACY_LEVELS
+        and baseline_accuracy != current_accuracy
+    ):
         differences.append(f"Accuracy: {baseline_accuracy} -> {current_accuracy}")
         worse |= _ACCURACY_LEVELS[current_accuracy] > _ACCURACY_LEVELS[baseline_accuracy]
         better |= _ACCURACY_LEVELS[current_accuracy] < _ACCURACY_LEVELS[baseline_accuracy]
@@ -185,7 +189,9 @@ def compare_query(
 
     # Different datasets or selections are only worse or better if they changed the outcome of a check
     output_changed = False
-    baseline_completed, current_completed = _get_first_completed(baseline_results), _get_first_completed(current_results)
+    baseline_completed, current_completed = _get_first_completed(baseline_results), _get_first_completed(
+        current_results
+    )
     if baseline_completed and current_completed:
         for difference in describe_differences(get_outputs(baseline_completed), get_outputs(current_completed)):
             output_changed = True

@@ -77,7 +77,10 @@ def test_differences_in_selections_are_described_by_iteration(build_result, buil
 def test_differences_in_status_and_accuracy_are_described(build_result, build_dataset_result):
     runs = [
         (1, build_result(accuracy=QueryAccuracy(result=AccuracyResult.PASS))),
-        (2, build_result(status=ExecutionStatus.SSE_ERROR, accuracy=QueryAccuracy(result=AccuracyResult.NOT_EVALUATED))),
+        (
+            2,
+            build_result(status=ExecutionStatus.SSE_ERROR, accuracy=QueryAccuracy(result=AccuracyResult.NOT_EVALUATED)),
+        ),
     ]
 
     consistency = assess_query_consistency("query-1", runs)

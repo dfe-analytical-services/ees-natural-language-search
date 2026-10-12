@@ -80,7 +80,10 @@ def _render_run(report: RegressionReport) -> list[str]:
         ("Started", _format_datetime(run.started_at)),
         ("Environment", environment),
         ("Input file", f"`{run.input_file}`"),
-        ("Queries", f"{_plural(len(run.query_ids), 'query', 'queries')} x {_plural(run.iterations, 'iteration')}, {run.concurrency} at a time"),
+        (
+            "Queries",
+            f"{_plural(len(run.query_ids), 'query', 'queries')} x {_plural(run.iterations, 'iteration')}, {run.concurrency} at a time",
+        ),
         ("Maximum cost", max_cost),
     ]
     return _table(["Run", ""], rows) + [""]
@@ -98,7 +101,11 @@ def _render_execution_summary(summary: ExecutionSummary) -> list[str]:
         "",
         f"- Tokens: {summary.token_usage.input} input, {summary.token_usage.output} output. "
         f"Cost: {summary.cost:.6f}"
-        + (f" ({summary.queries_with_partial_cost} queries with partial cost)" if summary.queries_with_partial_cost else ""),
+        + (
+            f" ({summary.queries_with_partial_cost} queries with partial cost)"
+            if summary.queries_with_partial_cost
+            else ""
+        ),
         (
             f"- Duration of completed queries: mean {durations.mean_seconds:.1f}s, "
             f"p95 {durations.p95_seconds:.1f}s, max {durations.max_seconds:.1f}s"
@@ -181,7 +188,10 @@ def _render_baseline_comparison(comparison: BaselineComparison | None) -> list[s
     ]
     lines += _table(
         ["Metric", "Baseline", "Current"],
-        [(metric.name, _format_metric(metric, metric.baseline), _format_metric(metric, metric.current)) for metric in comparison.metrics],
+        [
+            (metric.name, _format_metric(metric, metric.baseline), _format_metric(metric, metric.current))
+            for metric in comparison.metrics
+        ],
     )
     lines.append("")
 
@@ -313,7 +323,9 @@ def _render_expected_dataset(dataset: ExpectedDatasetAccuracy) -> list[str]:
 
 
 def _render_grouped_selection(name: str, accuracy: GroupedSelectionAccuracy) -> list[str]:
-    lines = [f"    - {name}: {_format_passed(accuracy.passed)}{_format_precision_recall(accuracy.precision, accuracy.recall)}"]
+    lines = [
+        f"    - {name}: {_format_passed(accuracy.passed)}{_format_precision_recall(accuracy.precision, accuracy.recall)}"
+    ]
     for label, group in accuracy.groups.items():
         lines.append(f"      - {label}: {_format_selection(group)}")
     return lines
@@ -323,7 +335,11 @@ def _render_dataset(dataset: DatasetResult) -> list[str]:
     score = "-" if dataset.relevance_score is None else dataset.relevance_score
     lines = [
         f"  {dataset.rank}. {dataset.title} (`{dataset.data_set_file_id}`), relevance score {score}, "
-        + ("valid for table generation" if dataset.is_valid_for_table_generation else "**not valid for table generation**")
+        + (
+            "valid for table generation"
+            if dataset.is_valid_for_table_generation
+            else "**not valid for table generation**"
+        )
     ]
     for error in dataset.validation_errors:
         lines.append(f"     - Error `{error.code}`: {error.message}")

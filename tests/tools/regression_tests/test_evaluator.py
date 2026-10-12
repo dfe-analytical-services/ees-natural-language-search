@@ -56,9 +56,7 @@ def _subject_meta(
                 "default": {
                     "id": "indicator-group",
                     "label": "Default",
-                    "options": [
-                        {"value": label, "label": label, "name": label} for label in indicators or []
-                    ],
+                    "options": [{"value": label, "label": label, "name": label} for label in indicators or []],
                 }
             },
             "locations": locations or {},
@@ -182,7 +180,9 @@ def test_query_without_expected_results_is_not_evaluated():
 @pytest.mark.parametrize("status", [ExecutionStatus.SSE_ERROR, ExecutionStatus.TIMEOUT, ExecutionStatus.HTTP_ERROR])
 def test_query_whose_pipeline_did_not_complete_is_not_evaluated(status):
     accuracy = evaluate_query(
-        _query({"author": "developer", "datasets": [_expected_dataset()]}), _result([], status=status), _FakeSubjectMeta()
+        _query({"author": "developer", "datasets": [_expected_dataset()]}),
+        _result([], status=status),
+        _FakeSubjectMeta(),
     )
 
     assert accuracy.result == AccuracyResult.NOT_EVALUATED
@@ -216,7 +216,9 @@ def test_query_passes_when_every_expected_selection_matches_exactly():
     [dataset] = accuracy.datasets
     assert dataset.result == AccuracyResult.PASS
     assert (dataset.found, dataset.rank, dataset.rank_passed) == (True, 1, True)
-    assert dataset.filters.passed and dataset.indicators.passed and dataset.time_period.passed and dataset.locations.passed
+    assert (
+        dataset.filters.passed and dataset.indicators.passed and dataset.time_period.passed and dataset.locations.passed
+    )
     assert dataset.problems == []
 
 
@@ -237,7 +239,11 @@ def test_filters_are_compared_by_filter_and_only_for_the_expected_filters():
         1.0,
     )
     characteristic = dataset.filters.groups["Characteristic"]
-    assert (characteristic.missing, characteristic.unexpected, characteristic.recall) == (["FSM eligible"], ["Total"], 0.0)
+    assert (characteristic.missing, characteristic.unexpected, characteristic.recall) == (
+        ["FSM eligible"],
+        ["Total"],
+        0.0,
+    )
     # 1 of the 3 selected filter items was expected, and 1 of the 2 expected filter items was selected
     assert (dataset.filters.precision, dataset.filters.recall) == (0.333, 0.5)
 
@@ -342,14 +348,19 @@ def test_missing_required_dataset_fails_the_query():
 
 
 def test_missing_dataset_that_is_not_required_is_ignored():
-    accuracy = _evaluate([_expected_dataset(), _expected_dataset(dataSetFileId="optional", required=False)], [_dataset()])
+    accuracy = _evaluate(
+        [_expected_dataset(), _expected_dataset(dataSetFileId="optional", required=False)], [_dataset()]
+    )
 
     assert accuracy.result == AccuracyResult.PASS
 
 
 def test_dataset_that_is_not_required_still_counts_when_found():
     accuracy = _evaluate(
-        [_expected_dataset(), _expected_dataset(dataSetFileId="optional", required=False, indicators=["Overall absence rate"])],
+        [
+            _expected_dataset(),
+            _expected_dataset(dataSetFileId="optional", required=False, indicators=["Overall absence rate"]),
+        ],
         [_dataset(), _dataset(rank=2, data_set_file_id="optional")],
     )
 

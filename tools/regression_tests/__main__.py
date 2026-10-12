@@ -154,9 +154,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     try:
-        report = asyncio.run(
-            run_regression_tests(queries, options, transport=replay.transport if replay else None)
-        )
+        report = asyncio.run(run_regression_tests(queries, options, transport=replay.transport if replay else None))
     except HealthCheckError as e:
         logger.error("%s", e)
         return EXIT_QUERIES_NOT_COMPLETED
@@ -182,18 +180,53 @@ def _parse_args(argv: list[str] | None, environment_names: list[str]) -> argpars
         description="Runs gold standard queries against the natural language search API and writes a JSON report.",
     )
     target = parser.add_mutually_exclusive_group()
-    target.add_argument("--env", choices=environment_names, help="The environment to run against, from environments.json.")
-    target.add_argument("--replay", type=Path, metavar="REPORT", help="Replay the streams recorded in a previous report instead of calling the service, so that no Azure OpenAI tokens are used.")
-    parser.add_argument("--baseline", type=Path, metavar="REPORT", help="Compare the results with a previous report, to find the queries that got worse or better.")
-    parser.add_argument("--input", type=Path, default=DEFAULT_INPUT_FILE, help="The gold standard queries file. Default: %(default)s")
-    parser.add_argument("--query", action="append", default=[], metavar="QUERY_ID", help="Only run this query. Can be repeated.")
+    target.add_argument(
+        "--env", choices=environment_names, help="The environment to run against, from environments.json."
+    )
+    target.add_argument(
+        "--replay",
+        type=Path,
+        metavar="REPORT",
+        help="Replay the streams recorded in a previous report instead of calling the service, so that no Azure OpenAI tokens are used.",
+    )
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        metavar="REPORT",
+        help="Compare the results with a previous report, to find the queries that got worse or better.",
+    )
+    parser.add_argument(
+        "--input", type=Path, default=DEFAULT_INPUT_FILE, help="The gold standard queries file. Default: %(default)s"
+    )
+    parser.add_argument(
+        "--query", action="append", default=[], metavar="QUERY_ID", help="Only run this query. Can be repeated."
+    )
     parser.add_argument("--tag", action="append", default=[], help="Only run queries with this tag. Can be repeated.")
-    parser.add_argument("--iterations", type=_positive_int, help="How many times to run each query. Default: 1, or every recorded iteration when replaying.")
-    parser.add_argument("--concurrency", type=_positive_int, default=2, help="How many queries to run at once. Default: %(default)s")
-    parser.add_argument("--timeout", type=_positive_float, default=180, help="Seconds to wait for each query to complete. Default: %(default)s")
-    parser.add_argument("--max-cost", type=_positive_float, help="Stop starting new queries once the run's cost reaches this.")
-    parser.add_argument("--out", type=Path, default=DEFAULT_OUT_DIR, help="The directory to write the report to. Default: %(default)s")
-    parser.add_argument("--validate", action="store_true", help="Only validate the gold standard queries file, without running any queries.")
+    parser.add_argument(
+        "--iterations",
+        type=_positive_int,
+        help="How many times to run each query. Default: 1, or every recorded iteration when replaying.",
+    )
+    parser.add_argument(
+        "--concurrency", type=_positive_int, default=2, help="How many queries to run at once. Default: %(default)s"
+    )
+    parser.add_argument(
+        "--timeout",
+        type=_positive_float,
+        default=180,
+        help="Seconds to wait for each query to complete. Default: %(default)s",
+    )
+    parser.add_argument(
+        "--max-cost", type=_positive_float, help="Stop starting new queries once the run's cost reaches this."
+    )
+    parser.add_argument(
+        "--out", type=Path, default=DEFAULT_OUT_DIR, help="The directory to write the report to. Default: %(default)s"
+    )
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Only validate the gold standard queries file, without running any queries.",
+    )
 
     args = parser.parse_args(argv)
     if not args.validate and args.env is None and args.replay is None:
@@ -252,30 +285,26 @@ def _has_regressions(report: RegressionReport) -> bool:
 
 def _all_queries_completed(report: RegressionReport) -> bool:
     # Reaching the maximum cost only matters if it stopped queries from running
-    return (
-        len(report.iterations) == report.run.iterations
-        and all(
-            not iteration.skipped_query_ids
-            and all(result.status in COMPLETED_STATUSES for result in iteration.queries)
-            for iteration in report.iterations
-        )
+    return len(report.iterations) == report.run.iterations and all(
+        not iteration.skipped_query_ids and all(result.status in COMPLETED_STATUSES for result in iteration.queries)
+        for iteration in report.iterations
     )
 
 
 def _log_run_summary(report: RegressionReport, report_path: Path, markdown_report_path: Path) -> None:
     summary = report.summary
-    status_counts = ", ".join(
-        f"{status}: {count}" for status, count in summary.status_counts.items() if count
-    )
+    status_counts = ", ".join(f"{status}: {count}" for status, count in summary.status_counts.items() if count)
     logger.info("Ran %d queries (%s)", summary.query_count, status_counts or "none")
     logger.info(
         "Total tokens %d input / %d output, cost %.6f%s",
         summary.token_usage.input,
         summary.token_usage.output,
         summary.cost,
-        f" ({summary.queries_with_partial_cost} queries with partial cost)"
-        if summary.queries_with_partial_cost
-        else "",
+        (
+            f" ({summary.queries_with_partial_cost} queries with partial cost)"
+            if summary.queries_with_partial_cost
+            else ""
+        ),
     )
 
     accuracy = report.accuracy_summary

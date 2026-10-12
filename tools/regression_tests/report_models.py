@@ -46,9 +46,7 @@ class ExecutionStatus(StrEnum):
     """An event didn't match the response schemas, so the service and this script have diverged."""
 
 
-COMPLETED_STATUSES = frozenset(
-    {ExecutionStatus.SUCCESS, ExecutionStatus.SUCCESS_WITH_VALIDATION_ERRORS}
-)
+COMPLETED_STATUSES = frozenset({ExecutionStatus.SUCCESS, ExecutionStatus.SUCCESS_WITH_VALIDATION_ERRORS})
 
 
 class RawEvent(StrictCamelModel):
@@ -81,9 +79,7 @@ class DatasetResultsSummary(StrictCamelModel):
     dataset_count: int
     valid_for_table_generation_count: int
     with_validation_warnings_count: int
-    validation_error_counts: dict[str, int] = Field(
-        default_factory=dict, description="Keyed by validation error code."
-    )
+    validation_error_counts: dict[str, int] = Field(default_factory=dict, description="Keyed by validation error code.")
     validation_warning_counts: dict[str, int] = Field(
         default_factory=dict, description="Keyed by validation warning code."
     )
@@ -186,9 +182,7 @@ class QueryResult(StrictCamelModel):
     )
     confidence: str | None = None
     query_requirements: QueryRequirements | None = None
-    dataset_count: int | None = Field(
-        default=None, description="Unset if the pipeline didn't complete."
-    )
+    dataset_count: int | None = Field(default=None, description="Unset if the pipeline didn't complete.")
     token_usage: TokenUsage | None = None
     cost: float | None = None
     cost_is_partial: bool = Field(
@@ -197,9 +191,7 @@ class QueryResult(StrictCamelModel):
     )
     dataset_summary: DatasetResultsSummary | None = None
     datasets: list[DatasetResult] = Field(default_factory=list)
-    accuracy: QueryAccuracy | None = Field(
-        default=None, description="Unset if the query has no expected results."
-    )
+    accuracy: QueryAccuracy | None = Field(default=None, description="Unset if the query has no expected results.")
     raw_events: list[RawEvent] = Field(default_factory=list)
 
 
