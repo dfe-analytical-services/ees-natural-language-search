@@ -187,7 +187,10 @@ def _parse_args(argv: list[str] | None, environment_names: list[str]) -> argpars
         "--replay",
         type=Path,
         metavar="REPORT",
-        help="Replay the streams recorded in a previous report instead of calling the service, so that no Azure OpenAI tokens are used.",
+        help=(
+            "Replay the streams recorded in a previous report instead of calling the service, "
+            "so that no Azure OpenAI tokens are used."
+        ),
     )
     parser.add_argument(
         "--baseline",

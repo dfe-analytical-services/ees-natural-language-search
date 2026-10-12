@@ -62,7 +62,10 @@ class DatasetResult(StrictCamelModel):
     title: str
     relevance_score: float | None = Field(
         default=None,
-        description="Taken from the dataset in the 'reranker complete' event, as the 'pipeline complete' event doesn't include it.",
+        description=(
+            "Taken from the dataset in the 'reranker complete' event, "
+            "as the 'pipeline complete' event doesn't include it."
+        ),
     )
     is_valid_for_table_generation: bool
     validation_errors: list[DatasetValidationError] = Field(default_factory=list)
@@ -227,7 +230,9 @@ class AccuracySummary(StrictCamelModel):
     result_counts: dict[AccuracyResult, int]
     result_counts_by_author: dict[str, dict[AccuracyResult, int]] = Field(
         default_factory=dict,
-        description="Keyed by who wrote the expected results, or 'unspecified', so that each can be compared separately.",
+        description=(
+            "Keyed by who wrote the expected results, or 'unspecified', so that each can be compared separately."
+        ),
     )
     required_datasets_found: PassRate
     rank: PassRate

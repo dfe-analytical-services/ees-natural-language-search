@@ -309,7 +309,8 @@ def find_unknown_expected_values(expected: ExpectedDataset, meta: SubjectMetaRes
         for name, time_period in (("start", expected.time_period.start), ("end", expected.time_period.end)):
             if (time_period.code, time_period.year) not in time_periods:
                 problems.append(
-                    f"The expected {name} time period {time_period.code} {time_period.year} doesn't exist in the subject meta"
+                    f"The expected {name} time period {time_period.code} {time_period.year} "
+                    "doesn't exist in the subject meta"
                 )
 
     location_codes_by_level = {

@@ -66,8 +66,9 @@ def _render_run(report: RegressionReport) -> list[str]:
     if run.replayed_from:
         source = run.replayed_from
         environment = (
-            f"Replay of `{source.environment_name}` ({source.base_url}), recorded at {_format_datetime(source.started_at)} "
-            f"in `{source.report_file}`. No tokens were used, and durations are meaningless."
+            f"Replay of `{source.environment_name}` ({source.base_url}), "
+            f"recorded at {_format_datetime(source.started_at)} in `{source.report_file}`. "
+            "No tokens were used, and durations are meaningless."
         )
     else:
         environment = f"`{run.environment_name}` ({run.base_url})"
@@ -82,7 +83,8 @@ def _render_run(report: RegressionReport) -> list[str]:
         ("Input file", f"`{run.input_file}`"),
         (
             "Queries",
-            f"{_plural(len(run.query_ids), 'query', 'queries')} x {_plural(run.iterations, 'iteration')}, {run.concurrency} at a time",
+            f"{_plural(len(run.query_ids), 'query', 'queries')} x {_plural(run.iterations, 'iteration')}, "
+            f"{run.concurrency} at a time",
         ),
         ("Maximum cost", max_cost),
     ]
@@ -281,7 +283,8 @@ def _render_query(iteration: int, result: QueryResult) -> list[str]:
         )
         if accuracy.min_datasets is not None and accuracy.min_datasets_passed is not None:
             lines.append(
-                f"  - At least {_plural(accuracy.min_datasets, 'dataset')}: {_format_passed(accuracy.min_datasets_passed)}"
+                f"  - At least {_plural(accuracy.min_datasets, 'dataset')}: "
+                f"{_format_passed(accuracy.min_datasets_passed)}"
             )
         for dataset in accuracy.datasets:
             lines += _render_expected_dataset(dataset)
@@ -313,7 +316,8 @@ def _render_expected_dataset(dataset: ExpectedDatasetAccuracy) -> list[str]:
     if dataset.time_period is not None:
         lines.append(
             f"    - Time period: {_format_passed(dataset.time_period.passed)} - expected "
-            f"{_format_time_period(dataset.time_period.expected)}, selected {_format_time_period(dataset.time_period.selected)}"
+            f"{_format_time_period(dataset.time_period.expected)}, "
+            f"selected {_format_time_period(dataset.time_period.selected)}"
         )
     if dataset.locations is not None:
         lines += _render_grouped_selection("Locations", dataset.locations)
@@ -324,7 +328,8 @@ def _render_expected_dataset(dataset: ExpectedDatasetAccuracy) -> list[str]:
 
 def _render_grouped_selection(name: str, accuracy: GroupedSelectionAccuracy) -> list[str]:
     lines = [
-        f"    - {name}: {_format_passed(accuracy.passed)}{_format_precision_recall(accuracy.precision, accuracy.recall)}"
+        f"    - {name}: {_format_passed(accuracy.passed)}"
+        f"{_format_precision_recall(accuracy.precision, accuracy.recall)}"
     ]
     for label, group in accuracy.groups.items():
         lines.append(f"      - {label}: {_format_selection(group)}")

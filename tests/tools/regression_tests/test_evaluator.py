@@ -271,7 +271,8 @@ def test_selected_filter_items_not_in_the_subject_meta_are_a_problem():
     assert not dataset.filters.passed
     assert dataset.filters.groups["School type"].missing == ["Secondary"]
     assert dataset.problems == [
-        "The selected filter items 'Secondary' don't exist in the subject meta, e.g. because it has changed since the results were recorded"
+        "The selected filter items 'Secondary' don't exist in the subject meta, "
+        "e.g. because it has changed since the results were recorded"
     ]
 
 

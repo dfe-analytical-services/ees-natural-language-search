@@ -52,5 +52,6 @@ def test_duplicate_expected_datasets_are_reported(tmp_path):
     )
 
     assert problems == [
-        "Query 'query-1', field 'expected': Value error, Expected datasets must be unique, duplicated data set file ids: a"
+        "Query 'query-1', field 'expected': Value error, "
+        "Expected datasets must be unique, duplicated data set file ids: a"
     ]

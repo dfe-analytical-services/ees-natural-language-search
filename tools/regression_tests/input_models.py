@@ -51,7 +51,10 @@ class ExpectedDataset(StrictCamelModel):
     )
     filters: dict[str, list[str] | Literal["*"]] = Field(
         default_factory=dict,
-        description="Keyed by filter label. The value is the expected filter item labels, or '*' if any selection is acceptable.",
+        description=(
+            "Keyed by filter label. The value is the expected filter item labels, "
+            "or '*' if any selection is acceptable."
+        ),
     )
     indicators: list[str] = Field(default_factory=list, description="Expected indicator labels.")
     time_period: ExpectedTimePeriodRange | None = None
