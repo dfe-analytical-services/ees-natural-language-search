@@ -39,36 +39,24 @@ class ExpectedDataset(StrictCamelModel):
     Any selection left unset is not compared."""
 
     data_set_file_id: str = Field(min_length=1)
-    title: str | None = Field(default=None, description="For readability of the file only, not compared.")
-    max_rank: int | None = Field(
-        default=None,
-        ge=1,
-        description="The lowest acceptable position of the dataset in the results, where 1 is the first result.",
-    )
-    required: bool = Field(
-        default=True,
-        description="Whether the query fails when the dataset is missing, rather than it just being acceptable.",
-    )
-    filters: dict[str, list[str] | Literal["*"]] = Field(
-        default_factory=dict,
-        description=(
-            "Keyed by filter label. The value is the expected filter item labels, "
-            "or '*' if any selection is acceptable."
-        ),
-    )
-    indicators: list[str] = Field(default_factory=list, description="Expected indicator labels.")
+    # For readability of the file only, not compared
+    title: str | None = None
+    # The lowest acceptable position in the results, where 1 is the first result
+    max_rank: int | None = Field(default=None, ge=1)
+    # Whether the query fails when the dataset is missing, rather than it just being acceptable
+    required: bool = True
+    # Expected filter item labels keyed by filter label, or '*' if any selection is acceptable
+    filters: dict[str, list[str] | Literal["*"]] = Field(default_factory=dict)
+    # Expected indicator labels
+    indicators: list[str] = Field(default_factory=list)
     time_period: ExpectedTimePeriodRange | None = None
-    locations: dict[str, list[str]] = Field(
-        default_factory=dict,
-        description="Keyed by geographic level label. The value is the expected location codes.",
-    )
+    # Expected location codes keyed by geographic level label
+    locations: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class ExpectedResults(StrictCamelModel):
-    author: Literal["developer", "product-owner"] | None = Field(
-        default=None,
-        description="Who wrote the expected results, so that the accuracy against each can be reported separately.",
-    )
+    # Who wrote the expected results, so that the accuracy against each can be reported separately
+    author: Literal["developer", "product-owner"] | None = None
     min_datasets: int | None = Field(default=None, ge=0)
     datasets: list[ExpectedDataset] = Field(default_factory=list)
 
@@ -86,10 +74,8 @@ class GoldStandardQuery(StrictCamelModel):
     user_query: str = Field(min_length=1)
     publication_id: str = Field(min_length=1)
     tags: list[str] = Field(default_factory=list)
-    expected: ExpectedResults | None = Field(
-        default=None,
-        description="Leave unset to only report on how the query was executed, e.g. its status, duration and cost.",
-    )
+    # Unset to only report on how the query was executed, e.g. its status, duration and cost
+    expected: ExpectedResults | None = None
 
 
 class GoldStandard(StrictCamelModel):

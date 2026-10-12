@@ -55,18 +55,14 @@ class RawEvent(StrictCamelModel):
 
 
 class DatasetResult(StrictCamelModel):
-    rank: int = Field(description="Position in the results, where 1 is the first result.")
+    # Position in the results, where 1 is the first result
+    rank: int
     file_id: str
     data_set_file_id: str
     subject_id: str
     title: str
-    relevance_score: float | None = Field(
-        default=None,
-        description=(
-            "Taken from the dataset in the 'reranker complete' event, "
-            "as the 'pipeline complete' event doesn't include it."
-        ),
-    )
+    # From the 'reranker complete' event, as the 'pipeline complete' event doesn't include it
+    relevance_score: float | None = None
     is_valid_for_table_generation: bool
     validation_errors: list[DatasetValidationError] = Field(default_factory=list)
     validation_warnings: list[DatasetValidationWarning] = Field(default_factory=list)
@@ -82,10 +78,9 @@ class DatasetResultsSummary(StrictCamelModel):
     dataset_count: int
     valid_for_table_generation_count: int
     with_validation_warnings_count: int
-    validation_error_counts: dict[str, int] = Field(default_factory=dict, description="Keyed by validation error code.")
-    validation_warning_counts: dict[str, int] = Field(
-        default_factory=dict, description="Keyed by validation warning code."
-    )
+    # Keyed by code
+    validation_error_counts: dict[str, int] = Field(default_factory=dict)
+    validation_warning_counts: dict[str, int] = Field(default_factory=dict)
     mean_relevance_score: float | None = None
 
 
@@ -108,16 +103,14 @@ class SelectionAccuracy(StrictCamelModel):
     passed: bool
     expected: list[str] = Field(default_factory=list)
     selected: list[str] = Field(default_factory=list)
-    missing: list[str] = Field(default_factory=list, description="Expected, but not selected.")
-    unexpected: list[str] = Field(default_factory=list, description="Selected, but not expected.")
-    precision: float | None = Field(
-        default=None,
-        description="The proportion of the selected values that were expected. Unset if nothing was selected.",
-    )
-    recall: float | None = Field(
-        default=None,
-        description="The proportion of the expected values that were selected. Unset if nothing was expected.",
-    )
+    # Expected, but not selected
+    missing: list[str] = Field(default_factory=list)
+    # Selected, but not expected
+    unexpected: list[str] = Field(default_factory=list)
+    # Unset if nothing was selected
+    precision: float | None = None
+    # Unset if nothing was expected
+    recall: float | None = None
 
 
 class GroupedSelectionAccuracy(StrictCamelModel):
@@ -126,9 +119,8 @@ class GroupedSelectionAccuracy(StrictCamelModel):
     passed: bool
     precision: float | None = None
     recall: float | None = None
-    groups: dict[str, SelectionAccuracy] = Field(
-        default_factory=dict, description="Keyed by filter label, or geographic level label."
-    )
+    # Keyed by filter label, or geographic level label
+    groups: dict[str, SelectionAccuracy] = Field(default_factory=dict)
 
 
 class TimePeriodAccuracy(StrictCamelModel):
@@ -139,29 +131,29 @@ class TimePeriodAccuracy(StrictCamelModel):
 
 class ExpectedDatasetAccuracy(StrictCamelModel):
     data_set_file_id: str
-    title: str | None = Field(default=None, description="The title given in the gold standard file.")
+    # The title given in the gold standard file
+    title: str | None = None
     required: bool
     result: AccuracyResult
     found: bool
     rank: int | None = None
     max_rank: int | None = None
-    rank_passed: bool | None = Field(default=None, description="Unset if no maximum rank is expected.")
-    filters: GroupedSelectionAccuracy | None = Field(
-        default=None, description="Unset if no filters are expected, or if they couldn't be compared."
-    )
+    # Unset if no maximum rank is expected
+    rank_passed: bool | None = None
+    # Unset if no filters are expected, or if they couldn't be compared
+    filters: GroupedSelectionAccuracy | None = None
     indicators: SelectionAccuracy | None = None
     time_period: TimePeriodAccuracy | None = None
     locations: GroupedSelectionAccuracy | None = None
-    problems: list[str] = Field(
-        default_factory=list,
-        description="Problems comparing the dataset, e.g. expected labels that don't exist in its subject meta.",
-    )
+    # Problems comparing the dataset, e.g. expected labels that don't exist in its subject meta
+    problems: list[str] = Field(default_factory=list)
 
 
 class QueryAccuracy(StrictCamelModel):
     result: AccuracyResult
-    author: str | None = Field(default=None, description="Who wrote the expected results.")
-    reason: str | None = Field(default=None, description="Why the results weren't evaluated.")
+    author: str | None = None
+    # Why the results weren't evaluated
+    reason: str | None = None
     min_datasets: int | None = None
     min_datasets_passed: bool | None = None
     datasets: list[ExpectedDatasetAccuracy] = Field(default_factory=list)
@@ -174,27 +166,24 @@ class QueryResult(StrictCamelModel):
     tags: list[str] = Field(default_factory=list)
     status: ExecutionStatus
     error_message: str | None = None
-    last_stage: str | None = Field(
-        default=None, description="The stage of the last event received before the stream ended."
-    )
+    # The stage of the last event received
+    last_stage: str | None = None
     http_status: int | None = None
     duration_seconds: float
-    stage_timings: dict[str, float] = Field(
-        default_factory=dict,
-        description="Keyed by stage. The value is the time from sending the request to receiving that stage's event.",
-    )
+    # Seconds from sending the request to receiving each stage's event, keyed by stage
+    stage_timings: dict[str, float] = Field(default_factory=dict)
     confidence: str | None = None
     query_requirements: QueryRequirements | None = None
-    dataset_count: int | None = Field(default=None, description="Unset if the pipeline didn't complete.")
+    # Unset if the pipeline didn't complete
+    dataset_count: int | None = None
     token_usage: TokenUsage | None = None
     cost: float | None = None
-    cost_is_partial: bool = Field(
-        description="Whether the token usage and cost are from an earlier stage, as the pipeline didn't complete. "
-        "Tokens used by any later stages are not known."
-    )
+    # Whether the token usage and cost are from an earlier stage, as the pipeline didn't complete
+    cost_is_partial: bool
     dataset_summary: DatasetResultsSummary | None = None
     datasets: list[DatasetResult] = Field(default_factory=list)
-    accuracy: QueryAccuracy | None = Field(default=None, description="Unset if the query has no expected results.")
+    # Unset if the query has no expected results
+    accuracy: QueryAccuracy | None = None
     raw_events: list[RawEvent] = Field(default_factory=list)
 
 
@@ -207,10 +196,8 @@ class DurationSummary(StrictCamelModel):
 class ExecutionSummary(StrictCamelModel):
     query_count: int
     status_counts: dict[ExecutionStatus, int]
-    completed_query_durations: DurationSummary | None = Field(
-        default=None,
-        description="Durations of queries which completed the pipeline, so that quick failures don't skew them.",
-    )
+    # Only queries which completed the pipeline, so that quick failures don't skew the durations
+    completed_query_durations: DurationSummary | None = None
     token_usage: TokenUsage
     cost: float
     queries_with_partial_cost: int
@@ -220,7 +207,8 @@ class ExecutionSummary(StrictCamelModel):
 class PassRate(StrictCamelModel):
     evaluated: int
     passed: int
-    pass_rate: float | None = Field(default=None, description="Unset if nothing was evaluated.")
+    # Unset if nothing was evaluated
+    pass_rate: float | None = None
 
 
 class AccuracySummary(StrictCamelModel):
@@ -228,39 +216,27 @@ class AccuracySummary(StrictCamelModel):
 
     query_count: int
     result_counts: dict[AccuracyResult, int]
-    result_counts_by_author: dict[str, dict[AccuracyResult, int]] = Field(
-        default_factory=dict,
-        description=(
-            "Keyed by who wrote the expected results, or 'unspecified', so that each can be compared separately."
-        ),
-    )
+    # Keyed by who wrote the expected results, or 'unspecified'
+    result_counts_by_author: dict[str, dict[AccuracyResult, int]] = Field(default_factory=dict)
     required_datasets_found: PassRate
     rank: PassRate
     filters: PassRate
     indicators: PassRate
     time_period: PassRate
     locations: PassRate
-    mean_reciprocal_rank: float | None = Field(
-        default=None,
-        description="The mean over evaluated queries of 1 / the rank of the highest ranked expected dataset found, "
-        "or 0 if none were found.",
-    )
-    problem_count: int = Field(
-        description="The number of problems comparing datasets, e.g. expected labels that don't exist."
-    )
+    # Mean over evaluated queries of 1 / the rank of the highest ranked expected dataset found, or 0 if none were
+    mean_reciprocal_rank: float | None = None
+    problem_count: int
 
 
 class IterationReport(StrictCamelModel):
     iteration: int
     duration_seconds: float
     summary: ExecutionSummary
-    accuracy_summary: AccuracySummary | None = Field(
-        default=None, description="Unset if none of the queries have expected results."
-    )
-    skipped_query_ids: list[str] = Field(
-        default_factory=list,
-        description="Queries that were not run because the maximum cost of the run had been reached.",
-    )
+    # Unset if none of the queries have expected results
+    accuracy_summary: AccuracySummary | None = None
+    # Queries not run because the maximum cost had been reached
+    skipped_query_ids: list[str] = Field(default_factory=list)
     queries: list[QueryResult] = Field(default_factory=list)
 
 
@@ -283,18 +259,17 @@ class QueryConsistency(StrictCamelModel):
     iterations: int
     consistent: bool
     inconsistent_aspects: list[OutputAspect] = Field(default_factory=list)
-    differences: list[str] = Field(
-        default_factory=list, description="How each iteration differs from the first iteration that completed."
-    )
+    # How each iteration differs from the first iteration that completed
+    differences: list[str] = Field(default_factory=list)
 
 
 class ConsistencySummary(StrictCamelModel):
-    query_count: int = Field(description="The number of queries that ran in more than one iteration.")
+    # Queries that ran in more than one iteration
+    query_count: int
     consistent_count: int
     consistency_rate: float | None = None
-    inconsistent_counts: dict[OutputAspect, int] = Field(
-        default_factory=dict, description="The number of inconsistent queries, by what was inconsistent."
-    )
+    # Inconsistent queries, by what was inconsistent
+    inconsistent_counts: dict[OutputAspect, int] = Field(default_factory=dict)
 
 
 class RunConsistency(StrictCamelModel):
@@ -321,13 +296,10 @@ class QueryChange(StrEnum):
 class QueryComparison(StrictCamelModel):
     query_id: str
     change: QueryChange
-    baseline_status: ExecutionStatus | None = Field(
-        default=None, description="The worst status of the query in any iteration of the baseline."
-    )
+    # The worst status and accuracy of the query in any iteration
+    baseline_status: ExecutionStatus | None = None
     current_status: ExecutionStatus | None = None
-    baseline_accuracy: AccuracyResult | None = Field(
-        default=None, description="The worst accuracy of the query in any iteration of the baseline."
-    )
+    baseline_accuracy: AccuracyResult | None = None
     current_accuracy: AccuracyResult | None = None
     differences: list[str] = Field(default_factory=list)
 
@@ -353,9 +325,8 @@ class BaselineComparison(StrictCamelModel):
 
     baseline: BaselineSource
     change_counts: dict[QueryChange, int]
-    metrics_query_count: int = Field(
-        description="The number of queries in both the run and the baseline, which the metrics are compared over."
-    )
+    # Queries in both the run and the baseline, which the metrics are compared over
+    metrics_query_count: int
     metrics: list[MetricComparison] = Field(default_factory=list)
     queries: list[QueryComparison] = Field(default_factory=list)
 
@@ -375,32 +346,24 @@ class RunMetadata(StrictCamelModel):
     environment_name: str
     base_url: str
     input_file: str
-    query_ids: list[str] = Field(description="The queries selected to run.")
-    iterations: int = Field(description="The number of iterations requested.")
+    query_ids: list[str]
+    # Requested, so more than ran if the maximum cost was reached
+    iterations: int
     concurrency: int
     timeout_seconds: float
     max_cost: float | None = None
-    budget_exceeded: bool = Field(
-        description="Whether the maximum cost was reached, after which no further queries are started."
-    )
-    replayed_from: ReplaySource | None = Field(
-        default=None,
-        description="Set when the run replayed a previous report's recorded events. The token usage and cost are "
-        "then the recorded ones, and no tokens were used. Durations are meaningless, as the events are replayed "
-        "without any delay.",
-    )
+    budget_exceeded: bool
+    # Set when the run replayed a previous report, so no tokens were used, and durations are meaningless
+    replayed_from: ReplaySource | None = None
 
 
 class RegressionReport(StrictCamelModel):
     run: RunMetadata
     summary: ExecutionSummary
-    accuracy_summary: AccuracySummary | None = Field(
-        default=None, description="Unset if none of the queries have expected results."
-    )
-    consistency: RunConsistency | None = Field(
-        default=None, description="Unset unless a query ran in more than one iteration."
-    )
-    baseline_comparison: BaselineComparison | None = Field(
-        default=None, description="Unset unless the run was compared with a baseline."
-    )
+    # Unset if none of the queries have expected results
+    accuracy_summary: AccuracySummary | None = None
+    # Unset unless a query ran in more than one iteration
+    consistency: RunConsistency | None = None
+    # Unset unless the run was compared with a baseline
+    baseline_comparison: BaselineComparison | None = None
     iterations: list[IterationReport] = Field(default_factory=list)
