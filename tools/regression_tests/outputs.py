@@ -8,7 +8,7 @@ dataset can still be compared.
 from collections import Counter
 from dataclasses import dataclass
 
-from tools.regression_tests.report_models import ConsistencyAspect, DatasetResult, QueryResult
+from tools.regression_tests.report_models import DatasetResult, OutputAspect, QueryResult
 
 
 @dataclass(frozen=True)
@@ -25,7 +25,7 @@ class DatasetOutput:
 
 @dataclass(frozen=True)
 class OutputDifference:
-    aspect: ConsistencyAspect
+    aspect: OutputAspect
     message: str
 
 
@@ -65,7 +65,7 @@ def describe_differences(reference: list[DatasetOutput], other: list[DatasetOutp
     if [dataset.data_set_file_id for dataset in reference] != [dataset.data_set_file_id for dataset in other]:
         differences.append(
             OutputDifference(
-                ConsistencyAspect.DATASETS,
+                OutputAspect.DATASETS,
                 f"Datasets {_format_titles(other)} instead of {_format_titles(reference)}",
             )
         )
@@ -77,9 +77,9 @@ def describe_differences(reference: list[DatasetOutput], other: list[DatasetOutp
             continue
 
         for aspect, name, reference_values, values in (
-            (ConsistencyAspect.FILTERS, "Filter items", reference_dataset.filters, dataset.filters),
-            (ConsistencyAspect.INDICATORS, "Indicators", reference_dataset.indicators, dataset.indicators),
-            (ConsistencyAspect.LOCATIONS, "Locations", reference_dataset.locations, dataset.locations),
+            (OutputAspect.FILTERS, "Filter items", reference_dataset.filters, dataset.filters),
+            (OutputAspect.INDICATORS, "Indicators", reference_dataset.indicators, dataset.indicators),
+            (OutputAspect.LOCATIONS, "Locations", reference_dataset.locations, dataset.locations),
         ):
             change = _describe_change(reference_values, values)
             if change:
@@ -88,7 +88,7 @@ def describe_differences(reference: list[DatasetOutput], other: list[DatasetOutp
         if reference_dataset.time_period != dataset.time_period:
             differences.append(
                 OutputDifference(
-                    ConsistencyAspect.TIME_PERIOD,
+                    OutputAspect.TIME_PERIOD,
                     f"Time period of '{dataset.title}': {dataset.time_period or 'none'} "
                     f"instead of {reference_dataset.time_period or 'none'}",
                 )

@@ -5,9 +5,9 @@ from tools.regression_tests.consistency import assess_consistency, assess_query_
 from tools.regression_tests.outputs import describe_differences, get_outputs
 from tools.regression_tests.report_models import (
     AccuracyResult,
-    ConsistencyAspect,
     ExecutionStatus,
     IterationReport,
+    OutputAspect,
     QueryAccuracy,
     RegressionReport,
     RunMetadata,
@@ -67,7 +67,7 @@ def test_differences_in_selections_are_described_by_iteration(build_result, buil
     consistency = assess_query_consistency("query-1", runs)
 
     assert not consistency.consistent
-    assert consistency.inconsistent_aspects == [ConsistencyAspect.INDICATORS, ConsistencyAspect.TIME_PERIOD]
+    assert consistency.inconsistent_aspects == [OutputAspect.INDICATORS, OutputAspect.TIME_PERIOD]
     assert consistency.differences == [
         "Iteration 2, compared with iteration 1: Indicators of 'Dataset 1': added 'Number of sessions'",
         "Iteration 3, compared with iteration 1: Time period of 'Dataset 1': AY 2023 to AY 2024 instead of AY 2024",
@@ -85,7 +85,7 @@ def test_differences_in_status_and_accuracy_are_described(build_result, build_da
 
     consistency = assess_query_consistency("query-1", runs)
 
-    assert consistency.inconsistent_aspects == [ConsistencyAspect.STATUS, ConsistencyAspect.ACCURACY]
+    assert consistency.inconsistent_aspects == [OutputAspect.STATUS, OutputAspect.ACCURACY]
     assert consistency.differences == [
         "Statuses: iteration 1 success, iteration 2 sse_error",
         "Accuracy: iteration 1 pass, iteration 2 not_evaluated",
@@ -101,7 +101,7 @@ def test_results_are_only_compared_between_iterations_that_completed(build_resul
 
     consistency = assess_query_consistency("query-1", runs)
 
-    assert consistency.inconsistent_aspects == [ConsistencyAspect.STATUS, ConsistencyAspect.FILTERS]
+    assert consistency.inconsistent_aspects == [OutputAspect.STATUS, OutputAspect.FILTERS]
     assert (
         "Iteration 3, compared with iteration 2: Filter items of 'Dataset 1': added 'Primary', removed 'Total'"
         in consistency.differences
@@ -123,8 +123,8 @@ def test_summary_counts_inconsistent_queries_by_aspect(build_result, build_datas
     summary = assess_consistency(report).summary
 
     assert (summary.query_count, summary.consistent_count, summary.consistency_rate) == (2, 1, 0.5)
-    assert summary.inconsistent_counts[ConsistencyAspect.LOCATIONS] == 1
-    assert summary.inconsistent_counts[ConsistencyAspect.FILTERS] == 0
+    assert summary.inconsistent_counts[OutputAspect.LOCATIONS] == 1
+    assert summary.inconsistent_counts[OutputAspect.FILTERS] == 0
 
 
 def test_different_datasets_are_described_by_title(build_result, build_dataset_result):
@@ -141,7 +141,7 @@ def test_different_datasets_are_described_by_title(build_result, build_dataset_r
     differences = describe_differences(reference, other)
 
     assert [(difference.aspect, difference.message) for difference in differences] == [
-        (ConsistencyAspect.DATASETS, "Datasets 'Dataset 2', 'Dataset 1' instead of 'Dataset 1'"),
+        (OutputAspect.DATASETS, "Datasets 'Dataset 2', 'Dataset 1' instead of 'Dataset 1'"),
     ]
 
 

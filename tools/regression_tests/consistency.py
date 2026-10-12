@@ -9,8 +9,8 @@ from collections import defaultdict
 from tools.regression_tests.outputs import describe_differences, get_outputs
 from tools.regression_tests.report_models import (
     COMPLETED_STATUSES,
-    ConsistencyAspect,
     ConsistencySummary,
+    OutputAspect,
     QueryConsistency,
     QueryResult,
     RegressionReport,
@@ -38,7 +38,7 @@ def assess_consistency(report: RegressionReport) -> RunConsistency | None:
             consistent_count=consistent_count,
             consistency_rate=round(consistent_count / len(queries), RATIO_DECIMAL_PLACES),
             inconsistent_counts={
-                aspect: sum(aspect in query.inconsistent_aspects for query in queries) for aspect in ConsistencyAspect
+                aspect: sum(aspect in query.inconsistent_aspects for query in queries) for aspect in OutputAspect
             },
         ),
         queries=queries,
@@ -47,17 +47,17 @@ def assess_consistency(report: RegressionReport) -> RunConsistency | None:
 
 def assess_query_consistency(query_id: str, runs: list[tuple[int, QueryResult]]) -> QueryConsistency:
     """`runs` holds the result of the query in each iteration it ran in, with the iteration number."""
-    aspects: set[ConsistencyAspect] = set()
+    aspects: set[OutputAspect] = set()
     differences: list[str] = []
 
     statuses = [(iteration, result.status) for iteration, result in runs]
     if len({status for _, status in statuses}) > 1:
-        aspects.add(ConsistencyAspect.STATUS)
+        aspects.add(OutputAspect.STATUS)
         differences.append(f"Statuses: {_format_by_iteration(statuses)}")
 
     accuracies = [(iteration, result.accuracy.result) for iteration, result in runs if result.accuracy]
     if len({accuracy for _, accuracy in accuracies}) > 1:
-        aspects.add(ConsistencyAspect.ACCURACY)
+        aspects.add(OutputAspect.ACCURACY)
         differences.append(f"Accuracy: {_format_by_iteration(accuracies)}")
 
     # Results can only be compared between iterations where the pipeline completed
@@ -76,7 +76,7 @@ def assess_query_consistency(query_id: str, runs: list[tuple[int, QueryResult]])
         query_id=query_id,
         iterations=len(runs),
         consistent=not aspects,
-        inconsistent_aspects=[aspect for aspect in ConsistencyAspect if aspect in aspects],
+        inconsistent_aspects=[aspect for aspect in OutputAspect if aspect in aspects],
         differences=differences,
     )
 

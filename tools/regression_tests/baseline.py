@@ -188,13 +188,10 @@ def compare_query(
         better |= current_passed
 
     # Different datasets or selections are only worse or better if they changed the outcome of a check
-    output_changed = False
-    baseline_completed, current_completed = _get_first_completed(baseline_results), _get_first_completed(
-        current_results
-    )
+    baseline_completed = _get_first_completed(baseline_results)
+    current_completed = _get_first_completed(current_results)
     if baseline_completed and current_completed:
         for difference in describe_differences(get_outputs(baseline_completed), get_outputs(current_completed)):
-            output_changed = True
             differences.append(difference.message)
 
     if worse and better:
@@ -203,7 +200,7 @@ def compare_query(
         change = QueryChange.REGRESSED
     elif better:
         change = QueryChange.IMPROVED
-    elif output_changed or differences:
+    elif differences:
         change = QueryChange.CHANGED
     else:
         change = QueryChange.UNCHANGED

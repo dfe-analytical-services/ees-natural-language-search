@@ -264,7 +264,7 @@ class IterationReport(StrictCamelModel):
     queries: list[QueryResult] = Field(default_factory=list)
 
 
-class ConsistencyAspect(StrEnum):
+class OutputAspect(StrEnum):
     """What can differ between iterations of a query, or between a run and its baseline."""
 
     STATUS = "status"
@@ -282,7 +282,7 @@ class QueryConsistency(StrictCamelModel):
     query_id: str
     iterations: int
     consistent: bool
-    inconsistent_aspects: list[ConsistencyAspect] = Field(default_factory=list)
+    inconsistent_aspects: list[OutputAspect] = Field(default_factory=list)
     differences: list[str] = Field(
         default_factory=list, description="How each iteration differs from the first iteration that completed."
     )
@@ -292,7 +292,7 @@ class ConsistencySummary(StrictCamelModel):
     query_count: int = Field(description="The number of queries that ran in more than one iteration.")
     consistent_count: int
     consistency_rate: float | None = None
-    inconsistent_counts: dict[ConsistencyAspect, int] = Field(
+    inconsistent_counts: dict[OutputAspect, int] = Field(
         default_factory=dict, description="The number of inconsistent queries, by what was inconsistent."
     )
 

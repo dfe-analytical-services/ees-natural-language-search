@@ -97,11 +97,11 @@ def build_query_result(query: GoldStandardQuery, execution: SearchExecution) -> 
 
 def _classify(execution: SearchExecution, parsed: _ParsedEvents) -> tuple[ExecutionStatus, str | None]:
     if execution.timed_out:
-        return ExecutionStatus.TIMEOUT, (f"Timed out after {execution.duration_seconds:.1f}s")
+        return ExecutionStatus.TIMEOUT, f"Timed out after {execution.duration_seconds:.1f}s"
     if execution.request_error is not None:
         return ExecutionStatus.HTTP_ERROR, execution.request_error
     if execution.http_status != 200:
-        return ExecutionStatus.HTTP_ERROR, (f"HTTP {execution.http_status}: {execution.response_body or ''}".strip())
+        return ExecutionStatus.HTTP_ERROR, f"HTTP {execution.http_status}: {execution.response_body or ''}".strip()
     if parsed.contract_mismatch is not None:
         return ExecutionStatus.CONTRACT_MISMATCH, parsed.contract_mismatch
     if parsed.error_message is not None:
