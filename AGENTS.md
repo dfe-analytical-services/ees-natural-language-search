@@ -33,7 +33,8 @@ behaviour.** This file only covers what isn't in there.
 - **New top-level packages** need adding to the logging config in (`core/logging_config.py`) to be visible,
   and to `artifactContents` in `azure-pipelines.yml` to be deployed.
 - **Tests**: use `build_dataset` from `tests/conftest.py` to construct a `DatasetWithSubjectMeta` with
-  placeholder metadata, so a test only specifies the subject meta it cares about.
+  placeholder metadata, so a test only specifies the subject meta it cares about. JSON fixtures go in a
+  `fixtures/` directory beside the tests that use them, where `load_json_fixture` finds them.
 - **Commits** follow `EES-<ticket number> <Description> (#<PR number>)`. The ` (#<PR number>)` suffix is
   added by GitHub when a PR's commits are squashed on merging.
 

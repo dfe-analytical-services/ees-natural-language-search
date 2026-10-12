@@ -66,8 +66,10 @@ ees-natural-language-search/
 │
 └── tests/                           # Pytest suite - See section "Running the tests"
     ├── conftest.py                  # Shared Pytest fixtures
-    ├── fixtures/                    # Sample EES Data API JSON payloads, loaded via the `load_json_fixture`
-    └── common/                      # Tests for common/
+    ├── common/                      # Tests for common/
+    │   └── fixtures/                # JSON fixtures for these tests, loaded via `load_json_fixture`
+    └── tools/regression_tests/      # Tests for tools/regression_tests/
+        └── fixtures/                # Recorded SSE streams and subject meta for these tests
 ```
 
 ---
