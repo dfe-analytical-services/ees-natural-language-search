@@ -11,7 +11,7 @@ steps:
     displayName: "Cache pre-commit hook environments"
 
   # Only pre-commit needs installing here, since it installs isort, black and flake8 into its own hook environments.
-  # Keep the pre-commit version in sync with requirements-dev.txt.
+  # Keep the pre-commit version in sync with the dev dependency group in pyproject.toml.
   - script: |
       pip install pre-commit==4.6.2
     displayName: "Install pre-commit"

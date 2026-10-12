@@ -1,3 +1,39 @@
+[project]
+name = "ees-natural-language-search"
+version = "0.1.0"
+description = "Azure-hosted API that turns plain English queries into ranked EES dataset recommendations"
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+license = { file = "LICENSE" }
+dependencies = [
+    "azure-functions==2.2.0",
+    "azure-identity-broker==1.3.0",
+    "azure-search-documents==11.6.0",
+    "azurefunctions-extensions-http-fastapi==1.0.1",
+    "fastapi==0.136.3",
+    "openai==2.30.0",
+    "pydantic-client==2.0.6",
+    "rapidfuzz==3.14.5",
+]
+
+[dependency-groups]
+test = [
+    "pytest==9.1.1",
+    "pytest-cov==7.1.0",
+]
+# Keep black, flake8 and isort in sync with the hook revs in .pre-commit-config.yaml.
+# Keep pre-commit in sync with the version installed in pipelines/templates/steps/python/lint.yml.
+dev = [
+    { include-group = "test" },
+    "black==26.10.0",
+    "flake8==7.4.1",
+    "isort==9.0.2",
+    "pre-commit==4.6.2",
+]
+
+[tool.uv]
+package = false
+
 [tool.black]
 line-length = 120
 
@@ -5,4 +41,3 @@ line-length = 120
 profile = "black"
 combine_as_imports = true
 line_length = 120
-

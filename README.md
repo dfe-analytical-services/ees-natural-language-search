@@ -15,11 +15,9 @@ It combines **Azure Cognitive Search** (hybrid BM25 + vector) with a multi-stage
 ees-natural-language-search/
 ├── function_app.py                  # Azure Functions entry point - mounts FastAPI via an ASGI proxy
 ├── host.json                        # Functions runtime config
-├── requirements.txt
-├── requirements-test.txt            # Test dependencies - also installs requirements.txt
-├── requirements-dev.txt             # Development tools (black, isort, flake8, pre-commit) - also installs requirements-test.txt
 ├── pytest.ini                       # Pytest config, so `pytest` runs with no arguments
-├── pyproject.toml                   # black and isort config
+├── pyproject.toml                   # Dependencies (incl. test and dev groups), black and isort config
+├── uv.lock                          # uv lockfile - pinned versions of all dependencies
 ├── .flake8                          # flake8 config
 ├── .pre-commit-config.yaml          # Pre-commit hooks: isort, black and flake8
 ├── local.settings.example.json      # Template for local env vars
@@ -194,10 +192,10 @@ The response is returned as `text/event-stream`.
 
 ## Local Development
 
-**Prerequisites:** Python (CI pipeline targets **3.14**), [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local), and access to the Azure Search  / OpneAI / Storage resources.
+**Prerequisites:** Python (CI pipeline targets **3.14**), [uv](https://docs.astral.sh/uv/), [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local), and access to the Azure Search  / OpneAI / Storage resources.
 
 ```bash
-pip install -r requirements.txt
+uv sync                                                    # creates .venv with all dependencies, including test and dev
 Copy-Item local.settings.example.json local.settings.json  # then fill in values
 func start                                                 # serves on http://localhost:7071
 ```
@@ -216,17 +214,16 @@ curl -X POST https://localhost:7071/api/natural_language_search_function `
 
 The project uses [pre-commit](https://pre-commit.com/) to run isort, black and flake8 on staged files before each commit.
 
-Install the development dependencies (this also installs `requirements-test.txt` and `requirements.txt`) and the git hook:
+The development tools are in the `dev` dependency group, which `uv sync` installs by default. Install the git hook:
 
 ```bash
-pip install -r requirements-dev.txt
-pre-commit install
+uv run pre-commit install
 ```
 
 To run the hooks against every file in the repository:
 
 ```bash
-pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
 ---
@@ -238,16 +235,12 @@ Tests live in `tests/`, mirroring the package they cover (e.g. `tests/common/tes
 
 `pytest.ini` provides the test configuration, so `pytest` can be run without any additional arguments.
 
-Install the test dependencies (this also installs `requirements.txt`):
+The test dependencies are in the `test` dependency group, which `uv sync` installs as part of the `dev` group.
+
+From the root of the project, run:
 
 ```bash
-pip install -r requirements-test.txt
-```
-
-Then from the root of the project, run:
-
-```bash
-pytest
+uv run pytest
 ```
 
 The tests run in the CI pipeline using the configuration in the step template `pipelines/templates/steps/python/test.yml`.

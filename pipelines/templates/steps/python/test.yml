@@ -1,10 +1,10 @@
 steps:
   - script: |
-      pip install -r requirements-test.txt
+      uv sync --frozen --no-default-groups --group test
     displayName: 'Install test dependencies'
 
   - script: |
-      pytest
+      uv run --no-sync pytest
     displayName: 'Run tests'
 
   - task: PublishTestResults@2
