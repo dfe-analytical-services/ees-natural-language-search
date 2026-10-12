@@ -172,8 +172,8 @@
           ],
           "validationErrors": [
             {
-              "code": "no_indicators",
-              "message": "No relevant indicators were found for this dataset matching the query."
+              "code": "invalid_indicator",
+              "message": "No indicator 'Holiday sessions' was found for this dataset in the subject meta."
             }
           ],
           "validationWarnings": [

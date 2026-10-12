@@ -13,7 +13,9 @@ from schemas.responses.final_dataset_response import (
 from tools.regression_tests.report_models import ExecutionStatus
 from tools.regression_tests.run_result import build_query_result
 
-NO_INDICATORS_ERROR = DatasetValidationError(code=DatasetValidationErrorCode.NO_INDICATORS, message="No indicators")
+INVALID_INDICATOR_ERROR = DatasetValidationError(
+    code=DatasetValidationErrorCode.INVALID_INDICATOR, message="Invalid indicator"
+)
 NO_TIME_PERIOD_REQUIREMENT_WARNING = DatasetValidationWarning(
     code=DatasetValidationWarningCode.NO_TIME_PERIOD_REQUIREMENT,
     message="No time period requirement",
@@ -67,7 +69,7 @@ def test_validation_errors_make_a_success_with_validation_errors(
     events = build_pipeline_events(
         [
             build_final_dataset(file_id="file-1"),
-            build_final_dataset(file_id="file-2", validation_errors=[NO_INDICATORS_ERROR]),
+            build_final_dataset(file_id="file-2", validation_errors=[INVALID_INDICATOR_ERROR]),
         ]
     )
 
@@ -75,7 +77,7 @@ def test_validation_errors_make_a_success_with_validation_errors(
 
     assert result.status == ExecutionStatus.SUCCESS_WITH_VALIDATION_ERRORS
     assert [dataset.is_valid_for_table_generation for dataset in result.datasets] == [True, False]
-    assert result.datasets[1].validation_errors == [NO_INDICATORS_ERROR]
+    assert result.datasets[1].validation_errors == [INVALID_INDICATOR_ERROR]
 
 
 def test_validation_warnings_alone_are_a_success(query, build_final_dataset, build_pipeline_events, build_execution):
@@ -182,7 +184,7 @@ def test_events_not_matching_the_schemas_are_a_contract_mismatch(query, build_ex
 def test_inconsistent_is_valid_for_table_generation_is_a_contract_mismatch(
     query, build_final_dataset, build_pipeline_events, build_execution
 ):
-    events = build_pipeline_events([build_final_dataset(validation_errors=[NO_INDICATORS_ERROR])])
+    events = build_pipeline_events([build_final_dataset(validation_errors=[INVALID_INDICATOR_ERROR])])
     events[-1]["data"]["datasets"][0]["isValidForTableGeneration"] = True
 
     result = build_query_result(query, build_execution(events))
@@ -215,7 +217,7 @@ REAL_STREAM_CASES = [
     pytest.param(
         "nl_search_sse_validation_errors.json",
         ExecutionStatus.SUCCESS_WITH_VALIDATION_ERRORS,
-        [["no_indicators"]],
+        [["invalid_indicator"]],
         [["unfiltered_filters", "no_location_requirement"]],
         id="validation_errors",
     ),

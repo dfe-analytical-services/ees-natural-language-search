@@ -71,12 +71,12 @@ def test_summarise_datasets_counts_validity_and_codes():
             _dataset(relevance_score=90),
             _dataset(
                 relevance_score=60,
-                error_codes=[DatasetValidationErrorCode.NO_INDICATORS, DatasetValidationErrorCode.NO_LOCATION],
+                error_codes=[DatasetValidationErrorCode.INVALID_INDICATOR, DatasetValidationErrorCode.NO_LOCATION],
                 warning_codes=[DatasetValidationWarningCode.UNFILTERED_FILTERS],
             ),
             _dataset(
                 relevance_score=None,
-                error_codes=[DatasetValidationErrorCode.NO_INDICATORS],
+                error_codes=[DatasetValidationErrorCode.INVALID_INDICATOR],
             ),
         ]
     )
@@ -84,7 +84,7 @@ def test_summarise_datasets_counts_validity_and_codes():
     assert summary.dataset_count == 3
     assert summary.valid_for_table_generation_count == 1
     assert summary.with_validation_warnings_count == 1
-    assert summary.validation_error_counts == {"no_indicators": 2, "no_location": 1}
+    assert summary.validation_error_counts == {"invalid_indicator": 2, "no_location": 1}
     assert summary.validation_warning_counts == {"unfiltered_filters": 1}
     assert summary.mean_relevance_score == 75
 
