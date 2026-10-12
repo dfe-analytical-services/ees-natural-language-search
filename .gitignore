@@ -5,6 +5,7 @@ local.settings.json
 .idea
 
 # Python
+.venv/
 __pycache__/
 .pytest_cache/
 
