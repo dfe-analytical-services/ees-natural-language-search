@@ -30,9 +30,7 @@ from tools.regression_tests.report_models import (
     TimePeriodAccuracy,
 )
 from tools.regression_tests.subject_meta import SubjectMetaSource, SubjectMetaUnavailableError
-from tools.regression_tests.summaries import summarise_accuracy
-
-RATIO_DECIMAL_PLACES = 3
+from tools.regression_tests.summaries import ratio, summarise_accuracy
 
 
 def evaluate_report(
@@ -183,8 +181,8 @@ def compare_selections(expected: Iterable[str], selected: Iterable[str]) -> Sele
         selected=sorted(selected_values),
         missing=sorted(expected_values - selected_values),
         unexpected=sorted(selected_values - expected_values),
-        precision=_ratio(len(matched), len(selected_values)),
-        recall=_ratio(len(matched), len(expected_values)),
+        precision=ratio(len(matched), len(selected_values)),
+        recall=ratio(len(matched), len(expected_values)),
     )
 
 
@@ -215,8 +213,8 @@ def compare_grouped_selections(
     matched = sum(len(set(group.expected) & set(group.selected)) for group in compared)
     return GroupedSelectionAccuracy(
         passed=all(group.passed for group in groups.values()),
-        precision=_ratio(matched, sum(len(group.selected) for group in compared)),
-        recall=_ratio(matched, sum(len(group.expected) for group in compared)),
+        precision=ratio(matched, sum(len(group.selected) for group in compared)),
+        recall=ratio(matched, sum(len(group.expected) for group in compared)),
         groups=groups,
     )
 
@@ -344,7 +342,3 @@ def _unknown(values: Iterable[str], known: set[str]) -> list[str]:
 
 def _quote(values: Iterable[str]) -> str:
     return ", ".join(f"'{value}'" for value in values)
-
-
-def _ratio(numerator: int, denominator: int) -> float | None:
-    return round(numerator / denominator, RATIO_DECIMAL_PLACES) if denominator else None

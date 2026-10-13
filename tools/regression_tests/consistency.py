@@ -16,8 +16,7 @@ from tools.regression_tests.report_models import (
     RegressionReport,
     RunConsistency,
 )
-
-RATIO_DECIMAL_PLACES = 3
+from tools.regression_tests.summaries import ratio
 
 
 def assess_consistency(report: RegressionReport) -> RunConsistency | None:
@@ -36,7 +35,7 @@ def assess_consistency(report: RegressionReport) -> RunConsistency | None:
         summary=ConsistencySummary(
             query_count=len(queries),
             consistent_count=consistent_count,
-            consistency_rate=round(consistent_count / len(queries), RATIO_DECIMAL_PLACES),
+            consistency_rate=ratio(consistent_count, len(queries)),
             inconsistent_counts={
                 aspect: sum(aspect in query.inconsistent_aspects for query in queries) for aspect in OutputAspect
             },

@@ -105,6 +105,10 @@ def summarise_accuracy(query_results: list[QueryResult]) -> AccuracySummary | No
     )
 
 
+def ratio(numerator: int, denominator: int) -> float | None:
+    return round(numerator / denominator, RATIO_DECIMAL_PLACES) if denominator else None
+
+
 def percentile(values: list[float], percent: float) -> float:
     """The nearest-rank percentile, which is always one of the values, as the sample sizes are small."""
     ordered = sorted(values)
@@ -127,7 +131,7 @@ def _pass_rate(passed: Iterable[bool]) -> PassRate:
     return PassRate(
         evaluated=len(passed),
         passed=sum(passed),
-        pass_rate=round(sum(passed) / len(passed), RATIO_DECIMAL_PLACES) if passed else None,
+        pass_rate=ratio(sum(passed), len(passed)),
     )
 
 

@@ -40,9 +40,7 @@ from tools.regression_tests.report_models import (
 )
 from tools.regression_tests.run_result import build_query_result
 from tools.regression_tests.subject_meta import SubjectMetaSource
-from tools.regression_tests.summaries import summarise_accuracy, summarise_queries
-
-RATIO_DECIMAL_PLACES = 3
+from tools.regression_tests.summaries import ratio, summarise_accuracy, summarise_queries
 
 # Lower is better. Statuses where the pipeline didn't complete are all equally bad.
 _STATUS_LEVELS = {ExecutionStatus.SUCCESS: 0, ExecutionStatus.SUCCESS_WITH_VALIDATION_ERRORS: 1}
@@ -269,13 +267,13 @@ def _compare_metrics(
 ) -> list[MetricComparison]:
     def completed_rate(summary: ExecutionSummary) -> float | None:
         completed = sum(summary.status_counts[status] for status in COMPLETED_STATUSES)
-        return _ratio(completed, summary.query_count)
+        return ratio(completed, summary.query_count)
 
     def accuracy_pass_rate(accuracy: AccuracySummary | None) -> float | None:
         if accuracy is None:
             return None
         evaluated = accuracy.query_count - accuracy.result_counts[AccuracyResult.NOT_EVALUATED]
-        return _ratio(accuracy.result_counts[AccuracyResult.PASS], evaluated)
+        return ratio(accuracy.result_counts[AccuracyResult.PASS], evaluated)
 
     def check_pass_rate(accuracy: AccuracySummary | None, check: str) -> float | None:
         return getattr(accuracy, check).pass_rate if accuracy else None
@@ -335,7 +333,3 @@ def _compare_metrics(
 
 def _format_passed(passed: bool) -> str:
     return "passed" if passed else "failed"
-
-
-def _ratio(numerator: int, denominator: int) -> float | None:
-    return round(numerator / denominator, RATIO_DECIMAL_PLACES) if denominator else None
