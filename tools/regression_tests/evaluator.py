@@ -17,6 +17,7 @@ from tools.regression_tests.input_models import (
     ExpectedTimePeriodRange,
     GoldStandardQuery,
 )
+from tools.regression_tests.outputs import format_values
 from tools.regression_tests.report_models import (
     COMPLETED_STATUSES,
     AccuracyResult,
@@ -241,7 +242,7 @@ def _compare_filters(
 
     problems = (
         [
-            f"The selected filter items {_quote(unknown_filter_items)} don't exist in the subject meta, "
+            f"The selected filter items {format_values(unknown_filter_items)} don't exist in the subject meta, "
             "e.g. because it has changed since the results were recorded"
         ]
         if unknown_filter_items
@@ -292,7 +293,7 @@ def find_unknown_expected_values(expected: ExpectedDataset, meta: SubjectMetaRes
             unknown = _unknown(filter_item_labels, filter_item_labels_by_filter[filter_label])
             if unknown:
                 problems.append(
-                    f"The expected filter items {_quote(unknown)} don't exist in the filter '{filter_label}'"
+                    f"The expected filter items {format_values(unknown)} don't exist in the filter '{filter_label}'"
                 )
 
     indicator_labels = {
@@ -300,7 +301,7 @@ def find_unknown_expected_values(expected: ExpectedDataset, meta: SubjectMetaRes
     }
     unknown_indicators = _unknown(expected.indicators, indicator_labels)
     if unknown_indicators:
-        problems.append(f"The expected indicators {_quote(unknown_indicators)} don't exist in the subject meta")
+        problems.append(f"The expected indicators {format_values(unknown_indicators)} don't exist in the subject meta")
 
     if expected.time_period is not None:
         time_periods = {(time_period.code, time_period.year) for time_period in meta.time_period.options}
@@ -320,7 +321,9 @@ def find_unknown_expected_values(expected: ExpectedDataset, meta: SubjectMetaRes
         else:
             unknown = _unknown(location_codes, location_codes_by_level[level_label])
             if unknown:
-                problems.append(f"The expected locations {_quote(unknown)} don't exist at the level '{level_label}'")
+                problems.append(
+                    f"The expected locations {format_values(unknown)} don't exist at the level '{level_label}'"
+                )
 
     return problems
 
@@ -338,7 +341,3 @@ def _get_location_codes(options: list[LocationOption]) -> set[str]:
 
 def _unknown(values: Iterable[str], known: set[str]) -> list[str]:
     return sorted(set(values) - known)
-
-
-def _quote(values: Iterable[str]) -> str:
-    return ", ".join(f"'{value}'" for value in values)

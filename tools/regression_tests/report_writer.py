@@ -5,6 +5,7 @@ from pathlib import Path
 
 from schemas.responses.final_dataset_response import TimePeriodRange
 from tools.regression_tests.input_models import ExpectedTimePeriodRange
+from tools.regression_tests.outputs import format_values
 from tools.regression_tests.report_models import (
     AccuracySummary,
     BaselineComparison,
@@ -270,8 +271,8 @@ def _render_query(iteration: int, result: QueryResult) -> list[str]:
     if result.query_requirements:
         requirements = result.query_requirements
         lines.append(
-            f"- Query requirements: filters {_format_list(requirements.filters)}, "
-            f"geography {_format_list(requirements.geography)}, time period {requirements.time_period or '-'}"
+            f"- Query requirements: filters {format_values(requirements.filters)}, "
+            f"geography {format_values(requirements.geography)}, time period {requirements.time_period or '-'}"
         )
 
     accuracy = result.accuracy
@@ -356,13 +357,13 @@ def _render_dataset(dataset: DatasetResult) -> list[str]:
 def _format_selection(accuracy: SelectionAccuracy) -> str:
     text = _format_passed(accuracy.passed) + _format_precision_recall(accuracy.precision, accuracy.recall)
     if accuracy.expected == ["*"]:
-        return f"{text} - any selection expected, selected {_format_list(accuracy.selected)}"
+        return f"{text} - any selection expected, selected {format_values(accuracy.selected)}"
     if accuracy.missing:
-        text += f", missing {_format_list(accuracy.missing)}"
+        text += f", missing {format_values(accuracy.missing)}"
     if accuracy.unexpected:
-        text += f", unexpected {_format_list(accuracy.unexpected)}"
+        text += f", unexpected {format_values(accuracy.unexpected)}"
     if accuracy.passed:
-        text += f", selected {_format_list(accuracy.selected)}"
+        text += f", selected {format_values(accuracy.selected)}"
     return text
 
 
@@ -400,10 +401,6 @@ def _format_rate(rate: PassRate) -> str:
 
 def _format_ratio(ratio: float | None) -> str:
     return "-" if ratio is None else f"{ratio:.2f}"
-
-
-def _format_list(values: list[str]) -> str:
-    return ", ".join(f"'{value}'" for value in values) if values else "none"
 
 
 def _format_counts(counts: dict[str, int]) -> str:

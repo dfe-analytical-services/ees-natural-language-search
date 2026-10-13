@@ -6,6 +6,7 @@ dataset can still be compared.
 """
 
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from tools.regression_tests.report_models import DatasetResult, OutputAspect, QueryResult
@@ -66,7 +67,8 @@ def describe_differences(reference: list[DatasetOutput], other: list[DatasetOutp
         differences.append(
             OutputDifference(
                 OutputAspect.DATASETS,
-                f"Datasets {_format_titles(other)} instead of {_format_titles(reference)}",
+                f"Datasets {format_values(dataset.title for dataset in other)} "
+                f"instead of {format_values(dataset.title for dataset in reference)}",
             )
         )
 
@@ -102,15 +104,11 @@ def _describe_change(reference: tuple[str, ...], values: tuple[str, ...]) -> str
     removed = sorted((reference_counts - counts).elements())
     changes = []
     if added:
-        changes.append(f"added {_format_values(added)}")
+        changes.append(f"added {format_values(added)}")
     if removed:
-        changes.append(f"removed {_format_values(removed)}")
+        changes.append(f"removed {format_values(removed)}")
     return ", ".join(changes) or None
 
 
-def _format_titles(datasets: list[DatasetOutput]) -> str:
-    return _format_values([dataset.title for dataset in datasets]) if datasets else "none"
-
-
-def _format_values(values: list[str]) -> str:
-    return ", ".join(f"'{value}'" for value in values)
+def format_values(values: Iterable[str]) -> str:
+    return ", ".join(f"'{value}'" for value in values) or "none"
