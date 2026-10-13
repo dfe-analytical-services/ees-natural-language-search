@@ -1,0 +1,22 @@
+{
+  "dev": {
+    "baseUrl": "",
+    "eesDataApiUrl": ""
+  },
+  "test": {
+    "baseUrl": "",
+    "eesDataApiUrl": ""
+  },
+  "preprod": {
+    "baseUrl": "",
+    "eesDataApiUrl": ""
+  },
+  "prod": {
+    "baseUrl": "",
+    "eesDataApiUrl": ""
+  },
+  "local": {
+    "baseUrl": "http://localhost:7071",
+    "eesDataApiUrl": ""
+  }
+}

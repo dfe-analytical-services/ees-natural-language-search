@@ -1,13 +1,10 @@
 import json
-from pathlib import Path
 from typing import Any, Callable
 
 import pytest
 
 from schemas.domain.dataset_with_subject_meta import DatasetWithSubjectMeta
 from schemas.ees_data_api.subject_meta_response import SubjectMetaResponse
-
-FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 DATASET_DEFAULTS = {
     "file_id": "test-file-id",
@@ -24,11 +21,12 @@ DATASET_DEFAULTS = {
 
 
 @pytest.fixture
-def load_json_fixture() -> Callable[[str], Any]:
-    """Loads a JSON file from the `tests/fixtures` directory."""
+def load_json_fixture(request: pytest.FixtureRequest) -> Callable[[str], Any]:
+    """Loads a JSON file from the `fixtures` directory next to the requesting test module."""
+    fixtures_dir = request.path.parent / "fixtures"
 
     def _load(filename: str) -> Any:
-        return json.loads((FIXTURES_DIR / filename).read_text())
+        return json.loads((fixtures_dir / filename).read_text())
 
     return _load
 

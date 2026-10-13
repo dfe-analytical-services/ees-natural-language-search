@@ -1,0 +1,101 @@
+{
+  "filters": {
+    "EducationPhase": {
+      "id": "a4837d12-33a4-4974-a798-08dec0963a28",
+      "legend": "Education phase",
+      "options": {
+        "Default": {
+          "id": "3775c8df-af1f-4534-9b56-c31ba4462a4a",
+          "label": "Default",
+          "options": [
+            {
+              "label": "All schools",
+              "value": "3326ca63-c3eb-449b-9a2a-1a8927a91b8f"
+            },
+            {
+              "label": "Primary",
+              "value": "43875f96-47fe-4086-9536-8b74a04e93a3"
+            },
+            {
+              "label": "Secondary",
+              "value": "14d321df-16d0-4e90-999e-8e04c5a86ef1"
+            },
+            {
+              "label": "Special",
+              "value": "eea87815-d413-4771-9d9d-8bb1fed649e6"
+            }
+          ],
+          "order": 0
+        }
+      },
+      "name": "education_phase",
+      "order": 0
+    }
+  },
+  "indicators": {
+    "Default": {
+      "id": "33b9ebb3-f668-4c07-9172-fad0789442be",
+      "label": "Default",
+      "options": [
+        {
+          "label": "Persistent absence rate",
+          "unit": "%",
+          "value": "20df94bd-5648-4b30-a799-08dec0963a28",
+          "name": "persistent_absence_percent",
+          "decimalPlaces": 2
+        }
+      ],
+      "order": 0
+    }
+  },
+  "locations": {
+    "localAuthority": {
+      "legend": "Local authority",
+      "options": [
+        {
+          "level": "region",
+          "options": [
+            {
+              "id": "1c0b2894-990b-4591-8068-08d8f9b67995",
+              "label": "City of London",
+              "value": "E09000001"
+            }
+          ],
+          "label": "London",
+          "value": "E12000007"
+        }
+      ]
+    },
+    "country": {
+      "legend": "National",
+      "options": [
+        {
+          "id": "376f9a26-dc39-4db3-bb19-0549e59d322a",
+          "label": "England",
+          "value": "E92000001"
+        }
+      ]
+    },
+    "region": {
+      "legend": "Regional",
+      "options": [
+        {
+          "id": "72a2216b-2925-424d-8085-08d8f9b67995",
+          "label": "London",
+          "value": "E12000007"
+        }
+      ]
+    }
+  },
+  "timePeriod": {
+    "hint": "Filter statistics by a given start and end date",
+    "legend": "",
+    "options": [
+      {
+        "code": "W20",
+        "label": "2026 Week 20",
+        "year": 2026
+      }
+    ]
+  }
+}

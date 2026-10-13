@@ -62,11 +62,14 @@ ees-natural-language-search/
 ├── pipelines/templates/             # Azure Pipelines stage, job and step templates
 │
 ├── tools/data-sync/                 # Manual notebook that builds documents for the Azure AI Search indexes - see its own README
+├── tools/regression_tests/          # Manual script that runs gold standard queries against the API and reports on the results - see its own README
 │
 └── tests/                           # Pytest suite - See section "Running the tests"
     ├── conftest.py                  # Shared Pytest fixtures
-    ├── fixtures/                    # Sample EES Data API JSON payloads, loaded via the `load_json_fixture`
-    └── common/                      # Tests for common/
+    ├── common/                      # Tests for common/
+    │   └── fixtures/                # JSON fixtures for these tests, loaded via `load_json_fixture`
+    └── tools/regression_tests/      # Tests for tools/regression_tests/
+        └── fixtures/                # Recorded SSE streams and subject meta for these tests
 ```
 
 ---
