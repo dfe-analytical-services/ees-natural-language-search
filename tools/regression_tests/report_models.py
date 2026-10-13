@@ -1,11 +1,7 @@
 """
 Regression test report Pydantic models
 
-A report is structured as run -> iterations -> queries -> datasets, with a summary at the run and iteration
-levels aggregating the query results beneath them. Dump with `model_dump_json(by_alias=True)`.
-
-Each query result has an execution status, describing how its request was executed, and separately an accuracy,
-describing whether its results match the expected results in the gold standard file.
+A report is structured as run -> iterations -> queries -> datasets. Dump with `model_dump_json(by_alias=True)`.
 """
 
 from datetime import datetime
@@ -34,16 +30,11 @@ class ExecutionStatus(StrEnum):
 
     SUCCESS = "success"
     SUCCESS_WITH_VALIDATION_ERRORS = "success_with_validation_errors"
-    """The pipeline completed, but at least one dataset result has validation errors."""
     SSE_ERROR = "sse_error"
-    """The service streamed an error event."""
     HTTP_ERROR = "http_error"
-    """The request failed, or the response status wasn't 200."""
     TIMEOUT = "timeout"
     INCOMPLETE_STREAM = "incomplete_stream"
-    """The stream ended without a 'pipeline complete' or error event."""
     CONTRACT_MISMATCH = "contract_mismatch"
-    """An event didn't match the response schemas, so the service and this script have diverged."""
 
 
 COMPLETED_STATUSES = frozenset({ExecutionStatus.SUCCESS, ExecutionStatus.SUCCESS_WITH_VALIDATION_ERRORS})
@@ -89,10 +80,8 @@ class AccuracyResult(StrEnum):
 
     PASS = "pass"
     PARTIAL = "partial"
-    """Some, but not all, of the expected results matched."""
     FAIL = "fail"
     NOT_EVALUATED = "not_evaluated"
-    """The results couldn't be compared, e.g. because the pipeline didn't complete."""
 
 
 class Check(StrEnum):
@@ -309,16 +298,11 @@ class QueryChange(StrEnum):
     """How a query's results changed from the baseline."""
 
     REGRESSED = "regressed"
-    """Something got worse, e.g. its status, its accuracy, or a check that passed now fails, and nothing got better."""
     IMPROVED = "improved"
-    """Something got better, and nothing got worse."""
     MIXED = "mixed"
-    """Some things got better, and some got worse."""
     CHANGED = "changed"
-    """The results changed, e.g. different datasets or selections, but nothing got better or worse."""
     UNCHANGED = "unchanged"
     NEW = "new"
-    """The query isn't in the baseline, e.g. because it's new, or its text has changed."""
 
 
 class QueryComparison(StrictCamelModel):
@@ -346,11 +330,6 @@ class BaselineSource(StrictCamelModel):
 
 
 class BaselineComparison(StrictCamelModel):
-    """Compares the run with a previous run.
-
-    The baseline's results are rebuilt from its recorded events and compared with the current expected results, so
-    that differences come from the service, rather than from changes to the expected results or to this script."""
-
     baseline: BaselineSource
     change_counts: dict[QueryChange, int]
     # Queries in both the run and the baseline, which the metrics are compared over

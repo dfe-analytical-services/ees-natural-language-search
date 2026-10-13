@@ -1,10 +1,4 @@
-"""Compares query results with the expected results in the gold standard file.
-
-A selection passes only on an exact match with what's expected, and anything left unset in the expected results isn't
-compared. Filters are compared filter by filter, and only for the filters that are expected, as every filter of a
-dataset always has a selection. Locations are compared across every geographic level, so that a location selected at
-a level that isn't expected is unexpected.
-"""
+"""Compares query results with the expected results in the gold standard file."""
 
 from collections import defaultdict
 from collections.abc import Iterable

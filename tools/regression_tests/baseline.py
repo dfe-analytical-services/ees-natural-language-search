@@ -1,12 +1,6 @@
-"""Compares a run with a previous run, the baseline, to find the queries whose results got worse or better.
+"""Compares a run with a previous run, the baseline.
 
-The baseline's results are rebuilt from its recorded events with the current version of the script, and compared with
-the current expected results, in exactly the same way as the run's results are. Differences therefore come from the
-service, rather than from changes to the expected results or to this script, and an old report without any accuracy
-can still be used as a baseline.
-
-A query is compared by its worst status, and its worst accuracy, in any iteration, and by whether each check passed in
-every iteration, so that a query which only sometimes fails is treated as failing.
+The baseline's results are rebuilt from its recorded events, so they're scored exactly like the run's.
 """
 
 from collections import Counter

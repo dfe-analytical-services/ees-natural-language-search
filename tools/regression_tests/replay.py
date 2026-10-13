@@ -1,8 +1,6 @@
-"""Replays the SSE events recorded in a previous report instead of calling the service, so that the script can be
-developed and run without using any Azure OpenAI tokens.
+"""Replays the SSE events recorded in a previous report instead of calling the service.
 
-The recorded events are served through an HTTP transport, so everything after the network, e.g. parsing the stream,
-classifying each query's status and summarising the results, runs exactly as it does against a real environment.
+The events are served through an HTTP transport, so everything after the network runs unchanged.
 """
 
 import json

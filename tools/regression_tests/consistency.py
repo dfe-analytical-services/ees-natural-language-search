@@ -1,8 +1,4 @@
-"""Assesses whether each query returned the same results in every iteration of a run.
-
-The service calls Azure OpenAI with a temperature of 0 and a fixed seed, but that isn't fully deterministic, so the same
-query can return different results from one iteration to the next.
-"""
+"""Assesses whether each query returned the same results in every iteration of a run."""
 
 from collections import defaultdict
 

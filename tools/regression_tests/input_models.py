@@ -1,12 +1,7 @@
 """
 Gold standard queries file Pydantic models
 
-The file is written by hand, so the models are strict: a misspelt field fails validation rather than
-being silently ignored.
-
-Expected results are identified by labels and codes rather than ids, because the file ids, filter item
-ids and indicator ids of a dataset are regenerated with every new release version, whereas its data set
-file id, labels and location codes are not.
+Strict, so that a misspelt field in the hand-written file fails validation rather than being ignored.
 """
 
 import json
