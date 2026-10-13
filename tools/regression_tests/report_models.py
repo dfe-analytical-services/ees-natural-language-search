@@ -95,6 +95,27 @@ class AccuracyResult(StrEnum):
     """The results couldn't be compared, e.g. because the pipeline didn't complete."""
 
 
+class Check(StrEnum):
+    """What's checked of each expected dataset."""
+
+    FOUND = "found"
+    RANK = "rank"
+    FILTERS = "filters"
+    INDICATORS = "indicators"
+    TIME_PERIOD = "time_period"
+    LOCATIONS = "locations"
+
+
+CHECK_NAMES = {
+    Check.FOUND: "Found",
+    Check.RANK: "Rank",
+    Check.FILTERS: "Filters",
+    Check.INDICATORS: "Indicators",
+    Check.TIME_PERIOD: "Time period",
+    Check.LOCATIONS: "Locations",
+}
+
+
 class SelectionAccuracy(StrictCamelModel):
     """Compares the selected values with the expected values, e.g. of the indicators, or of one filter.
 
@@ -147,6 +168,17 @@ class ExpectedDatasetAccuracy(StrictCamelModel):
     locations: GroupedSelectionAccuracy | None = None
     # Problems comparing the dataset, e.g. expected labels that don't exist in its subject meta
     problems: list[str] = Field(default_factory=list)
+
+    def get_check_results(self) -> dict[Check, bool | None]:
+        """Whether each check passed, or None if it wasn't evaluated."""
+        return {
+            Check.FOUND: self.found,
+            Check.RANK: self.rank_passed,
+            Check.FILTERS: self.filters.passed if self.filters is not None else None,
+            Check.INDICATORS: self.indicators.passed if self.indicators is not None else None,
+            Check.TIME_PERIOD: self.time_period.passed if self.time_period is not None else None,
+            Check.LOCATIONS: self.locations.passed if self.locations is not None else None,
+        }
 
 
 class QueryAccuracy(StrictCamelModel):
@@ -218,12 +250,8 @@ class AccuracySummary(StrictCamelModel):
     result_counts: dict[AccuracyResult, int]
     # Keyed by who wrote the expected results, or 'unspecified'
     result_counts_by_author: dict[str, dict[AccuracyResult, int]] = Field(default_factory=dict)
-    required_datasets_found: PassRate
-    rank: PassRate
-    filters: PassRate
-    indicators: PassRate
-    time_period: PassRate
-    locations: PassRate
+    # Whether datasets were found is only evaluated for required datasets
+    checks: dict[Check, PassRate]
     # Mean over evaluated queries of 1 / the rank of the highest ranked expected dataset found, or 0 if none were
     mean_reciprocal_rank: float | None = None
     problem_count: int

@@ -11,6 +11,7 @@ from schemas.responses.final_dataset_response import (
 from schemas.shared.token_usage import TokenUsage
 from tools.regression_tests.report_models import (
     AccuracyResult,
+    Check,
     DatasetResult,
     ExecutionStatus,
     ExpectedDatasetAccuracy,
@@ -248,11 +249,13 @@ def test_summarise_accuracy_pass_rates_only_count_what_was_evaluated():
         ]
     )
 
-    assert (summary.required_datasets_found.passed, summary.required_datasets_found.evaluated) == (2, 3)
-    assert summary.required_datasets_found.pass_rate == pytest.approx(0.667)
-    assert (summary.rank.passed, summary.rank.evaluated) == (1, 2)
-    assert (summary.indicators.passed, summary.indicators.evaluated, summary.indicators.pass_rate) == (1, 2, 0.5)
-    assert (summary.filters.evaluated, summary.filters.pass_rate) == (0, None)
+    found, rank = summary.checks[Check.FOUND], summary.checks[Check.RANK]
+    indicators, filters = summary.checks[Check.INDICATORS], summary.checks[Check.FILTERS]
+    assert (found.passed, found.evaluated) == (2, 3)
+    assert found.pass_rate == pytest.approx(0.667)
+    assert (rank.passed, rank.evaluated) == (1, 2)
+    assert (indicators.passed, indicators.evaluated, indicators.pass_rate) == (1, 2, 0.5)
+    assert (filters.evaluated, filters.pass_rate) == (0, None)
 
 
 def test_summarise_accuracy_mean_reciprocal_rank_uses_the_highest_ranked_expected_dataset():

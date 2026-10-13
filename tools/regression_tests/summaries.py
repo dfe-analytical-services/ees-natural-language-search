@@ -10,11 +10,13 @@ from tools.regression_tests.report_models import (
     COMPLETED_STATUSES,
     AccuracyResult,
     AccuracySummary,
+    Check,
     DatasetResult,
     DatasetResultsSummary,
     DurationSummary,
     ExecutionStatus,
     ExecutionSummary,
+    ExpectedDatasetAccuracy,
     PassRate,
     QueryAccuracy,
     QueryResult,
@@ -83,7 +85,6 @@ def summarise_accuracy(query_results: list[QueryResult]) -> AccuracySummary | No
         counts_by_author[accuracy.author or UNSPECIFIED_AUTHOR][accuracy.result] += 1
 
     datasets = [dataset for accuracy in accuracies for dataset in accuracy.datasets]
-    found = [dataset for dataset in datasets if dataset.found]
 
     return AccuracySummary(
         query_count=len(accuracies),
@@ -92,12 +93,7 @@ def summarise_accuracy(query_results: list[QueryResult]) -> AccuracySummary | No
             author: {result: counts[result] for result in AccuracyResult}
             for author, counts in sorted(counts_by_author.items())
         },
-        required_datasets_found=_pass_rate(dataset.found for dataset in datasets if dataset.required),
-        rank=_pass_rate(dataset.rank_passed for dataset in found if dataset.rank_passed is not None),
-        filters=_pass_rate(dataset.filters.passed for dataset in found if dataset.filters is not None),
-        indicators=_pass_rate(dataset.indicators.passed for dataset in found if dataset.indicators is not None),
-        time_period=_pass_rate(dataset.time_period.passed for dataset in found if dataset.time_period is not None),
-        locations=_pass_rate(dataset.locations.passed for dataset in found if dataset.locations is not None),
+        checks={check: _check_pass_rate(datasets, check) for check in Check},
         mean_reciprocal_rank=_mean_reciprocal_rank(
             accuracy for accuracy in accuracies if accuracy.result != AccuracyResult.NOT_EVALUATED and accuracy.datasets
         ),
@@ -124,6 +120,12 @@ def _count_results(results: Iterable[AccuracyResult]) -> dict[AccuracyResult, in
     # Include every result, so that summaries can be compared result by result
     counts = Counter(results)
     return {result: counts[result] for result in AccuracyResult}
+
+
+def _check_pass_rate(datasets: list[ExpectedDatasetAccuracy], check: Check) -> PassRate:
+    # A dataset that isn't required isn't expected to be found
+    results = [dataset.get_check_results()[check] for dataset in datasets if check != Check.FOUND or dataset.required]
+    return _pass_rate(passed for passed in results if passed is not None)
 
 
 def _pass_rate(passed: Iterable[bool]) -> PassRate:

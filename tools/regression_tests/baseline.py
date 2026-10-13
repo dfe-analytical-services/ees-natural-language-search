@@ -25,11 +25,13 @@ from tools.regression_tests.recorded_report import (
     to_search_execution,
 )
 from tools.regression_tests.report_models import (
+    CHECK_NAMES,
     COMPLETED_STATUSES,
     AccuracyResult,
     AccuracySummary,
     BaselineComparison,
     BaselineSource,
+    Check,
     ExecutionStatus,
     ExecutionSummary,
     MetricComparison,
@@ -47,15 +49,6 @@ _STATUS_LEVELS = {ExecutionStatus.SUCCESS: 0, ExecutionStatus.SUCCESS_WITH_VALID
 _FAILED_STATUS_LEVEL = 2
 # Not evaluated isn't better or worse than anything, so it isn't compared
 _ACCURACY_LEVELS = {AccuracyResult.PASS: 0, AccuracyResult.PARTIAL: 1, AccuracyResult.FAIL: 2}
-
-_CHECK_NAMES = {
-    "found": "Found",
-    "rank": "Rank",
-    "filters": "Filters",
-    "indicators": "Indicators",
-    "time_period": "Time period",
-    "locations": "Locations",
-}
 
 
 class BaselineError(Exception):
@@ -179,7 +172,7 @@ def compare_query(
             continue
         _, check = key
         differences.append(
-            f"{_CHECK_NAMES[check]} of '{title}': "
+            f"{CHECK_NAMES[check]} of '{title}': "
             f"{_format_passed(baseline_checks[key][1])} -> {_format_passed(current_passed)}"
         )
         worse |= not current_passed
@@ -230,23 +223,15 @@ def _get_worst_accuracy(results: list[QueryResult]) -> AccuracyResult | None:
     return accuracies[0] if accuracies else None
 
 
-def _get_check_outcomes(results: list[QueryResult]) -> dict[tuple[str, str], tuple[str, bool]]:
+def _get_check_outcomes(results: list[QueryResult]) -> dict[tuple[str, Check], tuple[str, bool]]:
     """Keyed by (data set file id, check). The value is the dataset's title, and whether the check passed in every
     iteration it was evaluated in."""
-    outcomes: dict[tuple[str, str], tuple[str, bool]] = {}
+    outcomes: dict[tuple[str, Check], tuple[str, bool]] = {}
     for result in results:
         if not result.accuracy:
             continue
         for dataset in result.accuracy.datasets:
-            checks = {
-                "found": dataset.found,
-                "rank": dataset.rank_passed,
-                "filters": dataset.filters.passed if dataset.filters is not None else None,
-                "indicators": dataset.indicators.passed if dataset.indicators is not None else None,
-                "time_period": dataset.time_period.passed if dataset.time_period is not None else None,
-                "locations": dataset.locations.passed if dataset.locations is not None else None,
-            }
-            for check, passed in checks.items():
+            for check, passed in dataset.get_check_results().items():
                 if passed is None:
                     continue
                 key = (dataset.data_set_file_id, check)
@@ -275,8 +260,8 @@ def _compare_metrics(
         evaluated = accuracy.query_count - accuracy.result_counts[AccuracyResult.NOT_EVALUATED]
         return ratio(accuracy.result_counts[AccuracyResult.PASS], evaluated)
 
-    def check_pass_rate(accuracy: AccuracySummary | None, check: str) -> float | None:
-        return getattr(accuracy, check).pass_rate if accuracy else None
+    def check_pass_rate(accuracy: AccuracySummary | None, check: Check) -> float | None:
+        return accuracy.checks[check].pass_rate if accuracy else None
 
     def mean_cost(summary: ExecutionSummary) -> float | None:
         return round(summary.cost / summary.query_count, 6) if summary.query_count else None
@@ -298,17 +283,10 @@ def _compare_metrics(
             current=accuracy_pass_rate(current_accuracy),
         ),
     ]
-    for check, name in (
-        ("required_datasets_found", "Required datasets found"),
-        ("rank", "Rank"),
-        ("filters", "Filters"),
-        ("indicators", "Indicators"),
-        ("time_period", "Time period"),
-        ("locations", "Locations"),
-    ):
+    for check in Check:
         metrics.append(
             MetricComparison(
-                name=f"{name} pass rate",
+                name=f"{CHECK_NAMES[check]} pass rate",
                 unit="rate",
                 baseline=check_pass_rate(baseline_accuracy, check),
                 current=check_pass_rate(current_accuracy, check),

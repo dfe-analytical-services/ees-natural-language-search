@@ -5,6 +5,7 @@ from pathlib import Path
 
 from tools.regression_tests.outputs import format_time_period, format_values
 from tools.regression_tests.report_models import (
+    CHECK_NAMES,
     AccuracySummary,
     BaselineComparison,
     DatasetResult,
@@ -145,15 +146,8 @@ def _render_accuracy_summary(summary: AccuracySummary | None) -> list[str]:
     lines += _table(
         ["Check", "Passed", "Evaluated", "Pass rate"],
         [
-            (name, rate.passed, rate.evaluated, _format_rate(rate))
-            for name, rate in (
-                ("Required datasets found", summary.required_datasets_found),
-                ("Rank", summary.rank),
-                ("Filters", summary.filters),
-                ("Indicators", summary.indicators),
-                ("Time period", summary.time_period),
-                ("Locations", summary.locations),
-            )
+            (CHECK_NAMES[check], rate.passed, rate.evaluated, _format_rate(rate))
+            for check, rate in summary.checks.items()
         ],
     )
     lines += [

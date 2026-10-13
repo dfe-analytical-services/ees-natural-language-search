@@ -156,15 +156,7 @@ def evaluate_dataset(
     if meta is not None:
         accuracy.problems.extend(find_unknown_expected_values(expected, meta))
 
-    checks = [
-        accuracy.rank_passed,
-        *(
-            aspect.passed
-            for aspect in (accuracy.filters, accuracy.indicators, accuracy.time_period, accuracy.locations)
-            if aspect is not None
-        ),
-    ]
-    if not all(check for check in checks if check is not None):
+    if not all(passed for passed in accuracy.get_check_results().values() if passed is not None):
         accuracy.result = AccuracyResult.PARTIAL
     elif filters_not_compared:
         accuracy.result = AccuracyResult.NOT_EVALUATED
