@@ -9,6 +9,8 @@ from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from schemas.responses.final_dataset_response import TimePeriodRange
+from tools.regression_tests.input_models import ExpectedTimePeriodRange
 from tools.regression_tests.report_models import DatasetResult, OutputAspect, QueryResult
 
 
@@ -19,7 +21,7 @@ class DatasetOutput:
     filters: tuple[str, ...]
     """Filter item labels, including any repeated across filters, e.g. 'Total'."""
     indicators: tuple[str, ...]
-    time_period: str | None
+    time_period: str
     locations: tuple[str, ...]
     """'<geographic level label>: <location code>'."""
 
@@ -35,18 +37,12 @@ def get_outputs(result: QueryResult) -> list[DatasetOutput]:
 
 
 def _get_dataset_output(dataset: DatasetResult) -> DatasetOutput:
-    time_period = None
-    if dataset.time_period:
-        start = f"{dataset.time_period.start.code} {dataset.time_period.start.year}"
-        end = f"{dataset.time_period.end.code} {dataset.time_period.end.year}"
-        time_period = start if start == end else f"{start} to {end}"
-
     return DatasetOutput(
         data_set_file_id=dataset.data_set_file_id,
         title=dataset.title,
         filters=tuple(sorted(filter_item.label for filter_item in dataset.filters)),
         indicators=tuple(sorted(indicator.label for indicator in dataset.indicators)),
-        time_period=time_period,
+        time_period=format_time_period(dataset.time_period),
         locations=tuple(
             sorted(
                 f"{level_label}: {location.value}"
@@ -91,8 +87,8 @@ def describe_differences(reference: list[DatasetOutput], other: list[DatasetOutp
             differences.append(
                 OutputDifference(
                     OutputAspect.TIME_PERIOD,
-                    f"Time period of '{dataset.title}': {dataset.time_period or 'none'} "
-                    f"instead of {reference_dataset.time_period or 'none'}",
+                    f"Time period of '{dataset.title}': {dataset.time_period} "
+                    f"instead of {reference_dataset.time_period}",
                 )
             )
     return differences
@@ -108,6 +104,14 @@ def _describe_change(reference: tuple[str, ...], values: tuple[str, ...]) -> str
     if removed:
         changes.append(f"removed {format_values(removed)}")
     return ", ".join(changes) or None
+
+
+def format_time_period(time_period: TimePeriodRange | ExpectedTimePeriodRange | None) -> str:
+    if time_period is None:
+        return "none"
+    start = f"{time_period.start.code} {time_period.start.year}"
+    end = f"{time_period.end.code} {time_period.end.year}"
+    return start if start == end else f"{start} to {end}"
 
 
 def format_values(values: Iterable[str]) -> str:

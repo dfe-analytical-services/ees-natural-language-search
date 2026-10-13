@@ -3,9 +3,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from schemas.responses.final_dataset_response import TimePeriodRange
-from tools.regression_tests.input_models import ExpectedTimePeriodRange
-from tools.regression_tests.outputs import format_values
+from tools.regression_tests.outputs import format_time_period, format_values
 from tools.regression_tests.report_models import (
     AccuracySummary,
     BaselineComparison,
@@ -317,8 +315,8 @@ def _render_expected_dataset(dataset: ExpectedDatasetAccuracy) -> list[str]:
     if dataset.time_period is not None:
         lines.append(
             f"    - Time period: {_format_passed(dataset.time_period.passed)} - expected "
-            f"{_format_time_period(dataset.time_period.expected)}, "
-            f"selected {_format_time_period(dataset.time_period.selected)}"
+            f"{format_time_period(dataset.time_period.expected)}, "
+            f"selected {format_time_period(dataset.time_period.selected)}"
         )
     if dataset.locations is not None:
         lines += _render_grouped_selection("Locations", dataset.locations)
@@ -371,14 +369,6 @@ def _format_precision_recall(precision: float | None, recall: float | None) -> s
     if precision is None and recall is None:
         return ""
     return f" (precision {_format_ratio(precision)}, recall {_format_ratio(recall)})"
-
-
-def _format_time_period(time_period: TimePeriodRange | ExpectedTimePeriodRange | None) -> str:
-    if time_period is None:
-        return "none"
-    start = f"{time_period.start.code} {time_period.start.year}"
-    end = f"{time_period.end.code} {time_period.end.year}"
-    return start if start == end else f"{start} to {end}"
 
 
 def _format_passed(passed: bool | None) -> str:
